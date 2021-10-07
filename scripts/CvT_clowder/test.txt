@@ -1,0 +1,3 @@
+"x"
+"1""apiKey = \"?key=*INSERT API KEY HERE*\"
+clowder_user_id=\"*INSERT USER ID HERE*\""

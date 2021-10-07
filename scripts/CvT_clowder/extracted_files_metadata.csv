@@ -1,0 +1,110 @@
+PMID,filename,QA Category,QA Subcategory,Curator Initials,PDF in Clowder,uploadReady,Curator Notes,Curation Finish Date
+17656487,17656487_CvT_data_template_articles_TDK.xlsx,0_to_qa_format,Need Admin Check,TDK,1,0,submitted data to John and Chris via email,09/11/2020
+23184737,23184737_CvT_data_template_articles_LA_GSK.xlsx,0_to_qa_format,Need Admin Check,LA_GSK,1,0,In vivo inhalation CvT data sent to john and chris,7/29/2020
+25850107,25850107_CvT_data_template_articles_EKB_1.xlsx,0_to_qa_format,Need Admin Check,EKB_1,1,0,data sent to John,5/18/20
+25850107,25850107_CvT_data_template_articles_EKB_2.xlsx,0_to_qa_format,Need Admin Check,EKB_2,1,0,data sent to John,5/18/20
+28799097,28799097_CvT_data_template_articles_LA.xlsx,0_to_qa_format,Need Admin Check,LA,1,0,some CvT data looks cited from another paper. Data sent to John and Chris,8/7/2020
+30724099,30724099_CvT_data_template_articles_AK.xlsx,0_to_qa_format,Need Admin Check,AK,1,0,NA,NA
+10496686,10496686_CvT_data_template_articles_TDK.xlsx,0_to_qa_format,Needs Further Curation,TDK,1,0,Submitted to John and Chris via email,08/17/20
+14976335,14976335_CvT_data_template_articles_TDK.xlsx,0_to_qa_format,Needs Further Curation,TDK,1,0,Submitted to John and Chris via email,07/23/2020
+15885262,15885262_CvT_data_template_articles_TDK.xlsx,0_to_qa_format,Needs Further Curation,TDK,1,0,submitted to John via email,12/11/20
+15947923,15947923_CvT_data_template_articles_NMH.xlsx,0_to_qa_format,Needs Further Curation,NMH,1,0,Submitted to John via email.,06/16/2020
+16616907,16616907_CvT_data_template_articles_TDK.xlsx,0_to_qa_format,Needs Further Curation,TDK,1,0,submitted to Chris and John via email,07/09/20
+19407933,19407933_CvT_data_template_articles_AK.xlsx,0_to_qa_format,Needs Further Curation,AK,1,0,NA,8/12/20
+21889587,21889587_CvT_data_template_articles_TDK.xlsx,0_to_qa_format,Needs Further Curation,TDK,1,0,submitted to john via email,12/02/2020
+23506208,23506208_CvT_data_template_articles_AK.xlsx,0_to_qa_format,Needs Further Curation,AK,1,0,"Fig3 shows cvt plot from a 2nd study they used in their modeling, but so many overlapping points, I didn't include because I didn't think I could make accurate estimate; there's a bunch of PK data in tables",5/15/20
+27091076,27091076_CvT_data_template_articles_TDK.xlsx,0_to_qa_format,Needs Further Curation,TDK,1,0,Submitted to John and chris via email,07/02/20
+29061751,29061751_CvT_data_template_articles_TDK.xlsx,0_to_qa_format,Needs Further Curation,TDK,1,0,Submitted to John and chris via email; Had some difficulty with the graphs,08/21/20
+31680603,31680603_CvT_data_template_articles_TDK.xlsx,0_to_qa_format,Needs Further Curation,TDK,1,0,submitted to john via email,11/4/20
+7828694,7828694_CvT_data_template_articles_TDK.xlsx,0_to_qa_format,Needs Further Curation,TDK,1,0,Submitted to John and chris via email,06/25/20
+9111190,9111190_CvT_data_template_articles_TDK.xlsx,0_to_qa_format,Needs Further Curation,TDK,1,0,submitted to John and chris via email; some of the details in this paper are unclear,10/09/2020
+9179722,9179722_CvT_data_template_articles_TDK.xlsx,0_to_qa_format,Needs Further Curation,TDK,1,0,Submitted to John and chris via email; had some issues with the graphs,6/10/20
+10219542,10219542_CvT_data_template_articles_AK.xlsx,1_qa_format_complete,NA,AK,1,1,NA,6/4/20
+10353308,10353308_CvT_data_template_articles_TDK.xlsx,1_qa_format_complete,NA,TDK,1,1,submitted to john via email,12/2/2020
+10416266,10416266_CvT_data_template_articles_TDK.xlsx,1_qa_format_complete,NA,TDK,1,1,Submitted to John and Chris via email,09/18/2020
+10429835,10429835_CvT_data_template_articles_MH.xlsx,1_qa_format_complete,NA,MH,1,1,"some issues with dose volume administered, and number of subjects in iv study",04/16/2020
+10506015,10506015_CvT_data_template_articles_MH.xlsx,1_qa_format_complete,NA,MH,1,1,NA,04/17/2020
+10828257,10828257_CvT_data_template_articles_MH.xlsx,1_qa_format_complete,NA,MH,1,1,NA,05/08/2020
+11043494,11043494_CvT_data_template_articles_MH.xlsx,1_qa_format_complete,NA,MH,1,1,NA,04/27/2020
+11055266,11055266_CvT_data_template_articles_MH.xlsx,1_qa_format_complete,NA,MH,1,1,Data in Table 1 of manuscript is %dose/24 hr; edited data on on CvT sheet to % cumulative dose,04/24/2020
+11673121,11673121_CvT_data_template_articles_TDK.xlsx,1_qa_format_complete,NA,TDK,1,1,Submitted to John and Chris via email,08/07/20
+11680765,11680765_CvT_data_template_articles_MH.xlsx,1_qa_format_complete,NA,MH,1,1,NA,04/23/2020
+12107648,12107648_CvT_data_template_articles_MH.xlsx,1_qa_format_complete,NA,MH,1,1,TK parameters available,05/05/2020
+12145528,12145528_CvT_data_template_articles_TDK.xlsx,1_qa_format_complete,NA,TDK,1,1,submitted to John and Chris via email,10/2/20
+12355558,12355558_CvT_data_template_articles_MH.xlsx,1_qa_format_complete,NA,MH,1,1,Issues with dermal data. Dose not clear.  Dosing area and vehicle not specified.,05/20/2020
+14576974,14576974_CvT_data_template_articles_MH.xlsx,1_qa_format_complete,NA,MH,1,1,NA,05/18/2020
+14600279,14600279_CvT_data_template_articles_MS.xlsx,1_qa_format_complete,NA,MS,1,1,NA,4/30/2020
+15181664,15181664_CvT_data_template_articles_MS.xlsx,1_qa_format_complete,NA,MS,1,1,"Uncaptured metabolite urinary excretion data is available in cumulative amount here, as well as some calculated toxicokinetic parameters.",4/16/2020
+15456918,15456918_CvT_data_template_articles_.xlsx,1_qa_format_complete,NA,,1,1,NA,NA
+15994034,15994034_CvT_data_template_articles_AK.xlsx,1_qa_format_complete,NA,AK,1,1,NA,4/29/2020
+16481339,16481339_CvT_data_template_articles_MH.xlsx,1_qa_format_complete,NA,MH,1,1,NA,04/30/2020
+17234645,17234645_CvT_data_template_articles_MH.xlsx,1_qa_format_complete,NA,MH,1,1,NA,05/04/2020
+17336003,17336003_CvT_data_template_articles_AK.xlsx,1_qa_format_complete,NA,AK,1,1,NA,8/22/20
+17397815,17397815_CvT_data_template_articles_TDK.xlsx,1_qa_format_complete,NA,TDK,1,1,submitted to John via email,12/2/2020
+17454563,17454563_CvT_data_template_articles_TDK.xlsx,1_qa_format_complete,NA,TDK,1,1,Submitted to John and chris via email,08/27/20
+17582672,17582672_CvT_data_template_articles_MH.xlsx,1_qa_format_complete,NA,MH,1,1,NA,5/1/20
+17589597,17589597_CvT_data_template_articles_TDK.xlsx,1_qa_format_complete,NA,TDK,1,1,submitted to John and Chris via email,09/18/2020
+1855490,1855490_CvT_data_template_articles_MH.xlsx,1_qa_format_complete,NA,MH,1,1,NA,4/13/2020
+1908146,1908146_CvT_data_template_articles_AK.xlsx,1_qa_format_complete,NA,AK,1,1,NA,5/19/20
+19139288,19139288_CvT_data_template_articles_AK.xlsx,1_qa_format_complete,NA,AK,1,1,NA,8/12/20
+20077216,20077216_CvT_data_template_articles_TDK.xlsx,1_qa_format_complete,NA,TDK,1,1,Submitted to John and chris via email,5/5/20
+21116783,21116783_CvT_data_template_articles_TDK.xlsx,1_qa_format_complete,NA,TDK,1,1,Submitted to John and chris via email,5/5/20
+21241352,21241352_CvT_data_template_articles_AK.xlsx,1_qa_format_complete,NA,AK,1,1,NA,6/14/20
+21544080,21544080_CvT_data_template_articles_AK.xlsx,1_qa_format_complete,NA,AK,1,1,NA,5/4/2020
+22467031,22467031_CvT_data_template_articles_MH.xlsx,1_qa_format_complete,NA,MH,1,1,NA,05/12/2020
+22820759,22820759_CvT_data_template_articles_MH.xlsx,1_qa_format_complete,NA,MH,1,1,additional pk parameters available,5/14/2020
+22859315,22859315_CvT_data_template_articles_LA.xlsx,1_qa_format_complete,NA,LA,1,1,"Cis, and Trans-Permethrin data sent to John and Chris, Mike Hughes had original data",NA
+22963843,22963843_CvT_data_template_articles_MH.xlsx,1_qa_format_complete,NA,MH,1,1,NA,5/13/2020
+23184737,23184737_CvT_data_template_articles_LA.xlsx,1_qa_format_complete,NA,LA,1,1,In vivo inhalation CvT data sent to john and chris,7/29/2020
+23344044,23344044_CvT_data_template_articles_NMH.xlsx,1_qa_format_complete,NA,NMH,1,1,"Submitted to John & Chris via email, Fri May 15, 2020",5/15/2020
+23462847,23462847_CvT_data_template_articles_NMH.xlsx,1_qa_format_complete,NA,NMH,1,1,"Little usable CvT in vivo data as a.) There were mostly modeling predictions and pulled data from other papers, with b.) Many ""loose ends"" and unclear data/results (Examples: how many rats were dosed? why were human subject data points left out (dermal exposure study)? Will submit info from Fig 3 permethrin CvT rat data to John & Chris.""",05/20/2020
+23573923,23573923_CvT_data_template_articles_AK.xlsx,1_qa_format_complete,NA,AK,1,1,NA,5/7/20
+24043141,24043141_CvT_data_template_articles_AK.xlsx,1_qa_format_complete,NA,AK,1,1,additional pk parameters provided,5/13/20
+24804871,24804871_CvT_data_template_articles_LA.xlsx,1_qa_format_complete,NA,LA,1,1,Data sent to John including hemoglobin data,NA
+24839995,24839995_CvT_data_template_articles_LA.xlsx,1_qa_format_complete,NA,LA,1,1,Data sent to John and Chris. Data was mostly from Timchalck et al 2002,NA
+24977115,24977115_CvT_data_template_articles_AK.xlsx,1_qa_format_complete,NA,AK,1,1,NA,5/4/2020
+25072765,25072765_CvT_data_template_articles_AK.xlsx,1_qa_format_complete,NA,AK,1,1,NA,5/7/20
+26168976,26168976_CvT_data_template_articles_AK.xlsx,1_qa_format_complete,NA,AK,1,1,"additional PK values are given for other tissues, but don't provide cvt data",5/8/20
+26716882,26716882_CvT_data_template_articles_MH.xlsx,1_qa_format_complete,NA,MH,1,1,NA,5/18/2020
+26794662,26794662_CvT_data_template_articles_TDK.xlsx,1_qa_format_complete,NA,TDK,1,1,submitted to John and Chris via email,09/04/20
+27842973,27842973_CvT_data_template_articles_AK.xlsx,1_qa_format_complete,NA,AK,1,1,NA,8/12/20
+28321038,28321038_CvT_data_template_articles_NMH.xlsx,1_qa_format_complete,NA,NMH,1,1,Submitted to John via email with comments,04/08/2020
+28550799,28550799_CvT_data_template_articles_MH.xlsx,1_qa_format_complete,NA,MH,1,1,"Data not captured: Fig 1, correlation of exposure dose vs. adhesion coefficient; Table 1, exposure dose, unabsorbed dose (wash + tape strip), applied dose, adhesion cofficient, adhesion rate; Table 2, diffusion constant, Kp and other parameters",5/18/2020
+28575278,28575278_CvT_data_template_articles_TDK.xlsx,1_qa_format_complete,NA,TDK,1,1,Submitted to John and chris via email; Had some difficulty with the graphs,08/19/20
+29091796,29091796_CvT_data_template_articles_AK.xlsx,1_qa_format_complete,NA,AK,1,1,"contains postnatal data, which I didn't include in curation",4/30/20
+29111853,29111853_CvT_data_template_articles_JW.xlsx,1_qa_format_complete,NA,JW,1,1,NA,NA
+29421396,29421396_CvT_data_template_articles_TDK.xlsx,1_qa_format_complete,NA,TDK,1,1,submitted to john via email,11/4/20
+29947799,29947799_CvT_data_template_articles_MH.xlsx,1_qa_format_complete,NA,MH,1,1,"Only did plasma values, broncholar lavage data available",04/13/2020
+30257195,30257195_CvT_data_template_articles_LA.xlsx,1_qa_format_complete,NA,LA,1,1,"phys chem properties available, not all drugs have names, unsure how to extract data from figures, awaiting clarification",085/12/2020
+30264993,30264993_CvT_data_template_articles_MH.xlsx,1_qa_format_complete,NA,MH,1,1,NA,05/27/2020
+30481582,30481582_CvT_data_template_articles_MH.xlsx,1_qa_format_complete,NA,MH,1,1,NA,5/22/2020
+3086078,3086078_CvT_data_template_articles_TDK.xlsx,1_qa_format_complete,NA,TDK,1,1,submitted to John and Chris via email,08/27/20
+30901659,30901659_CvT_data_template_articles_LA.xlsx,1_qa_format_complete,NA,LA,1,1,Data sent to John,NA
+3094571,3094571_CvT_data_template_articles_MH.xlsx,1_qa_format_complete,NA,MH,1,1,NA,04/14/2020
+31002673,31002673_CvT_data_template_articles_NMH_cg.xlsx,1_qa_format_complete,NA,NMH_cg,1,1,Submitted to Chris and John via email with comments,4/19/2020
+31004470,31004470_CvT_data_template_articles_TDK.xlsx,1_qa_format_complete,NA,TDK,1,1,Submitted to John and chris via email,06/16/20
+31008016,31008016_CvT_data_template_articles_TDK.xlsx,1_qa_format_complete,NA,TDK,1,1,submitted to John and chris via email,06/12/20
+31359083,31359083_CvT_data_template_articles_MH.xlsx,1_qa_format_complete,NA,MH,1,1,Pharmacokinetic parameters available,05/07/2020
+32179324,32179324_CvT_data_template_articles_MH.xlsx,1_qa_format_complete,NA,MH,1,1,pharmacokinetic parameters available; CvT data for individuals in supplemental,05/22/2020
+3718226,3718226_CvT_data_template_articles_MH.xlsx,1_qa_format_complete,NA,MH,1,1,"PK parameters available, rate of elimination availble, but hard to determne concentration and time",05/09/2020
+3959124,3959124_CvT_data_template_articles_MH.xlsx,1_qa_format_complete,NA,MH,1,1,PK parameters available,05/15/2020
+4002226,4002226_CvT_data_template_articles_AK.xlsx,1_qa_format_complete,NA,AK,1,1,NA,5/5/2020
+4024100,4024100_CvT_data_template_articles_MH.xlsx,1_qa_format_complete,NA,MH,1,1,NA,5/29/2020
+4086539,4086539_CvT_data_template_articles_AK.xlsx,1_qa_format_complete,NA,AK,1,1,NA,5/23/20
+4091646,4091646_CvT_data_template_articles_MH.xlsx,1_qa_format_complete,NA,MH,1,1,first time point in Fig 2 not captured because of poor graph quality,5/21/2020
+4091659,4091659_CvT_data_template_articles_MH.xlsx,1_qa_format_complete,NA,MH,1,1,PK parameters available,5/13/2020
+6517696,6517696_CvT_data_template_articles_TDK.xlsx,1_qa_format_complete,NA,TDK,1,1,submitted to john via email,11/4/20
+6517697,6517697_CvT_data_template_articles_TDK.xlsx,1_qa_format_complete,NA,TDK,1,1,submitted to John via email,11/4/20
+7058523,7058523_CvT_data_template_articles_MH.xlsx,1_qa_format_complete,NA,MH,1,1,NA,04/15/2020
+7082347,7082347_CvT_data_template_articles_MH.xlsx,1_qa_format_complete,NA,MH,1,1,NA,04/18/2020
+7716496,7716496_CvT_data_template_articles_TDK.xlsx,1_qa_format_complete,NA,TDK,1,1,submitted to John and Chris via email,11/4/2020
+8494494,8494494_CvT_data_template_articles_MH.xlsx,1_qa_format_complete,NA,MH,1,1,Butadiene monoxide data available. Actual data is from 2 thesis,05/11/2020
+8901882,8901882_CvT_data_template_articles_MH.xlsx,1_qa_format_complete,NA,MH,1,1,"Symposium paper, CvT data extracted, but not original source",05/08/2020
+8901915,8901915_CvT_data_template_articles_TDK.xlsx,1_qa_format_complete,NA,TDK,1,1,submitted to John and Chris via email,09/18/2020
+9051121,9051121_CvT_data_template_articles_MH.xlsx,1_qa_format_complete,NA,MH,1,1,NA,04/15/2020
+9492380,9492380_CvT_data_template_articles_TDK.xlsx,1_qa_format_complete,NA,TDK,1,1,Submitted to John and chris via email,05/29/20
+9520352,9520352_CvT_data_template_articles_MH.xlsx,1_qa_format_complete,NA,MH,1,1,some data from another publication; some values repeated (blood),05/06/2020
+9794502,9794502_CvT_data_template_articles_TDK.xlsx,1_qa_format_complete,NA,TDK,1,1,Submitted to John and chris via email,06/22/20
+25267660,25267660_CvT_data_template_articles_AK.xlsx,1_qa_format_complete,NA,AK,1,1,"has more PK data, kill time data on bacteria",5/14/20
+25267660,25267660_CvT_data_template_articles_LA.xlsx,0_to_qa_format,Need Admin Check,LA,1,0,"has more PK data, kill time data on bacteria",5/14/20
+28505513,28505513_CvT_data_template_articles_TDK.xlsx,0_to_qa_format,Need Admin Check,TDK,1,0,submitted to John via email,12/02/2020
