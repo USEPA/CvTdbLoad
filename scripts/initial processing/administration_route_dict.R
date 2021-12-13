@@ -8,6 +8,7 @@ get_administration_route_dict <- function(){
 get_unique_administration_route <- function(fileList, template_path){
   #Get administration route from files
   ar = lapply(fileList, function(f){
+    message(f)
     s_list = load_sheet_group(fileName = f, template_path = template_path)
     s_list$Studies %>% select(administration_route) %>% unique() %>% unlist() %>% unname()
   }) %>% 
@@ -17,11 +18,12 @@ get_unique_administration_route <- function(fileList, template_path){
     mutate(administration_route_original = trimws(tolower(administration_route_original))) %>%
     unique() %>%
     #Attempt match
-    left_join(get_administration_route_dict(), by="administration_route_original") %>%
+    left_join(admin_dict, by="administration_route_original") %>%
     filter(is.na(administration_route_normalized))
   
   #Output to file for curation
   writexl::write_xlsx(out %>% select(-id), paste0("input/administration_route/administration_route_to_curate_",Sys.Date(),".xlsx"))
+  return(out %>% select(-id))
 }
 
 create_administration_route_dict <- function(overwrite = FALSE){

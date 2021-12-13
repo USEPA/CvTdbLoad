@@ -19,6 +19,12 @@ normalize_time <- function(raw, f){
   out = list()
   out$raw = prep_normalization(x=raw, newcols=c())
   out$raw = out$raw %>% mutate(time_hr=as.numeric(NA))
+  #Missing time values
+  out$missing_time = out$raw %>% filter(is.na(time_original))
+  out$raw = out$raw %>% filter(!tempID %in% unique(out$missing_time$tempID))
+  if(nrow(out$missing_time)){
+    log_CvT_doc_load(f=f, m="missing_time_values")
+  }
   #Missing units
   out = check_missing_units(x=out, f=f, units_col="time_units_original")
   #Normalize units
@@ -39,6 +45,15 @@ normalize_time <- function(raw, f){
   out = check_convert_failed(x=out, f=f, col="time_hr")
   #Remove empty list elements
   out = out[sapply(out, nrow) > 0]
+  #Convert to NA for all lists that were not normalized
+  out = lapply(names(out), function(n){
+    if(n %in% c("convert_ready")){
+      return(out[[n]])
+    } else{
+      convert_cols_to_NA(out[[n]], col_list=c("time_hr")) %>%
+        return()
+    }
+  })
   return(out %>% bind_rows() %>% arrange(tempID))
 }
 

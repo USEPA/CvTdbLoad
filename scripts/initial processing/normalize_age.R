@@ -28,6 +28,7 @@ normalize_age <- function(raw, f){
   out = norm_extrapolate(x=out, f=f, extrap_type="age")
   #Missing units
   out = check_missing_units(x=out, f=f, units_col="age_units")
+  out$missing_units$age_units = NA #reverting missing units back to NA
   out$unmatched_species = out$raw %>% filter(!species %in% age_dict$species)
   if(nrow(out$unmatched_species)){
     out$unmatched_species$age_category = "unmatched_species"  
@@ -41,7 +42,7 @@ normalize_age <- function(raw, f){
   out$raw = out$raw %>% filter(!tempID %in% out$unmatched_species$tempID)
   #Remove extraneous characters
   out$raw = out$raw %>%
-    mutate(age_normalized = sub("mean=|old|between|???|GD|gestational", "", age_normalized) %>%
+    mutate(age_normalized = sub("mean=|old|between|GD|gestational|≥|avg", "", age_normalized) %>%
              trimws(),
            age_units = sub("gestational", "", age_units) %>% trimws(.))
   #List of ages
@@ -57,7 +58,7 @@ normalize_age <- function(raw, f){
     select(-age_num)
   
   if(nrow(out$need_curation)){
-    message("...Missing age units...Needs further curation")
+    message("...Unhandled age normalization...Needs further curation")
     log_CvT_doc_load(f=f, m="unhandled_age_normalize_case")
   }
   out$raw = out$raw %>% filter(!tempID %in% out$need_curation$tempID) %>%
@@ -80,6 +81,15 @@ normalize_age <- function(raw, f){
     log_CvT_doc_load(f=f, m=m)
   }
   
+  #Convert to NA for all lists that were not normalized
+  out = lapply(names(out), function(n){
+    if(n %in% c("extrapolate", "mapped_age")){
+      return(out[[n]])
+    } else{
+      convert_cols_to_NA(out[[n]], col_list=c("age_normalized", "age_category")) %>%
+        return()
+    }
+  }) %T>% { names(.) <- names(out) }
   #Convert age_normalized to numeric for unconverted lists
   out = lapply(out, function(x){ 
     x = x %>% mutate(age_normalized = suppressWarnings(as.numeric(age_normalized)))

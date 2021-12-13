@@ -1,4 +1,37 @@
 #Helper functions to interact with the CvT database and Clowder
+#'@description A function to create a connection to the CvT database
+#'@import DBI
+#'@return A database connection object
+connect_to_CvT = function(){
+  dbConnect(RSQLite::SQLite(), 
+            "L:\\Lab\\HEM\\T_Wall_Projects_FY20\\CvT Database\\input\\sql dump\\CvTdb_20210825.sqlite") %>%
+    return()#"CvTdb_20210408.sqlite"))
+  # return(dbConnect(RMySQL::MySQL(),
+  #                  username = Sys.getenv("user"),
+  #                  password = Sys.getenv("pass"),
+  #                  host = Sys.getenv("host"),
+  #                  port = 3306,
+  #                  dbname = Sys.getenv("dbname"))
+}
+
+push_tbl_to_db <- function(dat=NULL, tblName=NULL, fieldTypes=NULL, overwrite=FALSE,
+                           customSQL=NULL, append=FALSE){
+  if(is.null(dat)) stop("Error: User must provide data to write to database")
+  if(is.null(tblName)) stop("Error: User must provide a name for the database table")
+  
+  con = connect_to_CvT()
+  
+  out <- tryCatch({
+    message("...Trying to write, '", tblName, "' to CvTdb")
+    dbWriteTable(con, value=dat, name=tblName, overwrite=overwrite,
+                 field.types=fieldTypes, row.names=FALSE, append=append)
+    if(!is.null(customSQL)) { dbSendQuery(con, customSQL) } #Send custom SQL statement
+  },
+  error=function(cond) { message("...Error message: ", cond); return(NA) },
+  warning=function(cond) { message("...Warning message: ", cond); return(NULL) },
+  finally={ dbDisconnect(con)
+  })
+}
 
 #' @description Function to write empty tables for CvTdb SQLite file from template docs.
 initialize_CvTdb <- function(){
@@ -259,72 +292,6 @@ download_clowder_docs <- function(docData=NULL, outputDir, apiKey, limit=NULL){
       )
     }))
   }
-}
-
-#'@description A function to load and pull all sheets from files in the specified directory.
-#'It corrects for missing required column names from a template file by filling with NA values.
-#'@param fileName The file name or path for the file of interest
-#'@param template_path The file path for the extraction template. If not supplied, hard coded columns will be used.
-#'@import readxl magrittr
-#'@return A dataframe of the combined sheets
-load_sheet_group <- function(fileName="", template_path=""){
-  
-  template = tryCatch({
-    template_sheets = readxl::excel_sheets(template_path)
-    lapply(template_sheets, function(s){
-      names(readxl::read_excel(template_path, sheet=s))
-    }) %T>% { names(.) <- template_sheets }   
-  },
-  error=function(cond){ message("...Error: ", cond); return(NULL) }
-  )
-  
-  if(is.null(template)){
-    message("...passed template file path doesn't exist...using default template...")
-    template = list("Documents" = c("pmid", "other_study_identifier", "doi", "first_author", 
-                                    "year", "title","url", "curator_comment"),
-                    "Studies" = c("id", "test_substance_name", "test_substance_name_secondary", 
-                                  "test_substance_casrn", "dose_level", "dose_level_units", 
-                                  "administration_route", "dose_duration", "dose_frequency",     
-                                  "dose_vehicle", "dose_volume", "fasting_period", "author_comment", 
-                                  "curator_comment", "dermal_dose_vehicle", "dermal_dose_vehicle_pH", 
-                                  "dermal_applied_area", "dermal_applied_area_units",
-                                  "aerosol_particle_diameter_mean", "aerosol_particle_diameter_gsd", 
-                                  "aerosol_particle_diameter_units", "aerosol_particle_density",
-                                  "aerosol_particle_density_units"),
-                    "Subjects" = c("id", "species", "subtype", "sex", "age", "age_units", "age_category", 
-                                   "height", "height_units", "weight", "weight_units", "curator_comment"),
-                    "Series" = c("id", "analyte_name", "analyte_name_secondary", 
-                                 "analyte_casrn", "figure_name", "figure_type", 
-                                 "figure_series_identifier", "x_min", "x_max", "y_min", "y_max", 
-                                 "time_units", "conc_units", "log_conc_units", "loq", "loq_units", 
-                                 "lod", "lod_units", "analytical_method_detail", 
-                                 "radiolabeled", "fk_study_id", "fk_subject_id", "n_subjects_in_series", 
-                                 "conc_medium", "curator_comment"),
-                    "Conc_Time_Values" = c("fk_series_id", "time", "conc", "conc_sd", "conc_lower_bound", 
-                                           "conc_upper_bound", "curator_comment"))
-  }
-  
-  tryCatch({
-    lapply(readxl::excel_sheets(fileName), function(x){
-      tmp = readxl::read_xlsx(fileName, sheet = x, col_types = "text",
-                              .name_repair = ~ ifelse(nzchar(.x), .x, paste0("missing_col_", LETTERS[seq_along(.x)])))
-      #Get list of columns corresponding to a sheet from the template
-      colList = switch(x, 
-                       "Documents" = template$Documents,
-                       "Studies" = template$Studies,
-                       "Subjects" = template$Subjects,
-                       "Series" = template$Series,
-                       "Conc_Time_Values" = template$Conc_Time_Values)
-      #Fill missing columns with NA
-      tmp[colList[!colList %in% names(tmp)]] <- NA
-      tmp =  select(tmp, all_of(colList))
-    }) %T>% {
-      names(.) <- readxl::excel_sheets(fileName)
-    }
-    
-  },
-  error=function(cond){ message("Error message: ", cond); return(NULL) }
-  ) %>% return()
 }
 
 #'@description A function to push a dataframe to a specified table in a database

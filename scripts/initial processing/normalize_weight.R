@@ -29,6 +29,7 @@ normalize_weight <- function(raw, f){
   out = norm_extrapolate(x=out, f=f, extrap_type = "weight")
   #Missing units
   out = check_missing_units(x=out, f=f, units_col="weight_units")
+  out$missing_units$weight_units = NA #Replacing missing units with NA after flagging
   #List of weights
   out = check_subject_list(x=out, f=f, col="weight_kg")
   # +/- Group
@@ -48,22 +49,33 @@ normalize_weight <- function(raw, f){
   }
   #out$unhandled_cases = out$raw
   #Convert kg, g, mg, lbs, etc.
-  out$convert_ready = bind_rows(out$conversion, out$ci, out$weight_range)
-  out$conversion = NULL; out$ci = NULL; out$weight_range = NULL
+  out$convert_ready = bind_rows(out$conversion, out$ci, out$unit_range)
+  out$conversion = NULL; out$ci = NULL; out$unit_range = NULL
   for(i in seq_len(nrow(out$convert_ready))){
     out$convert_ready[i,] = convert_units(x=out$convert_ready[i,], 
                                           num="weight_kg", 
                                           units="weight_units", desired="kg",
                                           overwrite_units = FALSE)
   }
-  
+  #Convert to NA for all lists that were not normalized
+  out = lapply(names(out), function(n){
+    if(n %in% c("extrapolate", "extrap_spec_sub", "extrap_spec", "convert_ready", "unit_range")){
+      return(out[[n]])
+    } else{
+      convert_cols_to_NA(out[[n]], col_list=c("weight_kg")) %>%
+        return()
+    }
+  })
   #Convert weight_kg to numeric for unconverted lists
   out = lapply(out, function(x){ 
     x = x %>% mutate(weight_kg = suppressWarnings(as.numeric(weight_kg)))
   })
   #Remove empty list elements
   out = out[sapply(out, nrow) > 0]
-  return(out %>% bind_rows() %>% arrange(tempID) %>% select(-tempID))
+  out = out %>%
+    bind_rows() %>% arrange(tempID) %>% select(-tempID)
+  out$weight_units[out$weight_units == "missing_units"] = NA #Replace missing_units with NA after flagging
+  return(out)
 }
 
 #Deprecated weight unit extraction function

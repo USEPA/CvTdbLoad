@@ -1,39 +1,6 @@
 #Script of various utility functions to screens/prep CvT data for loading
 require(DBI); require(dplyr); require(magrittr); require(tidyr); require(readxl)
 
-#'@description A function to create a connection to the CvT database
-#'@import DBI
-#'@return A database connection object
-connect_to_CvT = function(){
-  return(dbConnect(RSQLite::SQLite(), 
-                   "L:\\Lab\\HEM\\T_Wall_Projects_FY20\\CvT Database\\input\\sql dump\\CvTdb_20210825.sqlite"))#"CvTdb_20210408.sqlite"))
-  # return(dbConnect(RMySQL::MySQL(),
-  #                  username = Sys.getenv("user"),
-  #                  password = Sys.getenv("pass"),
-  #                  host = Sys.getenv("host"),
-  #                  port = 3306,
-  #                  dbname = Sys.getenv("dbname"))
-}
-
-push_tbl_to_db <- function(dat=NULL, tblName=NULL, fieldTypes=NULL, overwrite=FALSE,
-                           customSQL=NULL, append=FALSE){
-  if(is.null(dat)) stop("Error: User must provide data to write to database")
-  if(is.null(tblName)) stop("Error: User must provide a name for the database table")
-  
-  con = connect_to_CvT()
-  
-  out <- tryCatch({
-    message("...Trying to write, '", tblName, "' to CvTdb")
-    dbWriteTable(con, value=dat, name=tblName, overwrite=overwrite,
-                 field.types=fieldTypes, row.names=FALSE, append=append)
-    if(!is.null(customSQL)) { dbSendQuery(con, customSQL) } #Send custom SQL statement
-  },
-  error=function(cond) { message("...Error message: ", cond); return(NA) },
-  warning=function(cond) { message("...Warning message: ", cond); return(NULL) },
-  finally={ dbDisconnect(con)
-  })
-}
-
 #'@description A function to load and pull all sheets from files in the specified directory.
 #'It corrects for missing required column names from a template file by filling with NA values.
 #'@param fileName The file name or path for the file of interest
@@ -64,8 +31,8 @@ load_sheet_group <- function(fileName="", template_path=""){
                                   "aerosol_particle_diameter_mean", "aerosol_particle_diameter_gsd", 
                                   "aerosol_particle_diameter_units", "aerosol_particle_density",
                                   "aerosol_particle_density_units"),
-                    "Subjects" = c("id", "species", "subtype", "sex", "age", "age_category", 
-                                   "height", "weight", "curator_comment"),
+                    "Subjects" = c("id", "species", "subtype", "sex", "age", "age_units", "age_category", 
+                                   "height", "height_units", "weight", "weight_units", "curator_comment"),
                     "Series" = c("id", "analyte_name", "analyte_name_secondary", 
                                  "analyte_casrn", "figure_name", "figure_type", 
                                  "figure_series_identifier", "x_min", "x_max", "y_min", "y_max", 
@@ -78,7 +45,12 @@ load_sheet_group <- function(fileName="", template_path=""){
   }
   
   tryCatch({
-    lapply(readxl::excel_sheets(fileName), function(x){
+    sheetNames = readxl::excel_sheets(fileName)
+    sheetNames = sheetNames[sheetNames %in% names(template)]
+    lapply(sheetNames, function(x){
+      if(!x %in% names(template)){
+        return(NULL)
+      }
       tmp = readxl::read_xlsx(fileName, sheet = x, col_types = "text",
                               .name_repair = ~ ifelse(nzchar(.x), .x, paste0("missing_col_", LETTERS[seq_along(.x)])))
       #Get list of columns corresponding to a sheet from the template
@@ -92,11 +64,11 @@ load_sheet_group <- function(fileName="", template_path=""){
       tmp[colList[!colList %in% names(tmp)]] <- NA
       tmp =  select(tmp, all_of(colList))
     }) %T>% {
-      names(.) <- readxl::excel_sheets(fileName)
+      names(.) <- sheetNames
     }
     
   },
-  error=function(cond){ message("...Error message: ", cond); return(NULL) }
+  error=function(cond){ message("Error message: ", cond); return(NULL) }
   ) %>% return()
 }
 
@@ -249,8 +221,8 @@ query_cvt <- function(query=NULL){
 }
 
 log_CvT_doc_load <- function(f, m=NULL, reset=FALSE){
-  if(file.exists("output\\CvT_loading_log.xlsx")){
-    log = readxl::read_xlsx("output\\CvT_loading_log.xlsx")
+  if(file.exists("output\\template_normalization_log.xlsx")){
+    log = readxl::read_xlsx("output\\template_normalization_log.xlsx")
     log$timestamp = as.character(log$timestamp)  
   } else {
     log = data.frame(filename=f, timestamp=as.character(Sys.time()))
@@ -281,13 +253,19 @@ log_CvT_doc_load <- function(f, m=NULL, reset=FALSE){
     tmp$timestamp <- as.character(Sys.time())
     log = rbind(log, tmp)
   }
-  writexl::write_xlsx(log, "output\\CvT_loading_log.xlsx")
+  writexl::write_xlsx(log, "output\\template_normalization_log.xlsx")
 }
 
 #'@description A helper function to check if a file has logged issues (changed to 1 for select columns)
-log_check <- function(f){
-  log = readxl::read_xlsx("output\\CvT_loading_log.xlsx")
-  return(any(log[log$filename == f, !names(log) %in% c("timestamp", "successfully_loaded", "already_loaded")] == 1))
+#'@param f Filename
+#'@param check_type Type of log check. Allowable values are "any" and "required".
+log_check <- function(f, check_type="any"){
+  log = readxl::read_xlsx("output\\template_normalization_log.xlsx")
+  switch(check_type,
+         "any" = any(log[log$filename == f, !names(log) %in% c("timestamp", "successfully_loaded", "already_loaded")] == 1),
+         "required" = any(log[log$filename == f, grepl("required", names(log))] == 1)
+         ) %>%
+    return()
 }
 
 #'@description A helper function to match a new study entry to existing studies entries (if available).
@@ -309,25 +287,46 @@ match_chemical_fk <- function(df){
 #'@param x Input dataframe to convert
 #'@param num Name of column with values to convert
 #'@param units Name of column with units to convert from
+#'@param desired Desired units to convert the input value into
+#'@param MW Molecular weight of the input chemical (if applicable)
 #'@param overwrite_units Boolean to overwrite the 'units' with desired units.
-convert_units <- function(x, num, units, desired, overwrite_units=FALSE){
+convert_units <- function(x, num, units, desired, MW=NA, overwrite_units=FALSE){
   #Map of input units to desired output units equation
   conv = list(day = list(hr="*24", day="/1", week="/7", month="/30", year="/365"),
               week = list(hr="*24*7", day="*7", week="/1", month="/4", year="/52"),
               month = list(day="*30", week="*4", month="/1", year="/52"),
               year = list(day="*365", week="*52", month="*12", year="/1"),
               kg = list(kg="/1"), #Only care to convert to kg for all weights
-              g = list(kg="/1000"),
-              mg = list(kg="/1000000"),
+              g = list(mg="*1000", kg="/1000"),
+              ug = list(mg="/1000"),
+             `µg` = list(mg="/1000"),
+              mg = list(mg="/1", kg="/1000000"),
               lb = list(kg="/2.2"),
               mm = list(cm="/10"), #Only care to convert to cm for all heights
               cm = list(cm="/1"),
               m = list(cm="*100"),
               `in`=list(cm="*2.54"),
               ft=list(cm="*12*2.54"),
-              s=list(hr="/60/60"), #Only care to convert to hr for time
+              s=list(hr="/60/60"), #Only care to convert to hr f time
               min=list(hr="/60"),
-              hr=list(hr="/1")
+              hr=list(hr="/1"),
+              `mg/kg`=list(`mg/kg`="/1", `ug/ml`=paste0("*", MW)), #1 mg/kg*MW kg/L*1L/1000mL*1000ug/mg=ug/mL --> using httk density value for MW variable (refactor name)
+              `ug/kg`=list(`mg/kg`="/1000"),
+              `g/kg`=list(`mg/kg`="*1000"),
+              `ug per 250 g`=list(`mg/kg`="*4/1000"),
+              `ug/ml`=list(`ug/ml`="/1"),
+              `ug/l`=list(`ug/ml`="/1000"),
+              `ng/ml`=list(`ug/ml`="/1000"),
+              `ng/l`=list(`ug/ml`="/1000000"),
+              `mg/ml`=list(`ug/ml`="*1000"),
+             `mg/l`=list(`ug/ml`="/1"),
+              ppm=list(`ug/ml`="/1"), #1 ppm = 1 ug/mL
+              ppbv = list(`ug/ml`="/1000"), #1 ppb = 0.001 ug/mL,
+              `nmol/l` = list(`ug/ml`=paste0("*",MW,"/1000000")), #1 nmol/L*(1mol/1000000000nmol)*(MW g/1mol)*(1000000ug/1g)*(1L/1000mL)=1*MW/1000000
+              `umol/l` = list(`ug/ml`=paste0("*",MW,"/1000")), #1000 less than nmol/l conversion 
+              `pmol/ml` = list(`ug/ml`=paste0("*",MW,"/1000000")), #1 pmol/ml*(1mol/1000000000000pmol)*(MW g/1mol)*(1000000ug/1g)=1*MW/1000000
+             `ug/g` = list(`ug/ml`=paste0("*", MW)), #1 ug/g*1000g/kg*MW kg/L*1L/1000mL=ug/mL --> using httk density value for MW variable (refactor name)
+             `ug/kg` = list(`ug/ml`=paste0("*", MW, "/1000"))
               )
   #Convert units based on input string equation
   if(is.null(conv[[x[[units]]]][[desired]])){
@@ -349,7 +348,7 @@ convert_units <- function(x, num, units, desired, overwrite_units=FALSE){
 #'@description Function to return a dataframe of files ready to push due to all
 #'flags being '0'.
 get_cvt_push_ready <- function(){
-  readxl::read_xlsx("output\\CvT_loading_log.xlsx") %>% 
+  readxl::read_xlsx("output\\template_normalization_log.xlsx") %>% 
     filter(across(.cols=names(.)[!names(.) %in% c("filename", "timestamp")], 
                   .fns = ~. == 0)) %>%
     return()
@@ -432,10 +431,38 @@ convert_units_grepl <- function(unit_type){
                       rm_list = c("week", "weeks","wk","wks",
                                   "month",
                                   "years","year","-year","yr","yrs",
-                                  "day","days","GD","gestational day","gestational days"))
+                                  "day","days","GD","gestational day","gestational days")),
+         "dose_duration" = list(day = "day|GD",
+                                week = "week|wk|wks",
+                                month = "month",
+                                min = "min|mins",
+                                hr = "hour|hr|hrs|h",
+                                s = "sec|s",
+                                rm_list= c("within", "day",
+                                           "week", "wk", "wks",
+                                           "month",
+                                           "min", "mins",
+                                           "hour", "hr", "hrs", "h",
+                                           "sec", "s"))
          ) %>%
     return()
 }
+
+#'@description A helper function to cache the normalized templates
+save_normalized_template <- function(df=doc_sheet_list, f=f){
+  #"L:\Lab\HEM\T_Wall_Projects_FY20\CvT Database\output\normalized_templates"  
+  fn = basename(f)
+  fn_ext = tools::file_ext(fn)
+  fn = gsub(paste0(".", fn_ext), "", fn)
+  writexl::write_xlsx(x=doc_sheet_list, path=paste0("output/normalized_templates/", basename(fn), "_normalized.", fn_ext))
+}
+
+#'@description A helper function to convert input dataframe column list to NA
+convert_cols_to_NA <- function(df, col_list){
+  df[col_list] = NA
+  return(df)
+}
+
 
 #'@description A helper function to orchestrate normalization of CvT Data
 normalize_CvT_data <- function(df, f){
@@ -465,10 +492,34 @@ normalize_CvT_data <- function(df, f){
   }
   #Harmonize conc_medium
   df$Series=normalize_conc_medium(raw=df$Series, f=f)
+  #Normalize Dose
+  tmp = normalize_dose(raw = df$Series %>%
+                         left_join(df$Studies, by=c("fk_study_id"="id")) %>%
+                         left_join(df$Subjects, by=c("fk_subject_id"="id")) %>%
+                         select(fk_study_id, species, subtype, weight_kg, height_cm,
+                                test_substance_name, dose_level, dose_level_units, dose_volume, administration_route_normalized),
+                       f=f) %>%
+    select(fk_study_id, dose_level_normalized) %>% distinct()
+  df$Studies = df$Studies %>%
+    left_join(tmp, by=c("id"="fk_study_id"))
   #Normalize Conc Units
-  # tmp = normalize_conc_units(raw = df$Series %>% 
-  #                              left_join(df$Conc_Time_Values, by=c("id"="fk_series_id")) %>%
-  #                              select(id, conc_medium_normalized, conc_original=conc, conc_units_original=conc_units), 
-  #                            f = f)
+  tmp = normalize_conc(raw=df$Series %>%
+                         left_join(df$Subjects %>%
+                                     select(id, species), by=c("fk_study_id"="id")) %>%
+                         left_join(df$Conc_Time_Values, by=c("id"="fk_series_id")) %>%
+                         select(id, species, conc_medium, analyte_name, analyte_name_secondary, analyte_casrn,
+                                conc_original=conc, conc_units_original=conc_units,
+                                conc_sd_original=conc_sd, conc_lower_bound_original=conc_lower_bound,
+                                conc_upper_bound_original=conc_upper_bound), 
+                             f=f) %>%
+    select(-conc_medium, -analyte_name, -analyte_name_secondary, -analyte_casrn, -conc_units_original)
+  df$Conc_Time_Values = df$Conc_Time_Values %>%
+    mutate(tempID = seq_len(nrow(df$Conc_Time_Values))) %>%
+    select(-conc, -conc_sd, -conc_lower_bound, -conc_upper_bound) %>%
+    left_join(tmp, by=c("tempID")) %>%
+    select(-tempID)
+  
+  df$Studies[c("dose_duration", "dose_duration_units")] = normalize_dose_duration(df$Studies %>% select(dose_duration, dose_duration_units))
+  
   return(df)
 }

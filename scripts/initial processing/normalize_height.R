@@ -17,28 +17,29 @@ normalize_height <- function(raw, f){
   }
   #List of dataframe subsets
   out = list()
-  out$raw = prep_normalization(x=raw, newcols=c("height_cm", "height_estimated"))
+  out$raw = prep_normalization(x=raw, newcols=c("height_cm"))#, "height_estimated"))
   #Set to convert column to maintain original
   out$raw$height_cm = out$raw$height
   #Extract units
   #out$raw = extract_height_units(x=out$raw)
   out$raw = extract_units(x=out$raw, units_col="height_units", 
                           conv_col="height_cm", unit_type="height")
-  #Extrapolate heights
-  out = norm_extrapolate(x=out, f=f, extrap_type="height")
+  #Extrapolate heights - no longer doing this
+  #out = norm_extrapolate(x=out, f=f, extrap_type="height")
   #Missing units
   out = check_missing_units(x=out, f=f, units_col="height_units")
+  out$missing_units$height_units = NA #Replacing missing units to NA after flagging
   #List of heights
   out = check_subject_list(x=out, f=f, col="height_cm")
   # +/- Group
-  out = check_unit_ci(x=out, f=f, col="height_cm", estimated="height_estimated")
+  out = check_unit_ci(x=out, f=f, col="height_cm", estimated=c())#"height_estimated")
   #Height range
-  out = check_unit_range(x=out, f=f, col="height_cm", estimated="height_estimated")
+  out = check_unit_range(x=out, f=f, col="height_cm", estimated=c())#"height_estimated")
   #Ready for conversion
   out$conversion = out$raw %>% 
     mutate(height_cm = suppressWarnings(as.numeric(height_cm))) %>%
-    filter(!is.na(height_cm)) %>%
-    mutate(height_estimated = 0)
+    filter(!is.na(height_cm)) #%>%
+    #mutate(height_estimated = 0)
   out$raw = out$raw %>% filter(!tempID %in% out$conversion$tempID)
   
   if(nrow(out$raw)){
@@ -55,7 +56,15 @@ normalize_height <- function(raw, f){
                                           units="height_units", desired="cm", 
                                           overwrite_units = FALSE)
   }
-  
+  #Convert to NA for all lists that were not normalized
+  out = lapply(names(out), function(n){
+    if(n %in% c("convert_ready")){
+      return(out[[n]])
+    } else{
+      convert_cols_to_NA(out[[n]], col_list=c("height_cm")) %>%
+        return()
+    }
+  })
   #Convert height_cm to numeric for unconverted lists
   out = lapply(out, function(x){ 
     x = x %>% mutate(height_cm = suppressWarnings(as.numeric(height_cm)))

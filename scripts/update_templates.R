@@ -84,13 +84,13 @@ for(f_path in f_list){
     #Extra sheet
     if(any(!names(f) %in% names(template))){
       if(!"CompTox" %in% names(f)){#Allow Japan template through
-        bad_doc[f_path] = paste0("Extra Sheet: ", names(f)[!names(f) %in% names(template)])
+        bad_doc[f_path] = paste0("Extra Sheet: ", paste0(names(f)[!names(f) %in% names(template)], collapse=", "))
         next
       }
     }
     #Missing sheet
     if(any(!names(template) %in% names(f))){
-      bad_doc[f_path] = paste0("Missing Sheet: ", names(template)[!names(template) %in% names(f)])
+      bad_doc[f_path] = paste0("Missing Sheet: ", paste0(names(template)[!names(template) %in% names(f)], collapse=", "))
       next
     }
     
@@ -145,7 +145,8 @@ for(f_path in f_list){
                        dermal_dose_vehicle_pH=list(neighbor="curator_comment", after=TRUE),
                        #dermal_dose_vehicle=list(neighbor="curator_comment", after=TRUE),
                        test_substance_name_secondary=list(neighbor="test_substance_name", after=TRUE),
-                       test_substance_casrn=list(neighbor="test_substance_name_secondary", after=TRUE)
+                       test_substance_casrn=list(neighbor="test_substance_name_secondary", after=TRUE),
+                       dose_duration_units=list(neighbor="dose_duration", after=TRUE)
                        ),
       "Series" = list(figure_type=list(neighbor="figure_name", after=TRUE),
                       log_conc_units=list(neighbor="conc_units", after=TRUE),

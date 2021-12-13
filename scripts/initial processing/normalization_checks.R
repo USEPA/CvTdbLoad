@@ -72,7 +72,7 @@ norm_extrapolate <- function(x, f, extrap_type){
 #'
 #'@return Modified version of the input `x` parameter
 check_missing_units <- function(x, f, units_col){
-  x$missing_units = x$raw %>% filter(!!as.symbol(units_col) == "missing_units"  |
+  x$missing_units = x$raw %>% filter(!!as.symbol(units_col) %in% c("missing_units", "NA", "n/a", "N/A")  |
                                        is.na(!!as.symbol(units_col)))
   if(nrow(x$missing_units)){
     message("...Needs further curation: Missing - ", units_col)
@@ -107,12 +107,13 @@ check_subject_list <- function(x,f, col){
 #'
 #'@return Modified version of the input `x` parameter
 check_unit_ci <- function(x, f, col, estimated){
-  x$ci = x$raw %>% filter(grepl("±|\\+/-|\\+|�", !!as.symbol(col)))
+  #Removed |? at end of regex, not sure what it was used for??
+  x$ci = x$raw %>% filter(grepl("±|\\+/-|\\+", !!as.symbol(col)))
   x$raw = x$raw %>% filter(!tempID %in% x$ci$tempID)
   
   if(nrow(x$ci)){
     x$ci = x$ci %>%
-      mutate(across(.cols=all_of(col), .fns = ~sub('±.*|\\+/-.*|\\+.*|�.*', '', !!as.symbol(col))))
+      mutate(across(.cols=all_of(col), .fns = ~sub('±.*|\\+/-.*|\\+.*', '', !!as.symbol(col))))
     tryCatch({ x$ci %>% mutate(across(.cols=all_of(col), .fns = ~as.numeric(gsub(",", "", !!as.symbol(col))))) },
              warning = function(cond){
                log_CvT_doc_load(f=f, m=paste0(col, "_numeric_conversion_NA"))
@@ -194,7 +195,12 @@ check_convert_failed <- function(x, f, col){
 
 normalize_boolean <- function(x, col){
   #If multiple columns are provided
+  
   for(a in col){
+    #Convert column of missing values (imported as logical) to character columns
+    if(all(is.na(x[[a]])) & typeof(x[[a]]) == "logical"){
+      x[[a]] = as.character(x[[a]])
+    }
     x[(!is.na(x[[a]]) & x[[a]] != "0" & x[[a]] != 0), a] <- "1"
     x[is.na(x[[a]]), a] <- "0"
     x[[a]] = as.numeric(x[[a]])
@@ -212,7 +218,10 @@ check_radiolabel <- function(raw, f){
   # }) %>%
   #   bind_rows()
   check = raw %>%
-    filter(is.na(radiolabeled) | radiolabeled != 1) %>%
+    filter((is.na(radiolabeled) | radiolabeled != 1),
+           !grepl("DTXSID", analyte_name),
+           !grepl("DTXSID", analyte_name_secondary),
+           !grepl("DTXSID", test_substance_name)) %>%
     mutate(analyte_name_check = grepl("([1-9][0-9])", analyte_name),
            analyte_name_secondary_check = grepl("([1-9][0-9])", analyte_name_secondary),
            test_substance_name_check = grepl("([1-9][0-9])", test_substance_name)) %>%
@@ -250,4 +259,90 @@ normalize_conc_medium <- function(raw, f){
     log_CvT_doc_load(f=f, m="curate_conc_medium")
   }
   return(out)
+}
+
+#'@description Function to check if processed document is missing required fields.
+#'@param df List of dataframes for the sheets within an extraction template
+#'@param f Filename for flagging purposes
+#'
+#'@return None. Logs any flags
+check_required_fields <- function(df, f){
+  for(t in names(df)){
+    req_fields = switch(t,
+                        "Documents" = c("id", "document_type"),
+                        "Studies" = c("id", "dose_level", #"dose_vehicle", 
+                                      "administration_route_normalized"),
+                        "Subjects" = c("id", "weight_kg", "species"),
+                        "Series" = c("id", "radiolabeled", "conc_units", "conc_medium_normalized",
+                                     "fk_study_id", "fk_subject_id"),
+                        "Conc_Time_Values" = c("fk_series_id", "time_hr")
+    )  
+    #Check if missing required field entirely
+    if(any(!req_fields %in% names(df[[t]]))){
+      message("Required field missing: ", req_fields[!req_fields %in% names(df[[t]])])
+      #Flag missing fields
+      for(field in req_fields[!req_fields %in% names(df[[t]])]){
+        #message(paste0("missing_required_field_", field))
+        log_CvT_doc_load(f=f, m=paste0("missing_required_field_", field))
+      }
+    }
+    
+    #Flag empty required fields
+    for(field in req_fields[req_fields %in% names(df[[t]])]){
+      if(any(is.na(df[[t]][field]))){
+        #message(paste0("NA_in_required_field_", field))
+        log_CvT_doc_load(f=f, m=paste0("NA_in_required_field_", field))
+      }
+    }
+    
+    #Special case check
+    if(t == "Documents"){
+      if(any(is.na(df[[t]]$pmid) & is.na(df[[t]]$other_study_identifier))){
+        log_CvT_doc_load(f=f, m="missing_document_identifier")
+      }
+    }
+    if(t == "Studies"){
+      #Check chemical information (each row needs something in test_substance_name, test_substance_name_secondary, test_substance_casrn)
+      tmp = lapply(seq_len(nrow(df[[t]])), function(r){
+        any(!is.na(df[[t]]$test_substance_name[r]), !is.na(df[[t]]$test_substance_name_secondary[r]), !is.na(df[[t]]$test_substance_casrn[r]))
+      }) %>% unlist()
+      if(any(tmp == FALSE)){
+        log_CvT_doc_load(f=f, m="missing_required_test_substance_chemical_info")
+      }
+      
+      if(all(c("dose_duration", "dose_duration_units") %in% names(df[[t]]))){
+        #Check if dose_duration present (if dose_frequency present)
+        #if the dose frequency is "1" i guess you wouldn't need a dose duration - Risa Sayre 2021-12-1
+        tmp = df[[t]] %>%
+          filter(dose_frequency != 1)
+        if(any(!is.na(tmp$dose_frequency)) & all(is.na(tmp$dose_duration))){
+          log_CvT_doc_load(f=f, m="dose_frequency_present_without_dose_duration")
+        } 
+      }
+      if(all(c("dose_duration", "dose_duration_units") %in% names(df[[t]]))){
+        #Check if dose_duration_units present (if dose_duration present)
+        if(any(!is.na(df[[t]]$dose_duration)) & all(is.na(df[[t]]$dose_duration_units))){
+          log_CvT_doc_load(f=f, m="missing_dose_duration_units")
+        }
+      }
+      #dose duration is required for inhalation/dermal
+      #If dose_frequency is not 1 or NULL, then we need a dose_duration
+      #although, we have logic that if dose_frequency is present, they must have dose_duration...so simplifying
+      tmp = df[[t]] %>% filter((administration_route_normalized %in% c("inhalation", "dermal") | grepl("infusion", administration_route_original)),
+                               is.na(dose_duration) )
+      if(nrow(tmp)){
+        log_CvT_doc_load(f=f, m="missing_dose_duration_for_inhalation_dermal_iv_infusion_study")
+      }
+    }
+    
+    if(t == "Series"){
+      #Check chemical information (each row needs something in analyte_name, analyte_name_secondary, analyte_casrn)
+      tmp = lapply(seq_len(nrow(df[[t]])), function(r){
+        any(!is.na(df[[t]]$analyte_name[r]), !is.na(df[[t]]$analyte_name_secondary[r]), !is.na(df[[t]]$analyte_casrn[r]))
+      }) %>% unlist()
+      if(any(tmp == FALSE)){
+        log_CvT_doc_load(f=f, m="missing_required_test_substance_chemical_info")
+      }
+    }
+  }
 }
