@@ -6,7 +6,7 @@ normalize_species <- function(x){
   conv = list(dog=list("dog", "dogs"),
               human=list("human", "humans", "female", "male", "females", "males", "woman", "women", "man", "men"),
               mouse=list("mouse", "mice", "mouses"),
-              `nonhuman primate`=list("nonhuman primate", "monkey", "primate", "monkies"),
+              `nonhuman primate`=list("nonhuman primate", "monkey", "primate", "monkies", "monkeys"),
               rat=list("rat", "rats"),
               rabbit = list("rabbit", "rabbits"),
               `guinea pig` = list("guinea pig", "guinea pigs"),
@@ -26,3 +26,16 @@ normalize_species <- function(x){
   return(x)
 }
 
+get_unique_species_to_curate <- function(fileList, template_path){
+  #Get species from files
+  spec = lapply(fileList, function(f){
+    s_list = load_sheet_group(fileName = f, template_path = template_path)
+    s_list$Subjects %>% select(species) %>% unique() %>% unlist() %>% unname()
+  }) %>% 
+    unlist()
+  
+  out = normalize_species(spec) %>%
+    unique()
+  return(out[!out %in% c("dog", "human", "mouse", "nonhuman primate", 
+                         "rat", "rabbit", "guinea pig", "frog")])
+}

@@ -2,7 +2,7 @@
 
 #'@description Helper function to get the administration route dictionary form the CvT database
 get_administration_route_dict <- function(){
-  return(query_cvt("SELECT * FROM administration_route_dict"))
+  return(query_cvt("SELECT * FROM cvt.administration_route_dict"))
 }
 
 get_unique_administration_route <- function(fileList, template_path){
@@ -18,7 +18,7 @@ get_unique_administration_route <- function(fileList, template_path){
     mutate(administration_route_original = trimws(tolower(administration_route_original))) %>%
     unique() %>%
     #Attempt match
-    left_join(admin_dict, by="administration_route_original") %>%
+    left_join(get_administration_route_dict(), by="administration_route_original") %>%
     filter(is.na(administration_route_normalized))
   
   #Output to file for curation
@@ -28,7 +28,7 @@ get_unique_administration_route <- function(fileList, template_path){
 
 create_administration_route_dict <- function(overwrite = FALSE){
   if(overwrite){
-    tmp = query_cvt("SELECT DISTINCT administration_route_original, administration_route_normalized FROM studies") %>%
+    tmp = query_cvt("SELECT DISTINCT administration_route_original, administration_route_normalized FROM cvt.studies") %>%
       mutate(id := NA, .before=administration_route_original,
              administration_route_original = trimws(tolower(administration_route_original)))
     
@@ -41,5 +41,15 @@ create_administration_route_dict <- function(overwrite = FALSE){
                    ))  
   } else {
     message("...Set overwrite to 'TRUE' to overwrite existing administration route dictionary")
+  }
+}
+
+update_administration_route_dict <- function(dict_file){
+  if(file.exists(dict_file)){
+    push_tbl_to_db(dat=readxl::read_xlsx(dict_file),
+                  tblName="administration_route_dict",
+                  overwrite=TRUE)
+  } else {
+    message("...input dict_file does not exist...cannot push dictionary")
   }
 }

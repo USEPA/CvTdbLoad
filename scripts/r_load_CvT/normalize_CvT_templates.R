@@ -6,38 +6,21 @@ require(DBI); require(dplyr); require(magrittr); require(tidyr); require(readxl)
 #Load R Scripts
 file_source = list.files("scripts/initial processing", pattern="*.R", full.names = TRUE)
 invisible(sapply(file_source[!grepl("get_unique_chemicals|_dict|log_", file_source)],source,.GlobalEnv))
-#load("cached_cvt_screening_20210922.RData")
 ################################################################################
 ###Main Script Section
 ################################################################################
-#apiKey = Sys.getenv("apiKey")
-#clowder_dataset = "CvT Raw Extracted"
-#setwd("C:/Users/JWALL01/OneDrive - Environmental Protection Agency (EPA)/Profile/Desktop/CvT PDI/QA CvT")
 #outputDir = "L:/Lab/NCCT_ExpoCast/ExpoCast2021/CvT-CompletedTemplates/Format QA/0_to_qa_format/Needs Admin Check"#"QA Complete/"#"../QA CvT/QA Complete/"
-outputDir = "L:/Lab/NCCT_ExpoCast/ExpoCast2021/CvT-CompletedTemplates/Format QA"#/1_qa_format_complete"
-#outputDir = "C:\\Users\\JWALL01\\Desktop\\CvT Japan\\updated"
+outputDir = "L:/Lab/NCCT_ExpoCast/ExpoCast2021/CvT-CompletedTemplates/Format QA/1_qa_format_complete"
 template_path = "L:/Lab/NCCT_ExpoCast/ExpoCast2021/CvT-CompletedTemplates/CvT_data_template_articles.xlsx"
 sheetList = c("Documents", "Studies", "Subjects", "Series", "Conc_Time_Values")
 curated_chemicals = "input/chemicals/curated_chemicals_comparison_2021-11-23.xlsx"
-###########################
-#Pull directly from Clowder
-###########################
-#push_doc_list = get_clowder_docList(apiKey, clowder_dataset)
-#download_clowder_docs(docData = push_doc_list, outputDir = outputDir, apiKey = apiKey)
-
 ###########################
 #Push to CvT
 ###########################
 #Push 1 document at a time because of the need to pull unique ID values auto-generated
 #when pushed to a database table
-
-#initialize_CvTdb()
-#initialize_CvTdb_from_RDat("L:/Lab/HEM/T_Wall_Projects_FY20/CvT Database/CvT_dump_20210825.RData")
 fileList = list.files(outputDir, full.names = TRUE, pattern=".xlsx", recursive=TRUE)
 fileList = fileList[!grepl("~|_normalize|Needs Admin|Needs Further|Reviewer Dis|needs_edits|Copy of|_log|template_metadata", fileList)] #Remove tmp files
-#Quick filter to Japan dataset
-# fileList = c("L:\\Lab\\NCCT_ExpoCast\\ExpoCast2021\\CvT-CompletedTemplates\\Format QA\\0_to_qa_format\\toQA\\20210106_SPU_rat_PK-CvT_No1_159chem_CRT2020_0c00009(Kamiya et al)_clc.xlsx",
-#              "L:\\Lab\\NCCT_ExpoCast\\ExpoCast2021\\CvT-CompletedTemplates\\Format QA\\0_to_qa_format\\toQA\\20210501_SPU_rat_PK-CvT_No4_77chem_clc.xlsx")
 
 if(!dir.exists("output/normalized_templates")){
   dir.create("output/normalized_templates")

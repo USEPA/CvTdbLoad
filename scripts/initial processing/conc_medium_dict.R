@@ -1,7 +1,7 @@
 
 #'@description Helper function to get the concentration medium dictionary form the CvT database
 get_conc_medium_dict <- function(){
-  return(query_cvt("SELECT * FROM conc_medium_dict"))
+  return(query_cvt("SELECT * FROM cvt.conc_medium_dict"))
 }
 
 get_unique_conc_medium <- function(fileList, template_path){
@@ -25,7 +25,7 @@ get_unique_conc_medium <- function(fileList, template_path){
 
 create_conc_medium_dict <- function(overwrite = FALSE){
   if(overwrite){
-    tmp = query_cvt("SELECT DISTINCT conc_medium_original, conc_medium_normalized FROM series") %>%
+    tmp = query_cvt("SELECT DISTINCT conc_medium_original, conc_medium_normalized FROM cvt.series") %>%
       mutate(id := NA, .before=conc_medium_original,
              conc_medium_original = trimws(tolower(conc_medium_original)))
     
@@ -38,5 +38,15 @@ create_conc_medium_dict <- function(overwrite = FALSE){
                    ))  
   } else {
     message("...Set overwrite to 'TRUE' to overwrite existing concentration medium dictionary")
+  }
+}
+
+update_conc_medium_dict <- function(dict_file){
+  if(file.exists(dict_file)){
+    push_tbl_to_db(dat=readxl::read_xlsx(dict_file),
+                   tblName="conc_medium_dict",
+                   overwrite=TRUE)
+  } else {
+    message("...input dict_file does not exist...cannot push dictionary")
   }
 }
