@@ -46,3 +46,6 @@ po/*~
 
 # httk package
 scripts/httk/
+
+# ignore output files
+output/
