@@ -3,15 +3,15 @@
 #'@import DBI
 #'@return A database connection object
 connect_to_CvT = function(){
-  dbConnect(RSQLite::SQLite(), 
-            "L:\\Lab\\HEM\\T_Wall_Projects_FY20\\CvT Database\\input\\sql dump\\CvTdb_20210825.sqlite") %>%
-    return()#"CvTdb_20210408.sqlite"))
-  # return(dbConnect(RMySQL::MySQL(),
-  #                  username = Sys.getenv("user"),
-  #                  password = Sys.getenv("pass"),
-  #                  host = Sys.getenv("host"),
-  #                  port = 3306,
-  #                  dbname = Sys.getenv("dbname"))
+  # dbConnect(RSQLite::SQLite(), 
+  #           "L:\\Lab\\HEM\\T_Wall_Projects_FY20\\CvT Database\\input\\sql dump\\CvTdb_20210825.sqlite") %>%
+  #   return()#"CvTdb_20210408.sqlite"))
+  dbConnect(RPostgreSQL::PostgreSQL(), 
+            user = Sys.getenv("user"), 
+            password = Sys.getenv("pass"), #
+            host = Sys.getenv("host"), #
+            dbname = Sys.getenv("dbname")) %>%
+    return()
 }
 
 push_tbl_to_db <- function(dat=NULL, tblName=NULL, fieldTypes=NULL, overwrite=FALSE,
@@ -306,12 +306,12 @@ push_to_CvT <- function(df=NULL, tblName=NULL){
   df = df[!names(df) %in% c("id")]
   tryCatch({
     con = connect_to_CvT()
-    dbWriteTable(con, value = df, name="temp_tbl", overwrite=FALSE, append=TRUE, row.names=FALSE)  
+    dbWriteTable(con, value = df, name=c("cvt", "temp_tbl"), overwrite=TRUE, row.names=FALSE)  
     
-    dbSendStatement(con, paste0("INSERT INTO ", tblName, " (", toString(names(df)),
-                                ") SELECT ", toString(names(df)), " FROM temp_tbl")) %T>% 
+    dbSendStatement(con, paste0("INSERT INTO cvt.", tblName, " (\"", paste0(names(df), collapse='","'),
+                                "\") SELECT \"", paste0(names(df), collapse='","'), "\" FROM cvt.temp_tbl")) %T>% 
       dbClearResult()
-    dbSendStatement(con, "DROP TABLE temp_tbl") %T>% 
+    dbSendStatement(con, "DROP TABLE cvt.temp_tbl") %T>% 
       dbClearResult() #Drop temporary table
   },
   error=function(cond){ message("Error message: ", cond); return(NA) },
@@ -332,7 +332,7 @@ get_tbl_id <- function(tblName=NULL, idFilter=NULL){
   #Remove ID column because it'll be auto assigned in the push
   tryCatch({
     con = connect_to_CvT()
-    dbSendQuery(con, paste0("SELECT * FROM ", tblName, " ", idFilter)) %T>%
+    dbSendQuery(con, paste0("SELECT * FROM cvt.", tblName, " ", idFilter)) %T>%
       { dbFetch(.) ->> tmp } %>%
       dbClearResult()
     return(tmp)
