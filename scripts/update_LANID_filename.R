@@ -2,8 +2,10 @@
 require(dplyr); require(magrittr)
 
 outputDir = "L:/Lab/NCCT_ExpoCast/ExpoCast2021/CvT-CompletedTemplates/Format QA"
-initials_dict = readxl::read_xlsx("input/dictionaries/initials_LANID.xlsx") %>%
-  filter(!is.na(LANID))
+# initials_dict = readxl::read_xlsx("input/dictionaries/initials_LANID.xlsx") %>%
+#   filter(!is.na(LANID))
+initials_dict = readxl::read_xlsx("L:/Lab/NCCT_ExpoCast/ExpoCast2021/CvT-CompletedTemplates/CvT_roles.xlsx") %>%
+  filter(!is.na(`LAN ID`), `LAN ID Verified` = "Yes")
 #initialize_CvTdb()
 #initialize_CvTdb_from_RDat("L:/Lab/HEM/T_Wall_Projects_FY20/CvT Database/CvT_dump_20210825.RData")
 fileList = list.files(outputDir, full.names = TRUE, pattern=".xlsx", recursive=TRUE)
