@@ -44,7 +44,7 @@ for(i in seq_len(length(fileList))){
   doc_sheet_list = load_sheet_group(fileName = f, template_path = template_path)
   
   doc_check = query_cvt(paste0("SELECT pmid FROM cvt.documents where pmid in ('",
-                               paste0(unique(doc_sheet_list$Documents$pmid),
+                               paste0(unique(doc_sheet_list$Documents$pmid[!is.na(doc_sheet_list$Documents$pmid)]),
                                       collapse="', '"), 
                                "')"))# AND extracted != 0"))
 
@@ -67,8 +67,8 @@ for(i in seq_len(length(fileList))){
     mutate(across(c(x_min, x_max, y_min, y_max, loq, lod, radiolabeled, 
                     fk_study_id, fk_subject_id, n_subjects_in_series, conc_medium_id), as.numeric))
   doc_sheet_list$Conc_Time_Values = doc_sheet_list$Conc_Time_Values %>%
-    mutate(across(c(time_original, time_hr#, conc_original, conc_sd_original, conc_lower_bound_original, 
-                    #conc_upper_bound_original, conc, conc_sd, conc_lower_bound, conc_upper_bound
+    mutate(across(c(time_original, time_hr, conc_original, conc_sd_original, conc_lower_bound_original, 
+                    conc_upper_bound_original, conc, conc_sd, conc_lower_bound, conc_upper_bound
                     ), as.numeric))
   # ####Push Documents Sheet to CvT
   message("...pushing to Documents table")
@@ -76,84 +76,163 @@ for(i in seq_len(length(fileList))){
                 select(document_type, pmid, other_study_identifier, doi, 
                        first_author, year, title, url, curator_comment),
               tblName="documents")
-  #Get Documents ID values - Join back to original data for matching
-  #Find by matching pmid and/or study identifier
-  idFilter = list(pmid = ifelse(!is.na(doc_sheet_list$Documents$pmid), 
-                                paste0("pmid IN ('", 
-                                       paste0(doc_sheet_list$Documents$pmid,
-                                              collapse="', '"), 
-                                       "')"), 
-                                NA),
-                  other_study_identifier = ifelse(!is.na(doc_sheet_list$Documents$other_study_identifier),
-                                                  paste0("other_study_identifier IN ('",
-                                                         paste0(doc_sheet_list$Documents$other_study_identifier, 
-                                                                collapse="', '"),
-                                                         "')"),
-                                                  NA))
-  #Remove NA values
-  idFilter = lapply(idFilter, function(x) x[!is.na(x)]) %>% purrr::compact()
-  #Join for multiple documents (pmid or other_study_identifier)
-  doc_sheet_list$Documents = doc_sheet_list$Documents %>%
-    left_join(get_tbl_id(tblName="documents",
-                         idFilter = paste0("WHERE ", paste0(idFilter, collapse=" OR "))) %>%
-                         # idFilter=paste0("WHERE ", ifelse(length(idFilter[!is.na(idFilter)]) > 1,
-                         #                 paste0(idFilter, collapse=" OR "),
-                         #                 idFilter) %>% toString())) %>%
-                select(id, pmid, other_study_identifier) %>%
-                rename(fk_document_id = id),
-              by=c("pmid", "other_study_identifier"))
-  # ####Push Studies Sheet to CvT (after adding fk_extraction_document_id from idList)
+  if(match_by_whole_entry){
+    stop("manually change query to fit the create date")
+    match_entry = query_cvt("select * from cvt.documents where rec_create_dt = '2022-01-21 15:31:26.768700'") %>%
+      select(fk_document_id=id, document_type, pmid, other_study_identifier, doi, first_author, year, title, url, curator_comment)
+    doc_sheet_list$Documents = doc_sheet_list$Documents %>%
+      left_join(match_entry)
+  } else {
+    #Get Documents ID values - Join back to original data for matching
+    #Find by matching pmid and/or study identifier
+    idFilter = list(pmid = ifelse(!is.na(doc_sheet_list$Documents$pmid), 
+                                  paste0("pmid IN ('", 
+                                         paste0(doc_sheet_list$Documents$pmid,
+                                                collapse="', '"), 
+                                         "')"), 
+                                  NA),
+                    other_study_identifier = ifelse(!is.na(doc_sheet_list$Documents$other_study_identifier),
+                                                    paste0("other_study_identifier IN ('",
+                                                           paste0(doc_sheet_list$Documents$other_study_identifier, 
+                                                                  collapse="', '"),
+                                                           "')"),
+                                                    NA))
+    #Remove NA values
+    idFilter = lapply(idFilter, function(x) x[!is.na(x)]) %>% purrr::compact()
+    #Join for multiple documents (pmid or other_study_identifier)
+    doc_sheet_list$Documents = doc_sheet_list$Documents %>%
+      left_join(get_tbl_id(tblName="documents",
+                           idFilter = paste0("WHERE ", paste0(idFilter, collapse=" OR "))) %>%
+                  # idFilter=paste0("WHERE ", ifelse(length(idFilter[!is.na(idFilter)]) > 1,
+                  #                 paste0(idFilter, collapse=" OR "),
+                  #                 idFilter) %>% toString())) %>%
+                  select(id, pmid, other_study_identifier) %>%
+                  rename(fk_document_id = id),
+                by=c("pmid", "other_study_identifier"))
+  }
+  
+#####################################################################################
+####Push Studies Sheet to CvT (after adding fk_extraction_document_id from idList)
+#####################################################################################
   doc_sheet_list$Studies$fk_extraction_document_id = doc_sheet_list$Documents$fk_document_id[doc_sheet_list$Documents$document_type == 1]
   #If multiple documents (reference docs)
   if(nrow(doc_sheet_list$Documents[doc_sheet_list$Documents$document_type == 2,])){
     stop("NEED TO FLESH OUT REF DOC ID MATCHING NAMES OUTPUT")
     #Join by id values matching to documents sheet of template
+    # doc_sheet_list$Studies = doc_sheet_list$Studies %>%
+    #   dplyr::rename(fk_doc_id = fk_reference_document_id) %>%
+    #   left_join(doc_sheet_list$Documents %>%
+    #               filter(document_type == 2) %>%
+    #               select(id, fk_reference_document_id=fk_document_id) %>%
+    #               mutate(id = as.numeric(id)),
+    #             by=c("fk_doc_id" = "id"))  
+    
     doc_sheet_list$Studies = doc_sheet_list$Studies %>%
       dplyr::rename(fk_doc_id = fk_reference_document_id) %>%
-      left_join(doc_sheet_list$Documents %>%
-                  filter(document_type == 2) %>%
-                  select(id, fk_reference_document_id=fk_document_id) %>%
-                  mutate(id = as.numeric(id)),
-                by=c("fk_doc_id" = "id"))  
+      left_join(doc_sheet_list$Documents %>% 
+                  select(id, fk_reference_document_id=fk_document_id),
+                by=c("fk_doc_id"="id"))
+    
   } else {#No reference documents to match
     doc_sheet_list$Studies$fk_reference_document_id = as.numeric(NA)
   }
     
   #MATCH TO CHEMICALS TABLE
-  cvt_chemicals = query_cvt("SELECT id As fk_dosed_chemical_id, dsstox_substance_id, dsstox_casrn, preferred_name FROM cvt.chemicals")
+  if(showa_chemical_match){
+    cvt_chemicals = readxl::read_xlsx("/home/jwall01/cvtdb/input/chemicals/PBPKShowaPharma_238mapped_07Dec2021.xlsx") %>%
+      select(raw_name=`Query Name`, raw_cas = `Query Casrn`, dsstox_substance_id = `Top HIT DSSTox_Substance_Id`, Validated) %>%
+      filter(!is.na(dsstox_substance_id)) %>%
+      distinct()
+    
+    doc_sheet_list$Studies = doc_sheet_list$Studies %>%
+      select(-dsstox_substance_id, -dsstox_casrn, -preferred_name) %>%
+      left_join(cvt_chemicals, by=c("test_substance_name_original"="raw_name", 
+                                    "test_substance_casrn_original"="raw_cas")) %>%
+      select(-Validated)
+    
+    doc_sheet_list$Studies = doc_sheet_list$Studies %>%
+      left_join(query_cvt("SELECT id as fk_dosed_chemical_id, dsstox_substance_id FROM cvt.chemicals"),
+                by="dsstox_substance_id")
+    
+  } else {
+    cvt_chemicals = query_cvt("SELECT id As fk_dosed_chemical_id, dsstox_substance_id, dsstox_casrn, preferred_name FROM cvt.chemicals")
+    doc_sheet_list$Studies = doc_sheet_list$Studies %>%
+      left_join(cvt_chemicals, by=c("dsstox_substance_id", "dsstox_casrn", "preferred_name"))
+    #Filter to ones that didn't match, add new chemicals table entry
+    chem_push = doc_sheet_list$Studies %>%
+      filter(is.na(fk_dosed_chemical_id), !is.na(dsstox_substance_id)) %>%
+      select(dsstox_substance_id, dsstox_casrn, preferred_name) %>%
+      mutate(chemistry_team_mapping = 0) %>%
+      distinct()
+    if(nrow(chem_push)){
+      message("INSERT LOGIC TO ADD NEW CHEMICAL RECORD AND REMATCH fk_dose_chemical_id")
+    }
+  }
+  
+  ###Administration Route Matching###
+  match_check = nrow(doc_sheet_list$Studies)
+  
   doc_sheet_list$Studies = doc_sheet_list$Studies %>%
-    left_join(cvt_chemicals, by=c("dsstox_substance_id", "dsstox_casrn", "preferred_name"))
-  #Filter to ones that didn't match, add new chemicals table entry
-  chem_push = doc_sheet_list$Studies %>%
-    filter(is.na(fk_dosed_chemical_id), !is.na(dsstox_substance_id)) %>%
-    select(dsstox_substance_id, dsstox_casrn, preferred_name) %>%
-    mutate(chemistry_team_mapping = 0) %>%
-    distinct()
-  if(nrow(chem_push)){
-    message("INSERT LOGIC TO ADD NEW CHEMICAL RECORD AND REMATCH fk_dose_chemical_id")
+    select(-fk_administration_route, -administration_route_normalized) %>% #remove if already present, matching here now
+    left_join(query_cvt("SELECT * FROM cvt.administration_route_dict") %>%
+                select(fk_administration_route = id, administration_route_original, administration_route_normalized),
+              by=c("administration_route_original"))
+  
+  if(match_check != nrow(doc_sheet_list$Studies)){
+    stop("...Administration route matching produced duplicates...check")
   }
   message("...pushing to Studies table")
   push_to_CvT(df=doc_sheet_list$Studies %>%
-                select(-id, -dsstox_substance_id, -dsstox_casrn, -preferred_name, -chemistry_team_mapping), 
+                select(-id, -dsstox_substance_id, -chemistry_team_mapping, -fk_doc_id), 
               tblName="studies")
   # ####Push Subjects Sheet to CvT (no fk to add)
   message("...pushing to Subjects table")
   push_to_CvT(df=doc_sheet_list$Subjects %>%
                 select(-age_normalized), tblName="subjects")
-  #Get Studies ID values (Assumes the query returns the rows in the same order they were uploaded...)
-  doc_sheet_list$Studies = doc_sheet_list$Studies %>%
-    #mutate(fk_extraction_document_id = as.character(fk_extraction_document_id)) %>%
-    left_join(get_tbl_id("studies", #Left join so it only joins what records match
-                         idFilter=paste0("WHERE fk_extraction_document_id IN (",
-                                         toString(doc_sheet_list$Documents$fk_document_id), ")")) %>%
-                rename(fk_studies_id = id))
+  
+  if(match_by_whole_entry){
+    stop("manually change query to fit the create date")
+    match_entry = query_cvt("select * from cvt.studies where rec_create_dt = '2022-01-21 15:56:08.774352'") %>%
+      select(-fk_extraction_document_id, -created_by, -updated_by, -rec_update_dt, -rec_create_dt) %>%
+      dplyr::rename(fk_studies_id = id)
+    doc_sheet_list$Studies = doc_sheet_list$Studies %>%
+      left_join(match_entry)
+  } else {
+    #Get Studies ID values (Assumes the query returns the rows in the same order they were uploaded...)
+    doc_sheet_list$Studies = doc_sheet_list$Studies %>%
+      #mutate(fk_extraction_document_id = as.character(fk_extraction_document_id)) %>%
+      left_join(get_tbl_id("studies", #Left join so it only joins what records match
+                           idFilter=paste0("WHERE fk_extraction_document_id IN (",
+                                           toString(doc_sheet_list$Documents$fk_document_id), ")")) %>%
+                  rename(fk_studies_id = id))  
+  }
+  
   #Get Subjects ID Values (Assumes the query returns the rows in the same order they were uploaded...)
   #Doesn't handle duplicate entries...
-  doc_sheet_list$Subjects = doc_sheet_list$Subjects %>%
-    left_join(get_tbl_id("subjects", idFilter="") %>%
-                rename(fk_subjects_id = id))
-
-  #####Push Series Sheet to CvT (matching to fk_study_id and fk_subject_id)
+  if(match_by_whole_entry){
+    stop("manually change query to fit the create date")
+    match_entry = query_cvt("select * from cvt.subjects where rec_create_dt = '2022-01-21 15:56:42.731250'") %>%
+      select(-notes, -created_by, -updated_by, -rec_update_dt, -rec_create_dt) %>%
+      dplyr::rename(fk_subjects_id = id)
+    doc_sheet_list$Subjects = doc_sheet_list$Subjects %>%
+      left_join(match_entry)
+  } else {
+    doc_sheet_list$Subjects = doc_sheet_list$Subjects %>%
+      left_join(get_tbl_id("subjects", idFilter="") %>%
+                  rename(fk_subjects_id = id))  
+  }
+  
+##############################################################################
+####Push Series Sheet to CvT (matching to fk_study_id and fk_subject_id)
+##############################################################################
+  #Filter to only series of interest from normalization QA
+  load_series = normalization_log %>%
+    filter(filename == gsub(".xlsx", "", basename(f)),
+           load_series == 1) %>%
+    select(series_id) 
+  doc_sheet_list$Series = doc_sheet_list$Series %>%
+    filter(id %in% load_series$series_id)
+  
   doc_sheet_list$Series = doc_sheet_list$Series %>%
     left_join(doc_sheet_list$Studies %>% #Left join so it only joins what records match
                 select(fk_study_id=id, new_fk_study_id=fk_studies_id) %>%
@@ -168,31 +247,55 @@ for(i in seq_len(length(fileList))){
     select(-new_fk_subject_id, -new_fk_study_id)
   
   #MATCH TO CHEMICALS TABLE
-  cvt_chemicals = query_cvt("SELECT id As fk_analyzed_chemical_id, dsstox_substance_id, dsstox_casrn, preferred_name FROM cvt.chemicals")
-  doc_sheet_list$Series = doc_sheet_list$Series %>%
-    left_join(cvt_chemicals, by=c("dsstox_substance_id", "dsstox_casrn", "preferred_name"))
-  #Filter to ones that didn't match, add new chemicals table entry
-  chem_push = doc_sheet_list$Series %>%
-    filter(is.na(fk_analyzed_chemical_id), !is.na(dsstox_substance_id)) %>%
-    select(dsstox_substance_id, dsstox_casrn, preferred_name) %>%
-    mutate(chemistry_team_mapping = 0) %>%
-    distinct()
-  if(nrow(chem_push)){
-    message("INSERT LOGIC TO ADD NEW CHEMICAL RECORD AND REMATCH fk_dose_chemical_id")
+  if(show_chemical_match){
+    cvt_chemicals = readxl::read_xlsx("/home/jwall01/cvtdb/input/chemicals/PBPKShowaPharma_238mapped_07Dec2021.xlsx") %>%
+      select(raw_name=`Query Name`, raw_cas = `Query Casrn`, dsstox_substance_id = `Top HIT DSSTox_Substance_Id`, Validated) %>%
+      filter(!is.na(dsstox_substance_id)) %>%
+      distinct()
+    
+    doc_sheet_list$Series = doc_sheet_list$Series %>%
+      select(-dsstox_substance_id, -dsstox_casrn, -preferred_name) %>%
+      left_join(cvt_chemicals, by=c("analyte_name_original"="raw_name", 
+                                    "analyte_casrn_original"="raw_cas")) %>%
+      filter(Validated != FALSE) %>% #Filter out invalidated chemical series until they're validated
+      select(-Validated)
+    
+    doc_sheet_list$Series = doc_sheet_list$Series %>%
+      left_join(query_cvt("SELECT id as fk_analyzed_chemical_id, dsstox_substance_id FROM cvt.chemicals"),
+                by="dsstox_substance_id")
+    
+  } else {
+    cvt_chemicals = query_cvt("SELECT id As fk_analyzed_chemical_id, dsstox_substance_id, dsstox_casrn, preferred_name FROM cvt.chemicals")
+    doc_sheet_list$Series = doc_sheet_list$Series %>%
+      left_join(cvt_chemicals, by=c("dsstox_substance_id", "dsstox_casrn", "preferred_name"))
+    #Filter to ones that didn't match, add new chemicals table entry
+    chem_push = doc_sheet_list$Series %>%
+      filter(is.na(fk_analyzed_chemical_id), !is.na(dsstox_substance_id)) %>%
+      select(dsstox_substance_id, dsstox_casrn, preferred_name) %>%
+      mutate(chemistry_team_mapping = 0) %>%
+      distinct()
+    if(nrow(chem_push)){
+      message("INSERT LOGIC TO ADD NEW CHEMICAL RECORD AND REMATCH fk_dose_chemical_id")
+    }
   }
   
-  #Filter to only series of interest from normalization QA
-  load_series = normalization_log %>%
-    filter(filename == gsub(".xlsx", "", basename(f))) %>%
-    select(series_to_load)
+  ###Conc_Medium Matching###
+  match_check = nrow(doc_sheet_list$Series)
+  
   doc_sheet_list$Series = doc_sheet_list$Series %>%
-    filter(id %in% load_series$series_to_load)
+    select(-conc_medium, -conc_medium_normalized, -conc_medium_id) %>% #remove if already present, matching here now
+    left_join(query_cvt("SELECT * FROM cvt.conc_medium_dict") %>%
+                select(fk_conc_medium_id = id, conc_medium_original),
+              by=c("conc_medium_original"))
+  
+  if(match_check != nrow(doc_sheet_list$Series)){
+    stop("...Concentration Medium matching produced duplicates...check")
+  }
   
   message("...pushing to Series table")
   #xmin onward for int conversion
   push_to_CvT(df=doc_sheet_list$Series %>%
-                select(-conc_medium, -dsstox_substance_id, -dsstox_substance_id, -dsstox_casrn, -preferred_name, -chemistry_team_mapping) %>%
-                dplyr::rename(fk_conc_medium_id = conc_medium_id),
+                select(-dsstox_substance_id, -dsstox_substance_id, -chemistry_team_mapping),
               tblName="series")
   #Get Series ID Values (Assumes the query returns the rows in the same order they were uploaded...)
   doc_sheet_list$Series = doc_sheet_list$Series %>%
@@ -203,7 +306,7 @@ for(i in seq_len(length(fileList))){
   # ####Push Conc_Time_Values to CvT (matching to fk_series_id)
   #Filter to only series of interest from normalization QA
   doc_sheet_list$Conc_Time_Values = doc_sheet_list$Conc_Time_Values %>%
-    filter(fk_series_id %in% load_series$series_to_load)
+    filter(fk_series_id %in% doc_sheet_list$Series$id)
   message("...pushing to Conc_Time_Values table")
   push_to_CvT(df=doc_sheet_list$Conc_Time_Values %>%
                 left_join(doc_sheet_list$Series %>% select(fk_series_id=id, new_fk_series_id), by=c("fk_series_id")) %>%

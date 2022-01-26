@@ -44,7 +44,7 @@ create_conc_medium_dict <- function(overwrite = FALSE){
 update_conc_medium_dict <- function(dict_file){
   if(file.exists(dict_file)){
     push_tbl_to_db(dat=readxl::read_xlsx(dict_file),
-                   tblName="conc_medium_dict",
+                   tblName="cvt.conc_medium_dict",
                    overwrite=TRUE)
   } else {
     message("...input dict_file does not exist...cannot push dictionary")

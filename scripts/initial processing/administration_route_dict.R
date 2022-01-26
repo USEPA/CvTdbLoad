@@ -47,7 +47,7 @@ create_administration_route_dict <- function(overwrite = FALSE){
 update_administration_route_dict <- function(dict_file){
   if(file.exists(dict_file)){
     push_tbl_to_db(dat=readxl::read_xlsx(dict_file),
-                  tblName="administration_route_dict",
+                  tblName="cvt.administration_route_dict",
                   overwrite=TRUE)
   } else {
     message("...input dict_file does not exist...cannot push dictionary")
