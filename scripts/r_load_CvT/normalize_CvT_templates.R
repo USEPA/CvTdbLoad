@@ -14,6 +14,8 @@ outputDir = "L:/Lab/NCCT_ExpoCast/ExpoCast2021/CvT-CompletedTemplates/Format QA/
 template_path = "L:/Lab/NCCT_ExpoCast/ExpoCast2021/CvT-CompletedTemplates/CvT_data_template_articles.xlsx"
 sheetList = c("Documents", "Studies", "Subjects", "Series", "Conc_Time_Values")
 curated_chemicals = "input/chemicals/curated_chemicals_comparison_2021-11-23.xlsx"
+apiKey = Sys.getenv("apiKey")
+dsID = Sys.getenv("datasetID")
 ###########################
 #Push to CvT
 ###########################
@@ -23,6 +25,7 @@ fileList = list.files(outputDir, full.names = TRUE, pattern=".xlsx", recursive=T
 fileList = fileList[!grepl("~|_normalize|Needs Admin|Needs Further|Reviewer Dis|needs_edits|Copy of|_log|template_metadata", fileList)] #Remove tmp files
 
 if(!dir.exists("output/normalized_templates")){
+  if(!dir.exists("output")) dir.create("output")
   dir.create("output/normalized_templates")
   dir.create("output/normalized_templates/missing_required_fields")
 }
@@ -63,6 +66,15 @@ for(i in seq_len(length(fileList))){
   #   log_CvT_doc_load(f, m="already_loaded")
   #   next
   # }
+  #Match to Clowder documents
+  doc_sheet_list$Documents=match_clowder_docs(df=doc_sheet_list$Documents,
+                                              dsID=dsID,
+                                              apiKey=apiKey)
+  
+  if(any(is.na(doc_sheet_list$Documents$clowder_file_id))){
+    log_CvT_doc_load(f, m="missing_clowder_file_ids")
+  }
+  
   #Normalize species
   doc_sheet_list$Subjects$species = normalize_species(x=doc_sheet_list$Subjects$species)
   #Normalized administration route (use dictionary to map)
