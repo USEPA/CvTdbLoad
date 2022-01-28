@@ -43,15 +43,6 @@ for(i in seq_len(length(fileList))){
   #Load Documents Sheet
   doc_sheet_list = load_sheet_group(fileName = f, template_path = template_path)
   
-  doc_check = query_cvt(paste0("SELECT pmid FROM cvt.documents where pmid in ('",
-                               paste0(unique(doc_sheet_list$Documents$pmid[!is.na(doc_sheet_list$Documents$pmid)]),
-                                      collapse="', '"), 
-                               "')"))# AND extracted != 0"))
-
-  if(nrow(doc_check)){#Need to check for extracted status (loaded but not extracted)
-    message("...File already pushed...skipping")
-    next
-  }
   #Mutate column types to match database
   doc_sheet_list$Documents = doc_sheet_list$Documents %>%
     mutate(across(c(id, document_type, pmid, year), as.numeric))
@@ -70,11 +61,36 @@ for(i in seq_len(length(fileList))){
     mutate(across(c(time_original, time_hr, conc_original, conc_sd_original, conc_lower_bound_original, 
                     conc_upper_bound_original, conc, conc_sd, conc_lower_bound, conc_upper_bound
                     ), as.numeric))
-  # ####Push Documents Sheet to CvT
+  ###########################################################################
+  ###Parse the where clause to search by pmid, other_study_identifier, or doi
+  ###########################################################################
+  where_clause = list(pmid=paste0(unique(doc_sheet_list$Documents$pmid[!is.na(doc_sheet_list$Documents$pmid)]),
+                                  collapse="', '"),
+                      other_study_identifier=paste0(unique(doc_sheet_list$Documents$other_study_identifier[!is.na(doc_sheet_list$Documents$other_study_identifier)]),
+                                                    collapse="', '"),
+                      doi=paste0(unique(doc_sheet_list$Documents$doi[!is.na(doc_sheet_list$Documents$doi)]),
+                                 collapse="', '"))
+  where_clause = where_clause[lapply(where_clause, stringr::str_length)>0]
+  where_clause = lapply(names(where_clause), function(x){
+    paste0(x, " in ('", where_clause[[x]], "')")
+  }) %>% paste0(., collapse = " OR ")
+  
+  doc_check = query_cvt(paste0("SELECT id, pmid, other_study_identifier, doi, extracted FROM cvt.documents where ", where_clause))# AND extracted != 0"))
+  
+  if(nrow(doc_check)){#Need to check for extracted status (loaded but not extracted)
+    message("...File already pushed...skipping")
+    next
+  }
+  ###########################################################################
+  ###Push Documents Sheet to CvT
+  ###########################################################################
   message("...pushing to Documents table")
   push_to_CvT(df=doc_sheet_list$Documents %>%
                 select(document_type, pmid, other_study_identifier, doi, 
-                       first_author, year, title, url, curator_comment),
+                       first_author, year, title, url, curator_comment) %>%
+                filter(!pmid %in% doc_check$pmid[!is.na(doc_check$pmid)],
+                       !other_study_identifier %in% doc_check$other_study_identifier[!is.na(doc_check$other_study_identifier)],
+                       !doi %in% doc_check$doi[!is.na(doc_check$doi)]),
               tblName="documents")
   if(match_by_whole_entry){
     stop("manually change query to fit the create date")
@@ -84,28 +100,14 @@ for(i in seq_len(length(fileList))){
       left_join(match_entry)
   } else {
     #Get Documents ID values - Join back to original data for matching
-    #Find by matching pmid and/or study identifier
-    idFilter = list(pmid = ifelse(!is.na(doc_sheet_list$Documents$pmid), 
-                                  paste0("pmid IN ('", 
-                                         paste0(doc_sheet_list$Documents$pmid,
-                                                collapse="', '"), 
-                                         "')"), 
-                                  NA),
-                    other_study_identifier = ifelse(!is.na(doc_sheet_list$Documents$other_study_identifier),
-                                                    paste0("other_study_identifier IN ('",
-                                                           paste0(doc_sheet_list$Documents$other_study_identifier, 
-                                                                  collapse="', '"),
-                                                           "')"),
-                                                    NA))
+    #Find by matching pmid, study identifier, or doi
+
     #Remove NA values
     idFilter = lapply(idFilter, function(x) x[!is.na(x)]) %>% purrr::compact()
     #Join for multiple documents (pmid or other_study_identifier)
     doc_sheet_list$Documents = doc_sheet_list$Documents %>%
       left_join(get_tbl_id(tblName="documents",
-                           idFilter = paste0("WHERE ", paste0(idFilter, collapse=" OR "))) %>%
-                  # idFilter=paste0("WHERE ", ifelse(length(idFilter[!is.na(idFilter)]) > 1,
-                  #                 paste0(idFilter, collapse=" OR "),
-                  #                 idFilter) %>% toString())) %>%
+                           idFilter = paste0("WHERE ", where_clause)) %>%
                   select(id, pmid, other_study_identifier) %>%
                   rename(fk_document_id = id),
                 by=c("pmid", "other_study_identifier"))
@@ -315,6 +317,10 @@ for(i in seq_len(length(fileList))){
               tblName="conc_time_values")
   
     #NEED TO SET documents table "extracted" to 1
+  writexl::write_xlsx(doc_sheet_list, path=paste0("output/", 
+                                                  basename(f) %>% gsub(".xlsx", "", .), 
+                                                  "_loaded_", format(Sys.time(), "%Y%m%d"), 
+                                                  ".xlsx"))
 }
 message("Done...", Sys.time())
 
