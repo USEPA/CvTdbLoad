@@ -94,10 +94,13 @@ for(i in seq_len(length(fileList))){
               tblName="documents")
   if(match_by_whole_entry){
     stop("manually change query to fit the create date")
-    match_entry = query_cvt("select * from cvt.documents where rec_create_dt = '2022-01-21 15:31:26.768700'") %>%
+    match_entry = query_cvt("select * from cvt.documents where rec_create_dt = '2022-02-01 10:17:52.031871'") %>%
       select(fk_document_id=id, document_type, pmid, other_study_identifier, doi, first_author, year, title, url, curator_comment)
     doc_sheet_list$Documents = doc_sheet_list$Documents %>%
       left_join(match_entry)
+    #doc_sheet_list$Documents$fk_document_id[doc_sheet_list$Documents$pmid == 7902233] = 6728
+    #doc_sheet_list$Documents$fk_document_id[doc_sheet_list$Documents$pmid == 15704209] = 13346
+    #doc_sheet_list$Documents$fk_document_id[doc_sheet_list$Documents$pmid == 28803882] = 23064
   } else {
     #Get Documents ID values - Join back to original data for matching
     #Find by matching pmid, study identifier, or doi
@@ -194,7 +197,7 @@ for(i in seq_len(length(fileList))){
   
   if(match_by_whole_entry){
     stop("manually change query to fit the create date")
-    match_entry = query_cvt("select * from cvt.studies where rec_create_dt = '2022-01-21 15:56:08.774352'") %>%
+    match_entry = query_cvt("select * from cvt.studies where rec_create_dt = '2022-02-01 10:31:19.259285'") %>%
       select(-fk_extraction_document_id, -created_by, -updated_by, -rec_update_dt, -rec_create_dt) %>%
       dplyr::rename(fk_studies_id = id)
     doc_sheet_list$Studies = doc_sheet_list$Studies %>%
@@ -213,7 +216,7 @@ for(i in seq_len(length(fileList))){
   #Doesn't handle duplicate entries...
   if(match_by_whole_entry){
     stop("manually change query to fit the create date")
-    match_entry = query_cvt("select * from cvt.subjects where rec_create_dt = '2022-01-21 15:56:42.731250'") %>%
+    match_entry = query_cvt("select * from cvt.subjects where rec_create_dt = '2022-02-01 10:33:49.959818'") %>%
       select(-notes, -created_by, -updated_by, -rec_update_dt, -rec_create_dt) %>%
       dplyr::rename(fk_subjects_id = id)
     doc_sheet_list$Subjects = doc_sheet_list$Subjects %>%
@@ -321,6 +324,8 @@ for(i in seq_len(length(fileList))){
                                                   basename(f) %>% gsub(".xlsx", "", .), 
                                                   "_loaded_", format(Sys.time(), "%Y%m%d"), 
                                                   ".xlsx"))
+  
+  #insert logic to update the series load log for loaded series
 }
 message("Done...", Sys.time())
 
