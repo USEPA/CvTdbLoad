@@ -303,6 +303,10 @@ push_to_CvT <- function(df=NULL, tblName=NULL){
   if(is.null(df)) stop("Must provide a dataframe to push to database")
   if(is.null(tblName)) stop("Must provide database table name to write to")
   #Remove ID column because it'll be auto assigned in the push
+  if(!nrow(df)){
+    message("No data passed to push to CvT...returning")
+    return()
+  }
   df = df[!names(df) %in% c("id")]
   tryCatch({
     con = connect_to_CvT()

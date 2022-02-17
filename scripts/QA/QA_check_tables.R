@@ -23,6 +23,10 @@ no_subject_series = query_cvt("SELECT * FROM cvt.series where fk_subject_id IS N
 no_doc_study = query_cvt("SELECT * FROM cvt.studies WHERE fk_extraction_document_id IS NULL AND fk_reference_document_id IS NULL")
 no_ext_doc_study = query_cvt("SELECT * FROM cvt.studies WHERE fk_extraction_document_id IS NULL")
 no_ref_doc_study = query_cvt("SELECT * FROM cvt.studies WHERE fk_reference_document_id IS NULL")
+#Studies not connected to a series
+no_series_study = query_cvt("SELECT * FROM cvt.studies WHERE id NOT in (SELECT DISTINCT fk_study_id FROM cvt.series)")
+#Subjects not connected to a series
+no_series_subject = query_cvt("SELECT * FROM cvt.subjects WHERE id NOT in (SELECT DISTINCT fk_subject_id FROM cvt.series)")
 
 cat("---Report Start ---\n",
     paste0(nrow(conc_missing_series), " conc entries without a series link\n"),
@@ -32,6 +36,8 @@ cat("---Report Start ---\n",
     nrow(no_study_series), " series without a study link\n",
   nrow(no_study_series), " series without a subject link\n",
   nrow(no_doc_study), " studies without any document link\n",
-  nrow(no_ext_doc_study), " studies without an extraction document link\n",
   nrow(no_ref_doc_study), " studies without a reference document link\n",
+  nrow(no_ext_doc_study), " studies without an extraction document link\n",
+  nrow(no_series_study), " studies without a series link\n",
+  nrow(no_series_subject), " subjects without a series link\n",
   "--- Report End ---")

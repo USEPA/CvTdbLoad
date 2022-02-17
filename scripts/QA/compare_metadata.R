@@ -9,18 +9,25 @@ check_list = c("pmid", "other_study_identifier", "doi", "url")
 where_clause = lapply(check_list, function(x){
   tmp = query_cvt(paste0("SELECT ",x," from cvt.documents")) %>%
     filter(!is.na(!!sym(x))) %>% unlist() %>% unname()
-  tmp = tmp[duplicated(tmp)] %>% unique() #%>% paste0(collapse="', '")
+  tmp = tmp[duplicated(tmp)] %>% unique() %>% paste0(collapse="', '")
 }) %T>% { names(.) <- check_list }
 #Pull all document data
 input = query_cvt("SELECT * FROM cvt.documents")
 #Loop through the hierarchy to verify potenital duplicates
 doc_list = list()
 for(level in check_list){#Check each level, then filter out matched and to those missing a level entry
+  if(!stringr::str_length(where_clause[[level]])){
+    #No duplicates identified in search level, so filter out those with such values
+    input = input %>% 
+      filter(!id %in% doc_list[[level]]$id, #Filter out identified duplicates
+             is.na(!!sym(level))) #Filter to missing from this level
+    next #Skip empty search
+  }
   doc_list[[level]] = query_cvt(paste0("SELECT * FROM cvt.documents where ", 
                                             level, " in ('", where_clause[[level]],"')"))
   doc_list[[level]] = input %>%
     filter(!!sym(level) %in% where_clause[[level]]) %>%
-    mutate(doc_name = paste0(!!sym(level), "_", level,"_doc_id_", id, "_type_", document_type)) %>%
+    mutate(doc_name = paste0(!!sym(level), "_", level,"_doc_id_", id)) %>%
     select(id, !!sym(level), doc_name)
   input = input %>% 
     filter(!id %in% doc_list[[level]]$id, #Filter out identified duplicates
@@ -63,4 +70,4 @@ out = lapply(seq_len(nrow(doc_list)), function(r){
     
 }) %T>% { names(.) <- doc_list$doc_name } 
 
-
+message("Number of documents without check_list identifiers: ", nrow(input))
