@@ -63,3 +63,4 @@ out = lapply(seq_len(nrow(doc_list)), function(r){
     
 }) %T>% { names(.) <- doc_list$doc_name } 
 
+
