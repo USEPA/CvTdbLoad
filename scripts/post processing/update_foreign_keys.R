@@ -16,7 +16,13 @@ tbl_info = list(conc = list(select_list = c("id", "conc_medium_original"),
                             join_list = c("conc_medium_original"),
                             id_col = "fk_conc_medium_id",
                             update_tbl="cvt.series"),
-                administration_route = list())
+                administration_route = list(select_list = c("id", "administration_route_original"),
+                                            mutate_list = c("administration_route_original"),
+                                            dict = "cvt.administration_route_dict",
+                                            join_list = c("administration_route_original"),
+                                            id_col = "fk_administration_route",
+                                            update_tbl = "cvt.studies")
+                )
 
 message("Starting processing...", Sys.time())
 for(type in names(tbl_info)){
@@ -35,7 +41,11 @@ for(type in names(tbl_info)){
     input = query_cvt(paste0("SELECT ", toString(tbl_info[[type]]$select_list), 
                              " FROM ", tbl_info[[type]]$update_tbl, " WHERE ", tbl_info[[type]]$id_col, " IS NULL"))
   }
-
+  
+  if(!nrow(input)){
+    message("...no data returned for input...skipping...")
+    next
+  }
   #Normalize input
   input = input %>%
     mutate(across(tbl_info[[type]]$mutate_list, ~tolower(trimws(.))))
@@ -50,6 +60,7 @@ for(type in names(tbl_info)){
   
   #Check which didn't match - need to update dictionary
   #unique(output$conc_medium_original[is.na(output$fk_conc_medium_id)])
+  message("...unmatched records: ", length(unique(output[[tbl_info[[type]]$mutate_list]][is.na(output[[tbl_info[[type]]$id_col]])])))
   
   #Push updates
   con = connect_to_CvT()
