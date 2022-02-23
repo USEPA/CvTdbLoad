@@ -19,11 +19,16 @@ get_unique_administration_route <- function(fileList, template_path){
     unique() %>%
     #Attempt match
     left_join(get_administration_route_dict(), by="administration_route_original") %>%
-    filter(is.na(administration_route_normalized))
+    filter(is.na(administration_route_normalized)) %>%
+    select(administration_route_original, administration_route_normalized)
   
   #Output to file for curation
-  writexl::write_xlsx(out %>% select(-id), paste0("input/administration_route/administration_route_to_curate_",Sys.Date(),".xlsx"))
-  return(out %>% select(-id))
+  if(nrow(out)){
+    writexl::write_xlsx(out %>% select(-id), paste0("input/administration_route/administration_route_to_curate_",Sys.Date(),".xlsx"))
+  } else {
+    message("...No new administration routes to curate...returning")  
+  }
+  return(out)
 }
 
 create_administration_route_dict <- function(overwrite = FALSE){
@@ -46,9 +51,18 @@ create_administration_route_dict <- function(overwrite = FALSE){
 
 update_administration_route_dict <- function(dict_file){
   if(file.exists(dict_file)){
-    push_tbl_to_db(dat=readxl::read_xlsx(dict_file),
-                  tblName="cvt.administration_route_dict",
-                  overwrite=TRUE)
+    #Filter to only new entries to append to dictionary
+    new = readxl::read_xlsx(dict_file) %>%
+      select(-id) %>%
+      mutate(administration_route_original = trimws(tolower(administration_route_original))) %>%
+      filter(!is.na(administration_route_normalized), administration_route_normalized != "NA") %>%
+      anti_join(get_administration_route_dict() %>% 
+                  select(administration_route_original, administration_route_normalized) %>%
+                  mutate(administration_route_original = trimws(tolower(administration_route_original))))
+    #Push new dictionary entries
+    push_tbl_to_db(dat=new,
+                  tblName="administration_route_dict",
+                  overwrite=FALSE, append=TRUE)
   } else {
     message("...input dict_file does not exist...cannot push dictionary")
   }

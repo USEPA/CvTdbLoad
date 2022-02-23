@@ -17,10 +17,16 @@ get_unique_conc_medium <- function(fileList, template_path){
     unique() %>%
     #Attempt match
     left_join(get_conc_medium_dict(), by="conc_medium_original") %>%
-    filter(is.na(conc_medium_normalized))
+    filter(is.na(conc_medium_normalized)) %>%
+    select(conc_medium_original, conc_medium_normalized)
   
   #Output to file for curation
-  writexl::write_xlsx(out %>% select(-id), paste0("input/conc_medium/conc_medium_to_curate_",Sys.Date(),".xlsx"))
+  if(nrow(out)){
+    writexl::write_xlsx(out %>% select(-id), paste0("input/conc_medium/conc_medium_to_curate_",Sys.Date(),".xlsx"))  
+  } else {
+    message("...No new concentration media to curate...returning...")
+  }
+  return(out)
 }
 
 create_conc_medium_dict <- function(overwrite = FALSE){
@@ -43,9 +49,17 @@ create_conc_medium_dict <- function(overwrite = FALSE){
 
 update_conc_medium_dict <- function(dict_file){
   if(file.exists(dict_file)){
-    push_tbl_to_db(dat=readxl::read_xlsx(dict_file),
-                   tblName="cvt.conc_medium_dict",
-                   overwrite=TRUE)
+    new = readxl::read_xlsx(dict_file) %>%
+      select(-id, -units) %>%
+      mutate(conc_medium_original = trimws(tolower(conc_medium_original))) %>%
+      filter(!is.na(conc_medium_normalized), conc_medium_normalized != "NA") %>%
+      anti_join(get_conc_medium_dict() %>% 
+                  select(conc_medium_original, conc_medium_normalized) %>%
+                  mutate(conc_medium_original = trimws(tolower(conc_medium_original))))
+    
+    push_tbl_to_db(dat=new,
+                   tblName="conc_medium_dict",
+                   overwrite=FALSE, append=TRUE)
   } else {
     message("...input dict_file does not exist...cannot push dictionary")
   }

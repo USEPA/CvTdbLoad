@@ -23,7 +23,7 @@ push_tbl_to_db <- function(dat=NULL, tblName=NULL, fieldTypes=NULL, overwrite=FA
   
   out <- tryCatch({
     message("...Trying to write, '", tblName, "' to CvTdb")
-    dbWriteTable(con, value=dat, name=tblName, overwrite=overwrite,
+    dbWriteTable(con, value=dat, name=c("cvt", tblName), overwrite=overwrite,
                  field.types=fieldTypes, row.names=FALSE, append=append)
     if(!is.null(customSQL)) { dbSendQuery(con, customSQL) } #Send custom SQL statement
   },
