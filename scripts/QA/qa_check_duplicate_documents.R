@@ -1,4 +1,5 @@
 #Find duplicates in documents table based on ID hierarchy
+#Return associated CvTdb records to help compare between potential duplicates
 require(DBI); require(dplyr); require(magrittr); require(tidyr); require(readxl)
 #Load R Scripts
 file_source = list.files("scripts/initial processing", pattern="utils_", full.names = TRUE)
