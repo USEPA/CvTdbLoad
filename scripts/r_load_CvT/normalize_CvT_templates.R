@@ -9,9 +9,9 @@ invisible(sapply(file_source[!grepl("get_unique_chemicals|_dict|log_", file_sour
 ################################################################################
 ###Main Script Section
 ################################################################################
-#outputDir = "L:/Lab/NCCT_ExpoCast/ExpoCast2021/CvT-CompletedTemplates/Format QA/0_to_qa_format/Needs Admin Check"#"QA Complete/"#"../QA CvT/QA Complete/"
-outputDir = "L:/Lab/NCCT_ExpoCast/ExpoCast2021/CvT-CompletedTemplates/Format QA/1_qa_format_complete"
-template_path = "L:/Lab/NCCT_ExpoCast/ExpoCast2021/CvT-CompletedTemplates/CvT_data_template_articles.xlsx"
+#outputDir = "L:/Lab/NCCT_ExpoCast/ExpoCast2022/CvT-CompletedTemplates/Format QA/0_to_qa_format/Needs Admin Check"#"QA Complete/"#"../QA CvT/QA Complete/"
+outputDir = "L:/Lab/NCCT_ExpoCast/ExpoCast2022/CvT-CompletedTemplates/Format QA/1_qa_format_complete"
+template_path = "L:/Lab/NCCT_ExpoCast/ExpoCast2022/CvT-CompletedTemplates/CvT_data_template_articles.xlsx"
 sheetList = c("Documents", "Studies", "Subjects", "Series", "Conc_Time_Values")
 curated_chemicals = "input/chemicals/curated_chemicals_comparison_2021-11-23.xlsx"
 apiKey = Sys.getenv("apiKey")
@@ -41,7 +41,7 @@ for(i in seq_len(length(fileList))){
     next
   }
   #Skip problem files (for now)
-  # if(f %in% c("L:/Lab/NCCT_ExpoCast/ExpoCast2021/CvT-CompletedTemplates/Format QA/1_qa_format_complete/HERO7578028_CvT_data_template_articles_RRS.xlsx")){
+  # if(f %in% c("L:/Lab/NCCT_ExpoCast/ExpoCast2022/CvT-CompletedTemplates/Format QA/1_qa_format_complete/HERO7578028_CvT_data_template_articles_RRS.xlsx")){
   #   next
   # }
   ######insert loop over fileList logic########

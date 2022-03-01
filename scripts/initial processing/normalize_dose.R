@@ -35,7 +35,8 @@ normalize_dose <- function(raw, f){
   #out$raw$dose_level_units_original = out$raw$dose_level_units
   #Remove species and "body weight" from units field
   out$raw$dose_level_units = gsub(paste0(c("body weight", "bw",
-                                           paste0("/",out$raw$species %>% unique())), collapse="|"), 
+                                           paste0("/",out$raw$species %>% unique()),
+                                           out$raw$species %>% unique()), collapse="|"), 
                                   "",
                                   out$raw$dose_level_units) %>%
     gsub(" per ", "/", .) %>% 

@@ -313,7 +313,7 @@ convert_units <- function(x, num, units, desired, MW=NA, overwrite_units=FALSE){
               `mg/kg`=list(`mg/kg`="/1", `ug/ml`=paste0("*", MW)), #1 mg/kg*MW kg/L*1L/1000mL*1000ug/mg=ug/mL --> using httk density value for MW variable (refactor name)
               `ug/kg`=list(`mg/kg`="/1000"),
               `g/kg`=list(`mg/kg`="*1000"),
-              `ug per 250 g`=list(`mg/kg`="*4/1000"),
+              `ug/250 g`=list(`mg/kg`="*4/1000"),
               `ug/ml`=list(`ug/ml`="/1"),
               `ug/l`=list(`ug/ml`="/1000"),
               `ng/ml`=list(`ug/ml`="/1000"),
