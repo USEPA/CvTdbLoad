@@ -29,11 +29,11 @@ norm_extrapolate <- function(x, f, extrap_type){
       message("...extrapolating ", extrap_type)
       #Extrapolate
       #Average of species and subtype match or just species
-      map_spec_sub = query_cvt("SELECT DISTINCT species, subtype, weight_kg FROM subjects") %>%
+      map_spec_sub = query_cvt("SELECT DISTINCT species, subtype, weight_kg FROM cvt.subjects") %>%
         mutate(across(c(species, subtype), ~tolower(trimws(.)))) %>%
         group_by(species, subtype) %>%
         summarise(avg_weight_kg = mean(weight_kg, na.rm=TRUE))
-      map_spec = query_cvt("SELECT DISTINCT species, subtype, weight_kg FROM subjects") %>%
+      map_spec = query_cvt("SELECT DISTINCT species, subtype, weight_kg FROM cvt.subjects") %>%
         mutate(across(c(species, subtype), ~tolower(trimws(.)))) %>%
         group_by(species) %>%
         summarise(avg_weight_kg = mean(weight_kg, na.rm=TRUE))
