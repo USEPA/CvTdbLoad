@@ -27,7 +27,17 @@ fileList = fileList[!grepl("~|_normalize|Needs Admin|Needs Further|Reviewer Dis|
 if(!dir.exists("output/normalized_templates")){
   if(!dir.exists("output")) dir.create("output")
   dir.create("output/normalized_templates")
-  dir.create("output/normalized_templates/missing_required_fields")
+  dir.create("output/normalized_templates/flagged")
+  dir.create("output/normalized_templates/flagged/warning")
+  dir.create("output/normalized_templates/flagged/hard_stop")
+  dir.create("output/normalized_templates/flagged/hard_stop/missing_required")
+  dir.create("output/normalized_templates/flagged/hard_stop/need_split")
+  dir.create("output/normalized_templates/flagged/hard_stop/impossible_value")
+  dir.create("output/normalized_templates/flagged/hard_stop/conversion_failed")
+  dir.create("output/normalized_templates/flagged/soft_stop")
+  dir.create("output/normalized_templates/flagged/soft_stop/conversion_needed")
+  dir.create("output/normalized_templates/flagged/soft_stop/dictionary_update")
+  dir.create("output/normalized_templates/flagged/soft_stop/clowder_missing")
 }
 
 for(i in seq_len(length(fileList))){
@@ -37,7 +47,15 @@ for(i in seq_len(length(fileList))){
   f = fileList[i]
   #Skip already normalized template
   if(file.exists(paste0("output/normalized_templates/",gsub(".xlsx", "_normalized.xlsx", basename(f)))) |
-     file.exists(paste0("output/normalized_templates/missing_required_fields/",gsub(".xlsx", "_normalized.xlsx", basename(f))))){
+     file.exists(paste0("output/normalized_templates/flagged/warning/",gsub(".xlsx", "_normalized.xlsx", basename(f)))) |
+     file.exists(paste0("output/normalized_templates/flagged/hard_stop/missing_required/",gsub(".xlsx", "_normalized.xlsx", basename(f)))) |
+     file.exists(paste0("output/normalized_templates/flagged/hard_stop/need_split/", gsub(".xlsx", "_normalized.xlsx", basename(f)))) |
+     file.exists(paste0("output/normalized_templates/flagged/hard_stop/impossible_value/",gsub(".xlsx", "_normalized.xlsx", basename(f)))) |
+     file.exists(paste0("output/normalized_templates/flagged/hard_stop/conversion_failed/",gsub(".xlsx", "_normalized.xlsx", basename(f)))) |
+     file.exists(paste0("output/normalized_templates/flagged/soft_stop/conversion_needed/",gsub(".xlsx", "_normalized.xlsx", basename(f)))) |
+     file.exists(paste0("output/normalized_templates/flagged/soft_stop/dictionay_update/",gsub(".xlsx", "_normalized.xlsx", basename(f)))) |
+     file.exists(paste0("output/normalized_templates/flagged/soft_stop/clowder_missing/",gsub(".xlsx", "_normalized.xlsx", basename(f))))
+     ){
     next
   }
   #Skip problem files (for now)
@@ -66,14 +84,15 @@ for(i in seq_len(length(fileList))){
   #   log_CvT_doc_load(f, m="already_loaded")
   #   next
   # }
-  #Match to Clowder documents
-  doc_sheet_list$Documents=match_clowder_docs(df=doc_sheet_list$Documents,
-                                              dsID=dsID,
-                                              apiKey=apiKey)
-  
-  if(any(is.na(doc_sheet_list$Documents$clowder_file_id))){
-    log_CvT_doc_load(f, m="missing_clowder_file_ids")
-  }
+  # TO DO - uncomment Clowder when ready to use
+  # Match to Clowder documents
+  # doc_sheet_list$Documents=match_clowder_docs(df=doc_sheet_list$Documents,
+  #                                             dsID=dsID,
+  #                                             apiKey=apiKey)
+  # 
+  # if(any(is.na(doc_sheet_list$Documents$clowder_file_id))){
+  #   log_CvT_doc_load(f, m="missing_clowder_file_ids")
+  # }
   
   #Normalize species
   doc_sheet_list$Subjects$species = normalize_species(x=doc_sheet_list$Subjects$species)
@@ -85,11 +104,11 @@ for(i in seq_len(length(fileList))){
                 dplyr::rename(fk_administration_route = id),
               by="administration_route_original")
   #Check Species
-  species_check = query_cvt(paste0("SELECT DISTINCT species FROM subjects"))
+  species_check = query_cvt(paste0("SELECT DISTINCT species FROM cvt.subjects"))
   if(any(!doc_sheet_list$Subjects$species %in% species_check$species)){
     message("...File contains species not already in database: ", doc_sheet_list$Subjects$species[!doc_sheet_list$Subjects$species %in% species_check$species])
     log_CvT_doc_load(f, m="species_not_found")
-    next
+    #next
   }
   
   #Check if file contains all expected sheets
@@ -148,17 +167,6 @@ for(i in seq_len(length(fileList))){
 }
 
 message("Sorting files")
-for(i in seq_len(length(fileList))){
-  # if(i <= 7){#Quick skip/restart logic
-  #   next
-  # }
-  f = fileList[i]
-  if(file.exists(paste0("output/normalized_templates/",gsub(".xlsx", "_normalized.xlsx", basename(f))))){
-    if(log_check(f, "required")){
-      file.rename(from=paste0("output/normalized_templates/",gsub(".xlsx", "_normalized.xlsx", basename(f))),
-      to=paste0("output/normalized_templates/missing_required_fields/",gsub(".xlsx", "_normalized.xlsx", basename(f))))
-    }
-  }
-}
+reorganize_file_flags()
 
 message("Done...", Sys.time())
