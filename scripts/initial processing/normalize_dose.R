@@ -44,11 +44,8 @@ normalize_dose <- function(raw, f){
   #Remove parenthetical information from dose_level_normalized
   out$raw$dose_level_normalized = gsub("\\([^()]*\\)", "", out$raw$dose_level_normalized) %>% trimws()
   #Missing dose value
-  out$missing_dose = out$raw %>% filter(is.na(dose_level))
-  out$raw = out$raw %>% filter(!tempID %in% out$missing_dose$tempID)
-  if(nrow(out$missing_dose)){
-    log_CvT_doc_load(f=f, m="dose_level_missing")
-  }
+  out = check_missing(x=out, miss_col = "dose_level", f=f, flag=TRUE)
+
   #Missing units
   out = check_missing_units(x=out, f=f, units_col="dose_level_units")
   #Percentage units flag

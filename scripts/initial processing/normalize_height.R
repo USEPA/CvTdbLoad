@@ -27,8 +27,7 @@ normalize_height <- function(raw, f){
   #Extrapolate heights - no longer doing this
   #out = norm_extrapolate(x=out, f=f, extrap_type="height")
   #Missing height
-  out$missing_height = out$raw %>% filter(is.na(height))
-  out$raw = out$raw %>% filter(!tempID %in% out$missing_height$tempID)
+  out = check_missing(x=out, miss_col = "height", f=f, flag=FALSE)
   #Missing units
   out = check_missing_units(x=out, f=f, units_col="height_units")
   out$missing_units$height_units = NA #Replacing missing units to NA after flagging
