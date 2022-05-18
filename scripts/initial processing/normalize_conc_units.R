@@ -46,11 +46,8 @@ normalize_conc <- function(raw, f){
                                conc_lower_bound=conc_lower_bound_original,
                                conc_upper_bound=conc_upper_bound_original)
   #Missing concentration values
-  out$missing_conc = out$raw %>% filter(is.na(conc_original))
-  out$raw = out$raw %>% filter(!tempID %in% unique(out$missing_conc$tempID))
-  if(nrow(out$missing_conc)){
-    log_CvT_doc_load(f=f, m="missing_conc_values")
-  }
+  out = check_missing(x=out, miss_col = "conc_original", f=f, flag=TRUE)
+  
   #Get ND and NQ concentrations
   out$ND = out$raw %>% filter(conc_original %in% c("ND", "NQ"))
   out$raw = out$raw %>% filter(!tempID %in% unique(out$ND$tempID))
@@ -62,19 +59,19 @@ normalize_conc <- function(raw, f){
   out$percentage = out$raw %>% filter(grepl("%|percent*", conc_units_original))
   out$raw = out$raw %>% filter(!tempID %in% out$percentage$tempID)
   if(nrow(out$percentage)){
-    log_CvT_doc_load(f=f, m="dose_conversion_needed_percentage")
+    log_CvT_doc_load(f=f, m="conc_conversion_needed_percentage")
   }
   #Radioactive units flag
   out$radioactive = out$raw %>% filter(grepl("MBq|bq/", conc_units_original))
   out$raw = out$raw %>% filter(!tempID %in% out$radioactive$tempID)
   if(nrow(out$radioactive)){
-    log_CvT_doc_load(f=f, m="dose_conversion_needed_radioactive")
+    log_CvT_doc_load(f=f, m="conc_conversion_needed_radioactive")
   }
   #Rate units flag
   out$rate_units = out$raw %>% filter(grepl("/hour|/day|/minute|/second|/hr|/min|/s|/h|*h/", conc_units_original))
   out$raw = out$raw %>% filter(!tempID %in% out$rate_units$tempID)
   if(nrow(out$rate_units)){
-    log_CvT_doc_load(f=f, m="dose_conversion_needed_rate")
+    log_CvT_doc_load(f=f, m="conc_conversion_needed_rate")
   }
   #Non-numerics
   out = check_non_numeric(x=out, f=f, col="conc_original")

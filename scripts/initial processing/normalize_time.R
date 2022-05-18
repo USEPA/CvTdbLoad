@@ -20,11 +20,8 @@ normalize_time <- function(raw, f){
   out$raw = prep_normalization(x=raw, newcols=c())
   out$raw = out$raw %>% mutate(time_hr=as.numeric(NA))
   #Missing time values
-  out$missing_time = out$raw %>% filter(is.na(time_original))
-  out$raw = out$raw %>% filter(!tempID %in% unique(out$missing_time$tempID))
-  if(nrow(out$missing_time)){
-    log_CvT_doc_load(f=f, m="missing_time_values")
-  }
+  out = check_missing(x=out, miss_col = "time_original", f=f, flag=TRUE)
+  
   #Missing units
   out = check_missing_units(x=out, f=f, units_col="time_units_original")
   #Normalize units

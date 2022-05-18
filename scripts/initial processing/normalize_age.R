@@ -78,7 +78,7 @@ normalize_age <- function(raw, f){
   if(nrow(out$matching_err)){
     m = out$matching_err$age_category %>% unique() %>% unlist()
     message("...Age category matching error: ", paste0(m, collapse=", "))
-    log_CvT_doc_load(f=f, m=m)
+    log_CvT_doc_load(f=f, m="age_category_match_error")
   }
   
   #Convert to NA for all lists that were not normalized

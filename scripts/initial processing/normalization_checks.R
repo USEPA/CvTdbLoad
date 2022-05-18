@@ -65,6 +65,24 @@ norm_extrapolate <- function(x, f, extrap_type){
   return(x)
 }
 
+#'@description Helper function to check for missing values for desired column.
+#'@param x Input list of datasets being normalized
+#'@param miss_col The column to check
+#'@param f Filename for flagging purposes
+#'@param flag Whether to log a flag for the missing column
+#'
+#'@return Modified version of the input `x` parameter
+check_missing <- function(x, miss_col, f, flag=FALSE){
+  x$missing = x$raw %>% filter(!!as.symbol(miss_col) %in% c("NA", "n/a", "N/A")  |
+                                       is.na(!!as.symbol(miss_col)))
+  x$raw = x$raw %>% filter(!tempID %in% x$missing$tempID)
+  if(flag & nrow(x$missing)){
+    message("...Needs further curation: Missing - ", miss_col)
+    log_CvT_doc_load(f=f, m=paste0("missing_",miss_col,"_values"))
+  }
+  return(x)
+}
+
 #'@description Helper function to check for missing units for desired metric column.
 #'@param x Input list of datasets being normalized
 #'@param f Filename for flagging purposes
