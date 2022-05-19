@@ -9,23 +9,34 @@ match_clowder_docs <- function(df=NULL, dsID=NULL, apiKey=NULL){
   if(is.null(dsID)) stop("Error: missing required Clowder dataset ID")
   
   if(!"pdf_filepath" %in% names(df)){ df$pdf_filepath = NA }
-  
-  df %>%
-    #Get filename
-    mutate(pdf_filepath = ifelse(!is.na(pdf_filepath), 
-                                 basename(pdf_filepath),
-                                 ifelse(!is.na(pmid), 
-                                        paste0("PMID", pmid, ".pdf"), 
-                                        ifelse(!is.na(other_study_identifier), 
-                                               paste0(other_study_identifier, ".pdf"),
-                                               NA
-                                               )
-                                        )
-                                 ) 
-           ) %>% 
+  # Attempt to match to PMID
+  c_docs = get_clowder_docList_2(dsID=dsID, apiKey=apiKey)
+  pmid_match = df %>%
+    filter(!is.na(pmid)) %>%
+    mutate(pdf_filepath = paste0("PMID", pmid, ".pdf")) %>%
     #Match to Clowder filename
-    left_join(get_clowder_docList_2(dsID=dsID, apiKey=apiKey),
+    left_join(c_docs,
               by=c("pdf_filepath"="filename")) %>%
+    # Filter to those that matched
+    filter(!is.na(clowder_file_id))
+  df = df %>%
+    filter(!id %in% pmid_match$id)
+  
+  other_match = df %>%
+    filter(!is.na(other_study_identifier)) %>%
+    mutate(pdf_filepath = paste0(other_study_identifier, ".pdf")) %>%
+    # Match to Clowder filename
+    left_join(c_docs,
+              by=c("pdf_filepath"="filename")) %>%
+    # Filter to those that matched
+    filter(!is.na(clowder_file_id))
+  
+  df = df %>%
+    filter(!id %in% other_match$id)
+  
+  # Recombine and return
+  rbind(df, pmid_match, other_match) %>%
+    arrange(id) %>%
     return()
 }
 
@@ -40,7 +51,7 @@ get_clowder_docList_2 <- function(dsID=NULL, apiKey=NULL){
   baseurl = "https://clowder.edap-cluster.com/api"
   #Get dataset IDs of interest
   httr::GET(paste0("https://clowder.edap-cluster.com/api/datasets/",
-                                   dsID,"/files",
+                                   dsID,"/files?key=",
                                    apiKey)) %>% httr::content() %>%
     tibble(clowder_file_id = purrr::map_chr(.,"id"), filename = purrr::map_chr(.,"filename")) %>%
     select(-1) %>%

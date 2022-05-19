@@ -16,6 +16,10 @@ sheetList = c("Documents", "Studies", "Subjects", "Series", "Conc_Time_Values")
 curated_chemicals = "input/chemicals/curated_chemicals_comparison_2021-11-23.xlsx"
 apiKey = Sys.getenv("apiKey")
 dsID = Sys.getenv("datasetID")
+
+# Check for Clowder ID values
+if(is.null(apiKey) | is.null(dsID)) stop("Must provide apiKey and dataset ID to match Clowder Documents")
+if(apiKey == "" | dsID == "") stop("Must provide apiKey and dataset ID to match Clowder Documents")
 ###########################
 #Push to CvT
 ###########################
@@ -55,7 +59,7 @@ for(i in seq_len(length(fileList))){
      file.exists(paste0("output/normalized_templates/flagged/soft_stop/conversion_needed/",gsub(".xlsx", "_normalized.xlsx", basename(f)))) |
      file.exists(paste0("output/normalized_templates/flagged/soft_stop/dictionay_update/",gsub(".xlsx", "_normalized.xlsx", basename(f)))) |
      file.exists(paste0("output/normalized_templates/flagged/soft_stop/clowder_missing/",gsub(".xlsx", "_normalized.xlsx", basename(f))))
-     ){
+  ){
     next
   }
   #Skip problem files (for now)
@@ -72,7 +76,7 @@ for(i in seq_len(length(fileList))){
   #
   #
   #
-  #NEED TO UPDATE LOGIC TO HANDLE MULTIPLE DOCUMENTS (etraction and reference) uploads for a template
+  #NEED TO UPDATE LOGIC TO HANDLE MULTIPLE DOCUMENTS (extraction and reference) uploads for a template
   #
   #
   #
@@ -86,13 +90,13 @@ for(i in seq_len(length(fileList))){
   # }
   # TO DO - uncomment Clowder when ready to use
   # Match to Clowder documents
-  # doc_sheet_list$Documents=match_clowder_docs(df=doc_sheet_list$Documents,
-  #                                             dsID=dsID,
-  #                                             apiKey=apiKey)
-  # 
-  # if(any(is.na(doc_sheet_list$Documents$clowder_file_id))){
-  #   log_CvT_doc_load(f, m="missing_clowder_file_ids")
-  # }
+  doc_sheet_list$Documents=match_clowder_docs(df=doc_sheet_list$Documents,
+                                              dsID=dsID,
+                                              apiKey=apiKey)
+  
+  if(any(is.na(doc_sheet_list$Documents$clowder_file_id))){
+    log_CvT_doc_load(f, m="missing_clowder_file_ids")
+  }
   
   #Normalize species
   doc_sheet_list$Subjects$species = normalize_species(x=doc_sheet_list$Subjects$species)
