@@ -343,6 +343,13 @@ check_required_fields <- function(df, f){
           log_CvT_doc_load(f=f, m="missing_dose_duration_units")
         }
       }
+      if(all(c("administration_term", "administration_term_units") %in% names(df[[t]]))){
+        #Check if administration_term_units present (if administration_term present)
+        if(any(!is.na(df[[t]]$administration_term)) & all(is.na(df[[t]]$dose_duration_units))){
+          log_CvT_doc_load(f=f, m="missing_administration_term_units")
+        }
+      }
+        
       #dose duration is required for inhalation/dermal
       #If dose_frequency is not 1 or NULL, then we need a dose_duration
       #although, we have logic that if dose_frequency is present, they must have dose_duration...so simplifying

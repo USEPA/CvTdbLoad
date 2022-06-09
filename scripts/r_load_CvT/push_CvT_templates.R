@@ -196,7 +196,7 @@ for(i in seq_len(length(fileList))){
     
   #MATCH TO CHEMICALS TABLE
   if(showa_chemical_match){
-    cvt_chemicals = readxl::read_xlsx("/home/jwall01/cvtdb/input/chemicals/PBPKShowaPharma_238mapped_07Dec2021.xlsx") %>%
+    cvt_chemicals = readxl::read_xlsx("input/chemicals/PBPKShowaPharma_238mapped_07Dec2021.xlsx") %>%
       select(raw_name=`Query Name`, raw_cas = `Query Casrn`, dsstox_substance_id = `Top HIT DSSTox_Substance_Id`, Validated) %>%
       filter(!is.na(dsstox_substance_id)) %>%
       distinct()
