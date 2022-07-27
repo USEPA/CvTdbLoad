@@ -24,7 +24,7 @@ get_unique_administration_route <- function(fileList, template_path){
   
   #Output to file for curation
   if(nrow(out)){
-    writexl::write_xlsx(out %>% select(-id), paste0("input/administration_route/administration_route_to_curate_",Sys.Date(),".xlsx"))
+    writexl::write_xlsx(out, paste0("input/administration_route/administration_route_to_curate_",Sys.Date(),".xlsx"))
   } else {
     message("...No new administration routes to curate...returning")  
   }

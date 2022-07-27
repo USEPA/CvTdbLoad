@@ -3,19 +3,23 @@
 #Created Date: 2021-02-25
 #Load packages
 require(DBI); require(dplyr); require(magrittr); require(tidyr); require(readxl); library(httk)
+# R version 4.1.0 (2021-05-18)
+# httk_2.1.0; readxl_1.3.1; tidyr_1.2.0; magrittr_2.0.2; dplyr_1.0.8; DBI_1.1.2
+# purrr_0.3.4; assertthat_0.2.1
 #Load R Scripts
 file_source = list.files("scripts/initial processing", pattern="*.R", full.names = TRUE)
 invisible(sapply(file_source[!grepl("get_unique_chemicals|_dict|log_", file_source)],source,.GlobalEnv))
 ################################################################################
 ###Main Script Section
 ################################################################################
-#outputDir = "L:/Lab/NCCT_ExpoCast/ExpoCast2022/CvT-CompletedTemplates/Format QA/0_to_qa_format/Needs Admin Check"#"QA Complete/"#"../QA CvT/QA Complete/"
-outputDir = "L:/Lab/NCCT_ExpoCast/ExpoCast2022/CvT-CompletedTemplates/Format QA/1_qa_format_complete"
+# outputDir = "L:/Lab/NCCT_ExpoCast/ExpoCast2022/CvT-CompletedTemplates/Format QA/0_to_qa_format/Needs Admin Check"#"QA Complete/"#"../QA CvT/QA Complete/"
+outputDir = "L:\\Lab\\NCCT_ExpoCast\\ExpoCast2022\\PKWG-CompletedTemplates\\CvT_completed_templates\\PCB\\Complete"
+# outputDir = "L:/Lab/NCCT_ExpoCast/ExpoCast2022/CvT-CompletedTemplates/Format QA/1_qa_format_complete"
 template_path = "L:/Lab/NCCT_ExpoCast/ExpoCast2022/CvT-CompletedTemplates/CvT_data_template_articles.xlsx"
 sheetList = c("Documents", "Studies", "Subjects", "Series", "Conc_Time_Values")
 curated_chemicals = "input/chemicals/curated_chemicals_comparison_2021-11-23.xlsx"
 apiKey = Sys.getenv("apiKey")
-dsID = Sys.getenv("datasetID")
+dsID = Sys.getenv("dsID")
 
 # Check for Clowder ID values
 if(is.null(apiKey) | is.null(dsID)) stop("Must provide apiKey and dataset ID to match Clowder Documents")
@@ -38,6 +42,7 @@ if(!dir.exists("output/normalized_templates")){
   dir.create("output/normalized_templates/flagged/hard_stop/need_split")
   dir.create("output/normalized_templates/flagged/hard_stop/impossible_value")
   dir.create("output/normalized_templates/flagged/hard_stop/conversion_failed")
+  dir.create("output/normalized_templates/flagged/hard_stop/empty_sheet")
   dir.create("output/normalized_templates/flagged/soft_stop")
   dir.create("output/normalized_templates/flagged/soft_stop/conversion_needed")
   dir.create("output/normalized_templates/flagged/soft_stop/dictionary_update")
@@ -56,6 +61,7 @@ for(i in seq_len(length(fileList))){
      file.exists(paste0("output/normalized_templates/flagged/hard_stop/need_split/", gsub(".xlsx", "_normalized.xlsx", basename(f)))) |
      file.exists(paste0("output/normalized_templates/flagged/hard_stop/impossible_value/",gsub(".xlsx", "_normalized.xlsx", basename(f)))) |
      file.exists(paste0("output/normalized_templates/flagged/hard_stop/conversion_failed/",gsub(".xlsx", "_normalized.xlsx", basename(f)))) |
+     file.exists(paste0("output/normalized_templates/flagged/hard_stop/empty_sheet/",gsub(".xlsx", "_normalized.xlsx", basename(f)))) |
      file.exists(paste0("output/normalized_templates/flagged/soft_stop/conversion_needed/",gsub(".xlsx", "_normalized.xlsx", basename(f)))) |
      file.exists(paste0("output/normalized_templates/flagged/soft_stop/dictionay_update/",gsub(".xlsx", "_normalized.xlsx", basename(f)))) |
      file.exists(paste0("output/normalized_templates/flagged/soft_stop/clowder_missing/",gsub(".xlsx", "_normalized.xlsx", basename(f))))
@@ -68,10 +74,17 @@ for(i in seq_len(length(fileList))){
   # }
   ######insert loop over fileList logic########
   message("Normalizing file (", i, "/", length(fileList),"): ", f, "...", Sys.time())
-  #Create/clear log entry for filename
-  log_CvT_doc_load(f, m=NULL, reset=TRUE)
   #Load Documents Sheet
   doc_sheet_list = load_sheet_group(fileName = f, template_path = template_path) 
+  
+  # Check for empty template sheets
+  if(check_empty_sheet(doc_sheet_list)){
+    log_CvT_doc_load(f, m="empty_sheet")  
+    next
+  }
+
+  #Create/clear log entry for filename
+  log_CvT_doc_load(f, m=NULL, reset=TRUE)
   #Check if file already loaded
   #
   #

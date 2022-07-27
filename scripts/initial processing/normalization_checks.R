@@ -371,3 +371,14 @@ check_required_fields <- function(df, f){
     }
   }
 }
+
+#'@description Function to check if any sheet of loaded template is empty
+#'@param template List of loaded template sheets
+#'
+#'@return Boolean TRUE or FALSE if an empty sheet exists
+check_empty_sheet <- function(template){
+  for(s in template){
+    if(!nrow(s)) return(TRUE)
+  }
+  return(FALSE)
+}

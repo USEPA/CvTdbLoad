@@ -26,7 +26,11 @@ chems <- lapply(fileList[!grepl("^~", fileList)], function(x){
   fn=x
   #Document PMID, other_study_identifier
   doc = tryCatch({
-    readxl::read_xlsx(fn, sheet="Documents") %>% select(doc_id=id, pmid, other_study_identifier) %>% distinct()
+    readxl::read_xlsx(fn, sheet="Documents") %>% 
+      select(doc_id=id, document_type, pmid, other_study_identifier) %>% 
+      mutate(pmid = as.character(pmid),
+             other_study_identifier = as.character(other_study_identifier)) %>%
+      distinct()
     },
     error = function(e){ 
       problem_docs = append(problem_docs, x)
@@ -36,7 +40,14 @@ chems <- lapply(fileList[!grepl("^~", fileList)], function(x){
   #Studies test_substance_name  
   st = tryCatch({
     readxl::read_xlsx(fn, sheet="Studies") %>% 
-      select(study_id=id, fk_reference_document_id, test_substance_name, test_substance_name_secondary, test_substance_casrn) %>% 
+      select(study_id=id, fk_reference_document_id, test_substance_name, 
+             test_substance_name_secondary, test_substance_casrn) %>% 
+      mutate(across(c("test_substance_name", 
+                      "test_substance_name_secondary", "test_substance_casrn"), 
+                    ~as.character(.)),
+             fk_reference_document_id = as.numeric(fk_reference_document_id),
+             # Every study comes from the extraction document of type 1
+             fk_extraction_document_id = doc$doc_id[doc$document_type == 1]) %>%
       distinct()
     },
     error = function(e){
@@ -48,6 +59,8 @@ chems <- lapply(fileList[!grepl("^~", fileList)], function(x){
   se = tryCatch({
     readxl::read_xlsx(fn, sheet="Series") %>% 
       select(fk_study_id, analyte_name, analyte_name_secondary, analyte_casrn) %>% 
+      mutate(across(c("analyte_name", "analyte_name_secondary", "analyte_casrn"), 
+                    ~as.character(.))) %>%
       distinct()
     },
     error = function(e){
@@ -58,8 +71,11 @@ chems <- lapply(fileList[!grepl("^~", fileList)], function(x){
   
   #Combine into unique chemical list by document identifiers
   out = tryCatch({
-    left_join(doc, st, by=c("doc_id"="fk_reference_document_id")) %>%
-    left_join(se, by=c("study_id"="fk_study_id")) %>%
+    se %>%
+      left_join(st, by=c("fk_study_id"="study_id")) %>%
+      left_join(doc, by=c("fk_extraction_document_id"="doc_id")) %>%
+      #left_join(st, by=c("doc_id"="fk_reference_document_id")) %>%
+      #left_join(se, by=c("study_id"="fk_study_id")) %>%
       #select(-id) %>%
     # data.frame(chemical_name = append(st$test_substance_name, se$analyte_name), 
     #            chemical_name_secondary = append(st$test_substance_name_secondary,
@@ -79,7 +95,10 @@ chems <- lapply(fileList[!grepl("^~", fileList)], function(x){
   return(out)
 }) %>% 
   purrr::compact() %>%
-  bind_rows()
+  bind_rows() %>%
+  # Due to the use of extraction_id vs. reference_id, some extraneous records match
+  # Just need those that do match based on extraction_document_id
+  filter(!is.na(fk_study_id))
 
 #Process for batch searching
 #Assign unique record ID
