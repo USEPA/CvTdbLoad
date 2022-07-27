@@ -34,20 +34,26 @@ delCol <- function(df, delCol){
   return(df[, !names(df) %in% delCol])
 }
 
-#"L:\\Lab\\NCCT_ExpoCast\\ExpoCast2021\\CvT-CompletedTemplates\\Format QA\\0_to_qa_format\\Needs Admin Check"
-#"L:\\Lab\\NCCT_ExpoCast\\ExpoCast2021\\CvT-CompletedTemplates\\Format QA\\0_to_qa_format\\Needs Further Curation"
-#"L:\\Lab\\NCCT_ExpoCast\\ExpoCast2021\\CvT-CompletedTemplates\\Format QA\\0_to_qa_format\\Reviewer Disagreement"
-#"L:\\Lab\\NCCT_ExpoCast\\ExpoCast2021\\CvT-CompletedTemplates\\Format QA\\1_qa_format_complete"
-#"L:\\Lab\\NCCT_ExpoCast\\ExpoCast2021\\CvT-CompletedTemplates\\Format QA\\0_to_qa_format\\toQA"
+#"L:\\Lab\\NCCT_ExpoCast\\ExpoCast2022\\CvT-CompletedTemplates\\Format QA\\0_to_qa_format\\Needs Admin Check"
+#"L:\\Lab\\NCCT_ExpoCast\\ExpoCast2022\\CvT-CompletedTemplates\\Format QA\\0_to_qa_format\\Needs Further Curation"
+#"L:\\Lab\\NCCT_ExpoCast\\ExpoCast2022\\CvT-CompletedTemplates\\Format QA\\0_to_qa_format\\Reviewer Disagreement"
+#"L:\\Lab\\NCCT_ExpoCast\\ExpoCast2022\\CvT-CompletedTemplates\\Format QA\\1_qa_format_complete"
+#"L:\\Lab\\NCCT_ExpoCast\\ExpoCast2022\\CvT-CompletedTemplates\\Format QA\\0_to_qa_format\\toQA"
 
-f_list = list.files("L:\\Lab\\NCCT_ExpoCast\\ExpoCast2021\\CvT-CompletedTemplates\\Format QA",
+f_list = list.files("L:\\Lab\\NCCT_ExpoCast\\ExpoCast2022\\CvT-CompletedTemplates\\Format QA",
                     pattern=".xlsx",#"_CvT_", 
                     full.names = TRUE,
                     recursive = TRUE)
-f_list = f_list[!grepl("qa_log", f_list)]
+f_list = f_list[!grepl("qa_log|template_metadata_qa|template_normalization_log|normalized_templates|log_template_initials|2_pushed", f_list)]
+
+f_list = list.files("L:\\Lab\\NCCT_ExpoCast\\ExpoCast2022\\PKWG-CompletedTemplates\\PCBs",
+                    pattern=".xlsx",#"_CvT_", 
+                    full.names = TRUE,
+                    recursive = TRUE)
+f_list = f_list[grepl("template_version", f_list)]
 #f_list = list.files("C:\\Users\\JWALL01\\Desktop\\CvT Japan", full.names = TRUE)
 #Load template
-template_path = "L:\\Lab\\NCCT_ExpoCast\\ExpoCast2021\\CvT-CompletedTemplates\\CvT_data_template_articles.xlsx"
+template_path = "L:\\Lab\\NCCT_ExpoCast\\ExpoCast2022\\CvT-CompletedTemplates\\CvT_data_template_articles.xlsx"
 template = tryCatch({
   template_sheets = readxl::excel_sheets(template_path)
   lapply(template_sheets, function(s){
@@ -60,7 +66,7 @@ error=function(cond){ message("...Error: ", cond); return(NULL) }
 bad_doc = list()
 for(f_path in f_list){
   message(" --- Checking File: ", f_path, "---")
-  #f_path = "L:\\Lab\\NCCT_ExpoCast\\ExpoCast2021\\CvT-CompletedTemplates\\Format QA\\1_qa_format_complete\\PMID1855490_CvT_data_template_articles_MH.xlsx"
+  #f_path = "L:\\Lab\\NCCT_ExpoCast\\ExpoCast2022\\CvT-CompletedTemplates\\Format QA\\1_qa_format_complete\\PMID1855490_CvT_data_template_articles_MH.xlsx"
   f = tryCatch({
     load_file(f_path)},
     error=function(cond){
@@ -131,7 +137,9 @@ for(f_path in f_list){
                          id=list(neighbor="document_type", after=FALSE),
                          other_study_identifier=list(neighbor="pmid", after=TRUE),
                          url=list(neighbor="title", after=TRUE),
-                         curator_comment=list(neighbor="url", after=TRUE)
+                         curator_comment=list(neighbor="url", after=TRUE),
+                         extracted=list(neighbor="other_study_identifier", after=TRUE)
+                         
       ),
       "Studies" = list(fk_reference_document_id=list(neighbor="test_substance_name", after=FALSE),
                        author_comment=list(neighbor="curator_comment", after=FALSE),
@@ -146,7 +154,9 @@ for(f_path in f_list){
                        #dermal_dose_vehicle=list(neighbor="curator_comment", after=TRUE),
                        test_substance_name_secondary=list(neighbor="test_substance_name", after=TRUE),
                        test_substance_casrn=list(neighbor="test_substance_name_secondary", after=TRUE),
-                       dose_duration_units=list(neighbor="dose_duration", after=TRUE)
+                       dose_duration_units=list(neighbor="dose_duration", after=TRUE),
+                       administration_term=list(neighbor="dose_duration", after=FALSE),
+                       administration_term_units=list(neighbor="administration_term", after=TRUE)
                        ),
       "Series" = list(figure_type=list(neighbor="figure_name", after=TRUE),
                       log_conc_units=list(neighbor="conc_units", after=TRUE),
@@ -157,7 +167,8 @@ for(f_path in f_list){
                       x_max=list(neighbor="figure_series_identifier", after=TRUE),
                       x_min=list(neighbor="figure_series_identifier", after=TRUE),
                       analyte_name_secondary=list(neighbor="analyte_name", after=TRUE),
-                      analyte_casrn=list(neighbor="analyte_name_secondary", after=TRUE)
+                      analyte_casrn=list(neighbor="analyte_name_secondary", after=TRUE),
+                      curator_comment=list(neighbor="conc_medium", after=TRUE)
         
       ),
       "Subjects" = list(age_units=list(neighbor="age", after=TRUE),
@@ -210,10 +221,10 @@ for(f_path in f_list){
     next
   }
   #Add document ID and type
-  f$Documents$id = 1:nrow(f$Documents)
+  #f$Documents$id = 1:nrow(f$Documents)
   if(nrow(f$Documents) == 1){#Only for single docs
     f$Documents$document_type = 1  
   }
   #Write changes back to file
-  #writexl::write_xlsx(x=f, path=f_path)
+  writexl::write_xlsx(x=f, path=f_path)
 }
