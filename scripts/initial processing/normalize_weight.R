@@ -12,6 +12,7 @@ normalize_weight <- function(raw, f){
   #     mutate(doc = f)
   # }) %>%
   #   bind_rows()
+  # tmp$species = normalize_species(tmp$species)
   if(!nrow(raw)){#Empty dataframe
     message("...normalize_weight dataframe empty...returning...")
     return(raw)

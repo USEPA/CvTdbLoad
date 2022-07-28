@@ -9,18 +9,17 @@
 normalize_dose <- function(raw, f){
   message("...normalizing dose...")
   #message("Normalize_dose is still in development...")
-  # tmp = lapply(fileList, function(f){
-  #   s_list = load_sheet_group(fileName = f, template_path = template_path)
-  #   s_list$Series %>%
-  #     left_join(s_list$Studies, by=c("fk_study_id"="id")) %>%
-  #     left_join(s_list$Subjects, by=c("fk_subject_id"="id")) %>%
-  #     select(species, subtype, weight, weight_units, height, height_units, #Needed for weight extrapolation
-  #            test_substance_name, dose_level, dose_level_units, dose_volume, administration_route, dose_duration, dose_duration_units) %>%
-  #     distinct() %>%
-  #     mutate(file=f)
-  # 
-  # }) %>%
-  #   bind_rows()
+  tmp = lapply(fileList, function(f){
+    s_list = load_sheet_group(fileName = f, template_path = template_path)
+    s_list$Series %>%
+      left_join(s_list$Studies, by=c("fk_study_id"="id")) %>%
+      left_join(s_list$Subjects, by=c("fk_subject_id"="id")) %>%
+      select(species, subtype, weight, weight_units, height, height_units, #Needed for weight extrapolation
+             test_substance_name, dose_level, dose_level_units, dose_volume, administration_route, dose_duration, dose_duration_units) %>%
+      distinct() %>%
+      mutate(file=f)
+  }) %>%
+    bind_rows()
   # tmp = normalize_weight(raw=tmp, f=f)
   # tmp = normalize_height(raw=tmp, f=f)
   if(!nrow(raw)){#Empty dataframe
@@ -34,7 +33,7 @@ normalize_dose <- function(raw, f){
   out$raw$dose_level_normalized = out$raw$dose_level
   #out$raw$dose_level_units_original = out$raw$dose_level_units
   #Remove species and "body weight" from units field
-  out$raw$dose_level_units = gsub(paste0(c("body weight", "bw",
+  out$raw$dose_level_units = gsub(paste0(c("body weight", "bw", "b.w.",
                                            paste0("/",out$raw$species %>% unique()),
                                            out$raw$species %>% unique()), collapse="|"), 
                                   "",
@@ -61,7 +60,7 @@ normalize_dose <- function(raw, f){
     log_CvT_doc_load(f=f, m="dose_conversion_needed_concentration")
   }
   #Radioactive units flag
-  out$radioactive = out$raw %>% filter(grepl("MBq", dose_level_units))
+  out$radioactive = out$raw %>% filter(grepl("MBq|uCi", dose_level_units))
   out$raw = out$raw %>% filter(!tempID %in% out$radioactive$tempID)
   if(nrow(out$radioactive)){
     log_CvT_doc_load(f=f, m="dose_conversion_needed_radioactive")
@@ -79,7 +78,7 @@ normalize_dose <- function(raw, f){
     log_CvT_doc_load(f=f, m="dose_conversion_gas_liquid")
   }
   #Surface area conversion needed
-  out$surface_area_needed = out$raw %>% filter(grepl("/cm2", dose_level_units))
+  out$surface_area_needed = out$raw %>% filter(grepl("/cm2|/cm\\^|/m\\^", dose_level_units))
   out$raw = out$raw %>% filter(!tempID %in% out$surface_area_needed$tempID)
   if(nrow(out$surface_area_needed)){
     log_CvT_doc_load(f=f, m="dose_conversion_needed_surface_area")
@@ -125,11 +124,20 @@ normalize_dose <- function(raw, f){
   out$convert_ready = bind_rows(out$conversion, out$ci, out$unit_range)
   out$conversion = NULL; out$ci = NULL; out$unit_range = NULL
   for(i in seq_len(nrow(out$convert_ready))){
+    #Molecular Weight conversion (have to find MW first)
+    MW=NA
+    if(grepl("mol/", out$convert_ready[i,]$dose_level_units)){
+      MW = tryCatch({httk::get_physchem_param("MW", chem.name=tolower(out$convert_ready[i,]$test_substance_name))},
+                    error=function(cond){NA})
+      
+    }
     #NEED subject weight to convert!
     out$convert_ready[i,] = convert_units(x=out$convert_ready[i,], 
-                                          num="dose_level_normalized", 
-                                          units="dose_level_units", desired="mg/kg",
-                                          overwrite_units = FALSE)
+                                          num="dose_level_normalized",
+                                          units="dose_level_units", 
+                                          desired="mg/kg",
+                                          overwrite_units = FALSE,
+                                          MW=MW)
   }
   #Remove empty list elements
   out = out[sapply(out, nrow) > 0]

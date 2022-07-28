@@ -331,7 +331,7 @@ convert_units <- function(x, num, units, desired, MW=NA, overwrite_units=FALSE){
               kg = list(kg="/1"), #Only care to convert to kg for all weights
               g = list(mg="*1000", kg="/1000"),
               ug = list(mg="/1000"),
-             `µg` = list(mg="/1000"),
+              `µg` = list(mg="/1000"),
               mg = list(mg="/1", kg="/1000000"),
               lb = list(kg="/2.2"),
               mm = list(cm="/10"), #Only care to convert to cm for all heights
@@ -343,7 +343,8 @@ convert_units <- function(x, num, units, desired, MW=NA, overwrite_units=FALSE){
               min=list(hr="/60"),
               hr=list(hr="/1"),
               `mg/kg`=list(`mg/kg`="/1", `ug/ml`=paste0("*", MW)), #1 mg/kg*MW kg/L*1L/1000mL*1000ug/mg=ug/mL --> using httk density value for MW variable (refactor name)
-              `ug/kg`=list(`mg/kg`="/1000"),
+              `ug/kg`=list(`mg/kg`="/1000", `ug/ml`=paste0("*", MW, "/1000")),
+              `µg/kg` = list(`ug/ml`=paste0("*", MW, "/1000")), 
               `g/kg`=list(`mg/kg`="*1000"),
               `ug/250 g`=list(`mg/kg`="*4/1000"),
               `ug/ml`=list(`ug/ml`="/1"),
@@ -351,14 +352,17 @@ convert_units <- function(x, num, units, desired, MW=NA, overwrite_units=FALSE){
               `ng/ml`=list(`ug/ml`="/1000"),
               `ng/l`=list(`ug/ml`="/1000000"),
               `mg/ml`=list(`ug/ml`="*1000"),
-             `mg/l`=list(`ug/ml`="/1"),
+              `mg/l`=list(`ug/ml`="/1"),
               ppm=list(`ug/ml`="/1"), #1 ppm = 1 ug/mL
               ppbv = list(`ug/ml`="/1000"), #1 ppb = 0.001 ug/mL,
+              ppb = list(`ug/ml`="/1000"), #1 ppb = 0.001 ug/mL,
               `nmol/l` = list(`ug/ml`=paste0("*",MW,"/1000000")), #1 nmol/L*(1mol/1000000000nmol)*(MW g/1mol)*(1000000ug/1g)*(1L/1000mL)=1*MW/1000000
+              `nmol/ml` = list(`ug/ml`=paste0("*",MW,"/1000")),
+              `nmoles/ml` = list(`ug/ml`=paste0("*",MW,"/1000")),
               `umol/l` = list(`ug/ml`=paste0("*",MW,"/1000")), #1000 less than nmol/l conversion 
               `pmol/ml` = list(`ug/ml`=paste0("*",MW,"/1000000")), #1 pmol/ml*(1mol/1000000000000pmol)*(MW g/1mol)*(1000000ug/1g)=1*MW/1000000
-             `ug/g` = list(`ug/ml`=paste0("*", MW)), #1 ug/g*1000g/kg*MW kg/L*1L/1000mL=ug/mL --> using httk density value for MW variable (refactor name)
-             `ug/kg` = list(`ug/ml`=paste0("*", MW, "/1000"))
+              `ug/g` = list(`ug/ml`=paste0("*", MW)), #1 ug/g*1000g/kg*MW kg/L*1L/1000mL=ug/mL --> using httk density value for MW variable (refactor name)
+              `umol/kg` = list(`mg/kg`= paste0("*", MW, "/1000")) # MW is g/mol, which is the same as mg/mmol or ug/umol
               )
   #Convert units based on input string equation
   if(is.null(conv[[x[[units]]]][[desired]])){
@@ -425,7 +429,8 @@ extract_units <- function(x, units_col, conv_col, unit_type){
                       gsub("old", "", .) %>%
                       #https://stackoverflow.com/questions/24173194/remove-parentheses-and-text-within-from-strings-in-r/24173271
                       gsub("\\s*\\([^\\)]+\\)","", .) %>%
-                      gsub(">|<|at least", "", .)))
+                      gsub(">|<|at least", "", .)
+                    ))
   }
   
   #Remove empty list elements
@@ -456,20 +461,20 @@ convert_units_grepl <- function(unit_type){
                                      "in", "inch", "inches",
                                      "ft", "foot", "feet")
                          ),
-         "age" = list(week = "week|wk|wks",
-                      year = "years old|year|yr",
-                      day = "day|GD|gestation",
-                      month = "month",
+         "age" = list(week = "week|weeks|wk|wks",
+                      year = "years old|year|years|yr|yrs",
+                      day = "day|days|GD|gestation",
+                      month = "month|months",
                       rm_list = c("week", "weeks","wk","wks",
                                   "month",
                                   "years","year","-year","yr","yrs",
                                   "day","days","GD","gestational day","gestational days")),
-         "dose_duration" = list(day = "day|GD",
-                                week = "week|wk|wks",
-                                month = "month",
+         "dose_duration" = list(day = "day|days|GD",
+                                week = "week|weeks|wk|wks",
+                                month = "month|months",
                                 min = "min|mins",
-                                hr = "hour|hr|hrs|h",
-                                s = "sec|s",
+                                hr = "hour|hours|hr|hrs|h",
+                                s = "sec|s|second|seconds",
                                 rm_list= c("within", "day",
                                            "week", "wk", "wks",
                                            "month",

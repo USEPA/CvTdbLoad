@@ -17,12 +17,13 @@ get_unique_conc_medium <- function(fileList, template_path){
     unique() %>%
     #Attempt match
     left_join(get_conc_medium_dict(), by="conc_medium_original") %>%
-    filter(is.na(conc_medium_normalized)) %>%
+    filter(is.na(conc_medium_normalized),
+           !is.na(conc_medium_original)) %>%
     select(conc_medium_original, conc_medium_normalized)
   
   #Output to file for curation
   if(nrow(out)){
-    writexl::write_xlsx(out %>% select(-id), paste0("input/conc_medium/conc_medium_to_curate_",Sys.Date(),".xlsx"))  
+    writexl::write_xlsx(out, paste0("input/conc_medium/conc_medium_to_curate_",Sys.Date(),".xlsx"))  
   } else {
     message("...No new concentration media to curate...returning...")
   }
