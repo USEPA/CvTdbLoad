@@ -8,6 +8,7 @@ normalize_age <- function(raw, f){
   #     mutate(doc = f)
   # }) %>%
   #   bind_rows()
+  # tmp$species = normalize_species(tmp$species)
   if(!nrow(raw)){#Empty dataframe
     message("...normalize_age dataframe empty...returning...")
     return(raw)
@@ -23,7 +24,7 @@ normalize_age <- function(raw, f){
   #Cases where units were extracted into age_category column
   out$raw$age_units[is.na(out$raw$age_units)] = out$raw$age_category[is.na(out$raw$age_units)]
   out$raw = extract_units(x=out$raw, units_col="age_units", conv_col="age_normalized", unit_type="age")
-  
+  out$raw$age_units_original = out$raw$age_units
   #Extrapolate age
   out = norm_extrapolate(x=out, f=f, extrap_type="age")
   #Missing units
@@ -40,6 +41,8 @@ normalize_age <- function(raw, f){
   #   log_CvT_doc_load(f=f, m="no_species_age_category_match")
   # }
   out$raw = out$raw %>% filter(!tempID %in% out$unmatched_species$tempID)
+  #Normalize units
+  out$raw$age_units = normalize_age_units(out$raw$age_units)
   #Remove extraneous characters
   out$raw = out$raw %>%
     mutate(age_normalized = sub("mean=|old|between|GD|gestational|≥|avg", "", age_normalized) %>%
@@ -71,7 +74,7 @@ normalize_age <- function(raw, f){
   #Remove mapped dataframes
   out$ci = NULL; out$unit_range = NULL; out$to_convert = NULL
   if(nrow(out$mapped_age)){
-    out$mapped_age = map_age_category(x=out$mapped_age, dict=age_dict)  
+    out$mapped_age = map_age_category(x=out$mapped_age, dict=age_dict)
   }
   out$matching_err = out$mapped_age %>% filter(!tempID %in% out$mapped_age$tempID[out$mapped_age$age_category %in% names(age_dict)])
   out$mapped_age = out$mapped_age %>% filter(!tempID %in% out$matching_err$tempID)
@@ -96,7 +99,12 @@ normalize_age <- function(raw, f){
   })
   #Remove empty list elements
   out = out[sapply(out, nrow) > 0]
-  return(out %>% bind_rows() %>% arrange(tempID) %>% select(-tempID))
+  out %>% 
+    bind_rows() %>% 
+    dplyr::rename(age_units_normalized = age_units) %>%
+    arrange(tempID) %>% 
+    select(-tempID) %>% 
+    return()
   #Match to age category
   #Values represent the lower threshold for age inclusion in this category
   #Younger than infant was categorized "neonate"
@@ -124,6 +132,30 @@ map_age_category <- function(x, dict){
     #Find the first case where the age is > the category checked (in reverse order)
     x$age_category[i] = rev(names(m_dict %>% select(-unit)))[(which(x$age_normalized[i] >= rev(m_dict %>% select(-unit)))[1])]
   }
+  return(x)
+}
+
+normalize_age_units <- function(x){
+  #Convert time
+  x = tolower(x)
+  conv = list(s=list("s", "sec", "second", "seconds"),
+              min=list("min", "minute", "minutes"),
+              hr=list("hr","hour", "hours", "h"),
+              day=list("day", "days"),
+              week=list("week", "weeks", "wk", "wks"),
+              month=list("month", "months")
+  )
+  
+  x = lapply(x, function(s){
+    for(c in names(conv)){
+      if(!s %in% conv[[c]]){
+        next
+      } else {
+        return(c)  
+      }
+    }
+    return(s)
+  }) %>% unlist()
   return(x)
 }
 

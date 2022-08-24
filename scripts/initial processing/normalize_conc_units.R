@@ -33,12 +33,14 @@ normalize_conc <- function(raw, f){
                 "conc_lower_bound_original", "conc_upper_bound_original")
   out$raw[conc_cols] <- lapply(out$raw[conc_cols], 
                                function(x) replace(x, x %in% c("missing", "NA", "n/a"), NA))
-  #Remove evaluation symbols
+  
   out$raw = out$raw %>%
+    #Remove evaluation symbols
     mutate(conc_original=gsub(">|<|at least", "", conc_original),
-           #Remove conc_medium tags in units
-           conc_units_original = gsub(paste0(unique(out$raw$conc_medium), collapse="|"), "", 
-                                      conc_units_original) %>% trimws(.))
+           #Remove conc_medium tags and other extraneous terms in units
+           conc_units_original = gsub(paste0(c("tissue concentration", "[()]", unique(out$raw$conc_medium)), collapse="|"), "", 
+                                      conc_units_original) %>%
+             trimws(.))
   
   #Create normalization columns                                                                       
   out$raw = out$raw %>% mutate(conc=conc_original,
@@ -86,6 +88,7 @@ normalize_conc <- function(raw, f){
   out$per_weight = out$convert_ready %>% 
     filter(grepl("/kg|/g|/mg|/ng|/ug", conc_units_original)) %>%
     convert_mass_per_mass()
+  out$convert_ready = out$convert_ready %>% filter(!tempID %in% out$per_weight$tempID)
   #Try to normalize
   #Filter out ones that didn't get normalized
   #Add them back to the convert_ready list

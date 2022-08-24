@@ -6,7 +6,7 @@ normalize_species <- function(x){
   conv = list(dog=list("dog", "dogs"),
               human=list("human", "humans", "female", "male", "females", "males", "woman", "women", "man", "men"),
               mouse=list("mouse", "mice", "mouses"),
-              `nonhuman primate`=list("nonhuman primate", "monkey", "primate", "monkies", "monkeys",
+              `monkey`=list("nonhuman primate", "monkey", "primate", "monkies", "monkeys",
                                       "rhesus monkeys (macaca mulatta)", "rhesus monkeys",
                                       "cynomolgus monkeys (macaca fascicularis)"),
               rat=list("rat", "rats"),
