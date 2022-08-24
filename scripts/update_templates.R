@@ -51,6 +51,11 @@ f_list = list.files("L:\\Lab\\NCCT_ExpoCast\\ExpoCast2022\\PKWG-CompletedTemplat
                     full.names = TRUE,
                     recursive = TRUE)
 f_list = f_list[grepl("template_version", f_list)]
+
+f_list = list.files("L:\\Lab\\NCCT_ExpoCast\\ExpoCast2022\\PKWG-CompletedTemplates\\CvT_completed_templates\\PFAS_PIP",
+                    pattern=".xlsx", 
+                    full.names = TRUE,
+                    recursive = TRUE)
 #f_list = list.files("C:\\Users\\JWALL01\\Desktop\\CvT Japan", full.names = TRUE)
 #Load template
 template_path = "L:\\Lab\\NCCT_ExpoCast\\ExpoCast2022\\CvT-CompletedTemplates\\CvT_data_template_articles.xlsx"
@@ -160,6 +165,7 @@ for(f_path in f_list){
                        ),
       "Series" = list(figure_type=list(neighbor="figure_name", after=TRUE),
                       log_conc_units=list(neighbor="conc_units", after=TRUE),
+                      conc_cumulative=list(neighbor="conc_units", after=TRUE),
                       lod=list(neighbor="loq_units", after=TRUE),
                       lod_units=list(neighbor="lod", after=TRUE),
                       y_max=list(neighbor="figure_series_identifier", after=TRUE),

@@ -14,6 +14,27 @@ connect_to_CvT = function(){
     return()
 }
 
+#'@description A helper function to query cvt and receive the results. 
+#'Handles errors/warnings with tryCatch.
+#'@param query A SQL query string to query the database with
+#'@import DBI dplyr magrittr
+#'@return Dataframe of database query results
+query_cvt <- function(query=NULL){
+  if(is.null(query)) return(message("...Must provide a query to send"))
+  con = connect_to_CvT()
+  query_result = tryCatch({
+    dbGetQuery(con, query)
+    #dbSendQuery(con, query) %T>% #run query
+    #{ dbFetch(.) ->> tmp } %>% #save intermediate variable, critical tee-operator
+    #  dbClearResult() #clear result
+    #tmp #return query results
+  },
+  error=function(cond){ message("...Error message: ", cond); return(NA) },
+  warning=function(cond){ message("...Warning message: ", cond); return(NULL) },
+  finally={ dbDisconnect(con) })
+  return(query_result)
+}
+
 push_tbl_to_db <- function(dat=NULL, tblName=NULL, fieldTypes=NULL, overwrite=FALSE,
                            customSQL=NULL, append=FALSE){
   if(is.null(dat)) stop("Error: User must provide data to write to database")

@@ -199,27 +199,6 @@ load_database_sheet_group <- function(docID, template_path){
   }
 }
 
-#'@description A helper function to query cvt and receive the results. 
-#'Handles errors/warnings with tryCatch.
-#'@param query A SQL query string to query the database with
-#'@import DBI dplyr magrittr
-#'@return Dataframe of database query results
-query_cvt <- function(query=NULL){
-  if(is.null(query)) return(message("...Must provide a query to send"))
-  con = connect_to_CvT()
-  query_result = tryCatch({
-    dbGetQuery(con, query)
-    #dbSendQuery(con, query) %T>% #run query
-    #{ dbFetch(.) ->> tmp } %>% #save intermediate variable, critical tee-operator
-    #  dbClearResult() #clear result
-    #tmp #return query results
-  },
-  error=function(cond){ message("...Error message: ", cond); return(NA) },
-  warning=function(cond){ message("...Warning message: ", cond); return(NULL) },
-  finally={ dbDisconnect(con) })
-  return(query_result)
-}
-
 log_CvT_doc_load <- function(f, m=NULL, reset=FALSE){
   if(file.exists("output\\template_normalization_log.xlsx")){
     log = readxl::read_xlsx("output\\template_normalization_log.xlsx")
