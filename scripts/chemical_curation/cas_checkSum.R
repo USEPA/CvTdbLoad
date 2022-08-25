@@ -41,8 +41,8 @@
 cas_checkSum <- function(x, checkLEN = TRUE) {
   # Skip checking NA inputs
   if(is.na(x)) {
-    warning("Returning NA values for NA inputs for cas_checkSum")
-    return(x)
+    #warning("Returning NA values for NA inputs for cas_checkSum")
+    return(rep(NA, length(x)))
   }
   
   if(!is.character(x)) {
