@@ -4,13 +4,18 @@
 #unique list across the study and series sheets (difference in dosed vs. analyte)
 library(dplyr); library(readxl); library(purrr)
 #outputDir = "L:\\Lab\\NCCT_ExpoCast\\ExpoCast2021\\CvT-CompletedTemplates\\Format QA"
-outputDir = "L:/Lab/NCCT_ExpoCast/ExpoCast2021/CvT-CompletedTemplates/Format QA/1_qa_format_complete"
-fileList = list.files(outputDir, full.names = TRUE, pattern=".xlsx")
-fileList = fileList[!grepl("~|normalized_", fileList)] #Remove tmp files
-fileList = c("L:/Lab/NCCT_ExpoCast/ExpoCast2021/CvT-CompletedTemplates/Format QA/0_to_qa_format/toQA/20210501_SPU_rat_PK-CvT_No4_77chem_clc_AJ.xlsx",
-             "L:/Lab/NCCT_ExpoCast/ExpoCast2021/CvT-CompletedTemplates/Format QA/0_to_qa_format/toQA/20210106_SPU_rat_PK-CvT_No1_159chem_CRT2020_0c00009(Kamiya et al)_clc_AJ.xlsx")
+# outputDir = "L:/Lab/NCCT_ExpoCast/ExpoCast2021/CvT-CompletedTemplates/Format QA/1_qa_format_complete"
+# fileList = list.files(outputDir, full.names = TRUE, pattern=".xlsx")
+# # 2020 Dermal Data Files
+# fileList = fileList[!grepl("~|normalized_", fileList)] #Remove tmp files
+# # Showa Data Files
+# fileList = c("L:/Lab/NCCT_ExpoCast/ExpoCast2021/CvT-CompletedTemplates/Format QA/0_to_qa_format/toQA/20210501_SPU_rat_PK-CvT_No4_77chem_clc_AJ.xlsx",
+#              "L:/Lab/NCCT_ExpoCast/ExpoCast2021/CvT-CompletedTemplates/Format QA/0_to_qa_format/toQA/20210106_SPU_rat_PK-CvT_No1_159chem_CRT2020_0c00009(Kamiya et al)_clc_AJ.xlsx")
+# PKWG_PCB Files
 fileList = c("L:\\Lab\\NCCT_ExpoCast\\ExpoCast2022\\PKWG-CompletedTemplates\\CvT_completed_templates\\PCB\\Complete") %>%
   list.files(full.names = TRUE, pattern=".xlsx")
+# Update what to label output files
+runLabel = "PKWG_PCB"
 #outputDir = "L:\\Lab\\NCCT_ExpoCast\\ExpoCast2021\\CvT-CompletedTemplates\\Format QA\\0_to_qa_format\\Needs Admin Check"
 #f_list = list.files(outputDir, pattern="_CvT_")
 
@@ -127,7 +132,6 @@ raw = rbind(test_chems, analyte_chems)
 # Load required functions 
 # Use ToxVal functions to clean chemical information
 invisible(sapply(list.files("scripts/chemical_curation/", full.name=TRUE),source,.GlobalEnv))
-"L:\Lab\HEM\T_Wall_Projects_FY20\cvtdb\scripts\chemical_curation\get_unique_chemicals_toxval.R"
 # Clean primary name and casrn pair
 cleaned_primary = rbind(clean_chems(test_chems,
                             id.cols=c("pmid", "other_study_identifier")),
@@ -147,8 +151,7 @@ cleaned_secondary = rbind(clean_chems(test_chems,
   # Filter out empty chemical record
   filter(!is.na(raw_casrn) | !is.na(raw_name))
 
-
 #Recombine and export
 #writexl::write_xlsx(cleaned, paste0("input/chemicals/cvt_to_curate_unique_chemicals_", Sys.Date(),".xlsx"))
-writexl::write_xlsx(cleaned_primary, paste0("input/chemicals/PKWG_PCB_chems_for_DSSTOX_", Sys.Date(),".xlsx"))
-writexl::write_xlsx(cleaned_secondary, paste0("input/chemicals/PKWG_PCB_chems_secondary_for_DSSTOX_", Sys.Date(),".xlsx"))
+writexl::write_xlsx(cleaned_primary, paste0("input/chemicals/",runLabel,"_chems_for_DSSTOX_", Sys.Date(),".xlsx"))
+writexl::write_xlsx(cleaned_secondary, paste0("input/chemicals/",runLabel,"_chems_secondary_for_DSSTOX_", Sys.Date(),".xlsx"))

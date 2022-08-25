@@ -63,53 +63,53 @@ chem.check <- function(res0,
             select(original=n0, escaped=n1, cleaned=n2) %>%
             mutate(checksum = NA))
   # Flag difference found
-  if(any(res0$n2 != res0$n0)) name.OK = FALSE
+  if(!all(is.na(res0$n0))){
+    # Only check if not all NA
+    if(any(res0$name_diff[!is.na(res0$name_diff)])) name.OK = FALSE
+  }
   # Replace original with cleaned string
   res0[[name.col]] = res0$n2
 ################################################################################
   cat("\n>>> Deal with CASRN\n")
   # TO DO: Vectorize with tiydr
-  # res0 = res0 %>%
-  #   mutate(n0 = !!sym(casrn.col),
-  #          n1 = iconv(n0,from="UTF-8",to="ASCII//TRANSLIT"),
-  #          n2 = stringi::stri_escape_unicode(n1) %>%
-  #            fix.casrn(),
-  #          cs = cas_checkSum(n2)
-  #   )
+  res0 = res0 %>%
+    rowwise() %>%
+    mutate(n0 = !!sym(casrn.col),
+           # Convert UFT8 to escape special characters/symbols
+           n1 = iconv(n0,from="UTF-8",to="ASCII//TRANSLIT"),
+           n2 = stringi::stri_escape_unicode(n1) %>%
+             fix.casrn(),
+           cs = n2 %>% 
+             cas_checkSum() %>%
+             # Replace with 0 if NA
+             ifelse(is.na(.), 0, .),
+           # Check if any CAS values were changed
+           cas_diff = ((n2 != n0) | 
+                          (!is.na(n2) & is.na(n0)) |
+                          (is.na(n2) & !is.na(n0)))
+    )
+  # Log changes or checksum fails
+  ccheck = ccheck %>%
+    rbind(res0 %>% 
+            # There is a difference between original and cleaned
+            filter(cas_diff == TRUE | cs == 0) %>%
+            select(original=n0, escaped=n1, cleaned=n2, checksum=cs))
   
-  for(i in 1:nrow(res0)) {
-    n0 = res0[[i,casrn.col]]
-    if(is.na(n0)) next # Skip NA CAS
-    
-    n1 = iconv(n0,from="UTF-8",to="ASCII//TRANSLIT")
-    n2 = stringi::stri_escape_unicode(n1)
-    n2 = fix.casrn(n2)
-    cs = cas_checkSum(n2)
-    if(is.na(cs)) cs = 0
-    if(verbose) cat("2>>> Orig: ",n0, " | encoded: ", n1, " | cleaned: ", n2, " | checksum: ", cs,"\n")
-    if(n2!=n0) {
-      res0[i,casrn.col] = n2
-      row[1,1] = n0
-      row[1,2] = n1
-      row[1,3] = n2
-      row[1,4] = cs
-      ccheck = rbind(ccheck,row)
-      casrn.OK = FALSE
-    }
-    if(!cs) {
-      row[1,1] = n0
-      row[1,2] = n1
-      row[1,3] = NA
-      row[1,4] = cs
-      ccheck = rbind(ccheck,row)
-      checksum.OK = FALSE
-      cat("bad checksum:",n0,n1,"\n")
-    }
-    if(i%%status_bar==0) cat(" chemcheck casrn: finished ",i," out of ",nrow(res0),"\n")
+  #res0 = data.frame(n0=c(1, NA), n2 = c(1, NA))
+  
+  # Flag difference found
+  if(!all(is.na(res0$n0))){
+    # Only check if not all NA
+    if(any(res0$cas_diff[!is.na(res0$cas_diff)])) casrn.OK = FALSE    
   }
+  if(any(res0$cs == 0)) checksum.OK = FALSE
+  # Replace original with cleaned string
+  res0[[casrn.col]] = res0$n2
+  # Log only unique cases
   ccheck = unique(ccheck)
+  # Create log directory if doesn't exist
   if(!dir.exists("input/chemcheck")) dir.create("input/chemcheck")
-  
+  # Export log if entries exist
   if(!is.null(ccheck)){
     if(nrow(ccheck)){
       # Need to come up with file naming convention to better log which 
@@ -117,13 +117,15 @@ chem.check <- function(res0,
       writexl::write_xlsx(ccheck, paste0("input/chemcheck/chemchecklog_", format(Sys.time(), "%Y%m%d_%H%M%S"), ".xlsx"))
     } 
   }
-
-  if(!name.OK) cat("Some names fixed\n")
-  else cat("All names OK\n")
-  if(!casrn.OK) cat("Some casrn fixed\n")
-  else cat("All casrn OK\n")
-  if(!checksum.OK) cat("Some casrn have bad checksums\n")
-  else cat("All checksums OK\n")
+  # Report to user if verbose
+  if(verbose){
+    if(!name.OK) cat("Some names fixed\n")
+    else cat("All names OK\n")
+    if(!casrn.OK) cat("Some casrn fixed\n")
+    else cat("All casrn OK\n")
+    if(!checksum.OK) cat("Some casrn have bad checksums\n")
+    else cat("All checksums OK\n")  
+  }
   # Return cleaned chemical information with flags
   return(list(res0=res0,name.OK=name.OK,casrn.OK=casrn.OK,checksum.OK=checksum.OK))
 }
