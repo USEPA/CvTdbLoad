@@ -136,6 +136,9 @@ map_age_category <- function(x, dict){
 }
 
 normalize_age_units <- function(x){
+  if(!length(x)){
+    return(x)
+  }
   #Convert time
   x = tolower(x)
   conv = list(s=list("s", "sec", "second", "seconds"),
@@ -143,7 +146,8 @@ normalize_age_units <- function(x){
               hr=list("hr","hour", "hours", "h"),
               day=list("day", "days"),
               week=list("week", "weeks", "wk", "wks"),
-              month=list("month", "months")
+              month=list("month", "months"),
+              year=list("year", "years", "yr", "yrs")
   )
   
   x = lapply(x, function(s){
