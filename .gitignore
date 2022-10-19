@@ -49,3 +49,6 @@ scripts/httk/
 
 # ignore output files
 output/
+
+# Ignore CvT Curation Temp Files
+CvT Curation/

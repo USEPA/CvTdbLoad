@@ -134,19 +134,19 @@ raw = rbind(test_chems, analyte_chems)
 invisible(sapply(list.files("scripts/chemical_curation/", full.name=TRUE),source,.GlobalEnv))
 # Clean primary name and casrn pair
 cleaned_primary = rbind(clean_chems(test_chems,
-                            id.cols=c("pmid", "other_study_identifier")),
+                            id.cols=c("pmid", "other_study_identifier", "file")),
                 clean_chems(analyte_chems,
-                            id.cols=c("pmid", "other_study_identifier"))) %>%
+                            id.cols=c("pmid", "other_study_identifier", "file"))) %>%
   distinct() %>%
   # Filter out empty chemical record
   filter(!is.na(raw_casrn) | !is.na(raw_name))
 # Clean secondary name and casrn pair
 cleaned_secondary = rbind(clean_chems(test_chems,
                                       name.col = "name_secondary",
-                                      id.cols=c("pmid", "other_study_identifier")),
+                                      id.cols=c("pmid", "other_study_identifier", "file")),
                           clean_chems(analyte_chems,
                                       name.col = "name_secondary",
-                                      id.cols=c("pmid", "other_study_identifier"))) %>%
+                                      id.cols=c("pmid", "other_study_identifier", "file"))) %>%
   distinct() %>%
   # Filter out empty chemical record
   filter(!is.na(raw_casrn) | !is.na(raw_name))
