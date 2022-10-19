@@ -46,11 +46,11 @@ f_list = list.files("L:\\Lab\\NCCT_ExpoCast\\ExpoCast2022\\CvT-CompletedTemplate
                     recursive = TRUE)
 f_list = f_list[!grepl("qa_log|template_metadata_qa|template_normalization_log|normalized_templates|log_template_initials|2_pushed", f_list)]
 
-f_list = list.files("L:\\Lab\\NCCT_ExpoCast\\ExpoCast2022\\PKWG-CompletedTemplates\\PCBs",
+f_list = list.files("L:\\Lab\\NCCT_ExpoCast\\ExpoCast2022\\PKWG-CompletedTemplates\\CvT_completed_templates\\PCB",
                     pattern=".xlsx",#"_CvT_", 
                     full.names = TRUE,
                     recursive = TRUE)
-f_list = f_list[grepl("template_version", f_list)]
+f_list = f_list[grepl("HERO", f_list)]
 
 f_list = list.files("L:\\Lab\\NCCT_ExpoCast\\ExpoCast2022\\PKWG-CompletedTemplates\\CvT_completed_templates\\PFAS_PIP",
                     pattern=".xlsx", 
@@ -161,7 +161,8 @@ for(f_path in f_list){
                        test_substance_casrn=list(neighbor="test_substance_name_secondary", after=TRUE),
                        dose_duration_units=list(neighbor="dose_duration", after=TRUE),
                        administration_term=list(neighbor="dose_duration", after=FALSE),
-                       administration_term_units=list(neighbor="administration_term", after=TRUE)
+                       administration_term_units=list(neighbor="administration_term", after=TRUE),
+                       dose_volume_units=list(neighbor="dose_volume", after=TRUE)
                        ),
       "Series" = list(figure_type=list(neighbor="figure_name", after=TRUE),
                       log_conc_units=list(neighbor="conc_units", after=TRUE),
