@@ -10,7 +10,8 @@ get_unique_conc_medium <- function(fileList, template_path){
     s_list = load_sheet_group(fileName = f, template_path = template_path)
     s_list$Series %>% select(conc_medium) %>% unique() %>% unlist() %>% unname()
   }) %>% 
-    unlist()
+    unlist() %>%
+    unique()
   #Prep for matching
   out = data.frame(conc_medium_original = cm) %>%
     mutate(conc_medium_original = trimws(tolower(conc_medium_original))) %>%
@@ -56,7 +57,8 @@ update_conc_medium_dict <- function(dict_file){
       filter(!is.na(conc_medium_normalized), conc_medium_normalized != "NA") %>%
       anti_join(get_conc_medium_dict() %>% 
                   select(conc_medium_original, conc_medium_normalized) %>%
-                  mutate(conc_medium_original = trimws(tolower(conc_medium_original))))
+                  mutate(conc_medium_original = trimws(tolower(conc_medium_original)))) %>%
+      select(conc_medium_original, conc_medium_normalized)
     
     push_tbl_to_db(dat=new,
                    tblName="conc_medium_dict",

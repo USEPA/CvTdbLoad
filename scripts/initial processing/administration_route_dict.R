@@ -12,7 +12,8 @@ get_unique_administration_route <- function(fileList, template_path){
     s_list = load_sheet_group(fileName = f, template_path = template_path)
     s_list$Studies %>% select(administration_route) %>% unique() %>% unlist() %>% unname()
   }) %>% 
-    unlist()
+    unlist() %>%
+    unique()
   #Prep for matching
   out = data.frame(administration_route_original = ar) %>%
     mutate(administration_route_original = trimws(tolower(administration_route_original))) %>%
