@@ -1,5 +1,4 @@
 
-
 #'@description Helper function to get the administration route dictionary form the CvT database
 get_administration_route_dict <- function(){
   return(query_cvt("SELECT * FROM cvt.administration_route_dict"))
@@ -8,20 +7,21 @@ get_administration_route_dict <- function(){
 get_unique_administration_route <- function(fileList, template_path){
   #Get administration route from files
   ar = lapply(fileList, function(f){
-    message(f)
     s_list = load_sheet_group(fileName = f, template_path = template_path)
-    s_list$Studies %>% select(administration_route) %>% unique() %>% unlist() %>% unname()
+    s_list$Studies %>% 
+      select(administration_route_original = administration_route) %>% 
+      unique() %>%
+      mutate(filepath = f)
   }) %>% 
-    unlist() %>%
-    unique()
+    dplyr::bind_rows()
   #Prep for matching
-  out = data.frame(administration_route_original = ar) %>%
+  out = ar %>%
     mutate(administration_route_original = trimws(tolower(administration_route_original))) %>%
-    unique() %>%
+    distinct() %>%
     #Attempt match
     left_join(get_administration_route_dict(), by="administration_route_original") %>%
     filter(is.na(administration_route_normalized)) %>%
-    select(administration_route_original, administration_route_normalized)
+    select(filepath, administration_route_original, administration_route_normalized)
   
   #Output to file for curation
   if(nrow(out)){

@@ -8,19 +8,21 @@ get_unique_conc_medium <- function(fileList, template_path){
   #Get administration route from files
   cm = lapply(fileList, function(f){
     s_list = load_sheet_group(fileName = f, template_path = template_path)
-    s_list$Series %>% select(conc_medium) %>% unique() %>% unlist() %>% unname()
+    s_list$Series %>% 
+      select(conc_medium_original = conc_medium) %>% 
+      unique() %>%
+      mutate(filepath = f)
   }) %>% 
-    unlist() %>%
-    unique()
+    dplyr::bind_rows()
   #Prep for matching
-  out = data.frame(conc_medium_original = cm) %>%
+  out = cm %>%
     mutate(conc_medium_original = trimws(tolower(conc_medium_original))) %>%
     unique() %>%
     #Attempt match
     left_join(get_conc_medium_dict(), by="conc_medium_original") %>%
     filter(is.na(conc_medium_normalized),
            !is.na(conc_medium_original)) %>%
-    select(conc_medium_original, conc_medium_normalized)
+    select(filepath, conc_medium_original, conc_medium_normalized)
   
   #Output to file for curation
   if(nrow(out)){
