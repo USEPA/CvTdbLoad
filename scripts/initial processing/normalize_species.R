@@ -34,10 +34,11 @@ get_unique_species_to_curate <- function(fileList, template_path){
     s_list = load_sheet_group(fileName = f, template_path = template_path)
     s_list$Subjects %>% select(species) %>% unique() %>% unlist() %>% unname()
   }) %>% 
-    unlist()
+    unlist() %>%
+    unique()
   
   out = normalize_species(spec) %>%
     unique()
-  return(out[!out %in% c("dog", "human", "mouse", "nonhuman primate", 
+  return(out[!out %in% c("dog", "human", "mouse", "monkey", 
                          "rat", "rabbit", "guinea pig", "frog")])
 }

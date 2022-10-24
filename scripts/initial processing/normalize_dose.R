@@ -9,17 +9,17 @@
 normalize_dose <- function(raw, f){
   message("...normalizing dose...")
   #message("Normalize_dose is still in development...")
-  tmp = lapply(fileList, function(f){
-    s_list = load_sheet_group(fileName = f, template_path = template_path)
-    s_list$Series %>%
-      left_join(s_list$Studies, by=c("fk_study_id"="id")) %>%
-      left_join(s_list$Subjects, by=c("fk_subject_id"="id")) %>%
-      select(species, subtype, weight, weight_units, height, height_units, #Needed for weight extrapolation
-             test_substance_name, dose_level, dose_level_units, dose_volume, administration_route, dose_duration, dose_duration_units) %>%
-      distinct() %>%
-      mutate(file=f)
-  }) %>%
-    bind_rows()
+  # tmp = lapply(fileList, function(f){
+  #   s_list = load_sheet_group(fileName = f, template_path = template_path)
+  #   s_list$Series %>%
+  #     left_join(s_list$Studies, by=c("fk_study_id"="id")) %>%
+  #     left_join(s_list$Subjects, by=c("fk_subject_id"="id")) %>%
+  #     select(species, subtype, weight, weight_units, height, height_units, #Needed for weight extrapolation
+  #            test_substance_name, dose_level, dose_level_units, dose_volume, administration_route, dose_duration, dose_duration_units) %>%
+  #     distinct() %>%
+  #     mutate(file=f)
+  # }) %>%
+  #   bind_rows()
   # tmp = normalize_weight(raw=tmp, f=f)
   # tmp = normalize_height(raw=tmp, f=f)
   if(!nrow(raw)){#Empty dataframe
