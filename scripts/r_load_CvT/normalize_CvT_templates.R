@@ -13,8 +13,8 @@ invisible(sapply(file_source[!grepl("get_unique_chemicals|_dict|log_", file_sour
 ###Main Script Section
 ################################################################################
 # outputDir = "L:/Lab/NCCT_ExpoCast/ExpoCast2022/CvT-CompletedTemplates/Format QA/0_to_qa_format/Needs Admin Check"#"QA Complete/"#"../QA CvT/QA Complete/"
-outputDir = "L:\\Lab\\NCCT_ExpoCast\\ExpoCast2022\\PKWG-CompletedTemplates\\CvT_completed_templates\\PFAS_PIP"
-# outputDir = "L:/Lab/NCCT_ExpoCast/ExpoCast2022/CvT-CompletedTemplates/Format QA/1_qa_format_complete"
+# outputDir = "L:\\Lab\\NCCT_ExpoCast\\ExpoCast2022\\PKWG-CompletedTemplates\\CvT_completed_templates\\PFAS_PIP"
+outputDir = "L:/Lab/NCCT_ExpoCast/ExpoCast2022/CvT-CompletedTemplates/Format QA/1_qa_format_complete"
 template_path = "L:/Lab/NCCT_ExpoCast/ExpoCast2022/CvT-CompletedTemplates/CvT_data_template_articles.xlsx"
 sheetList = c("Documents", "Studies", "Subjects", "Series", "Conc_Time_Values")
 curated_chemicals = "input/chemicals/curated_chemicals_comparison_2021-11-23.xlsx"
@@ -184,6 +184,6 @@ for(i in seq_len(length(fileList))){
 }
 
 message("Sorting files")
-reorganize_file_flags()
+# reorganize_file_flags()
 
 message("Done...", Sys.time())
