@@ -32,7 +32,8 @@ match_clowder_docs <- function(df=NULL, dsID=NULL, apiKey=NULL){
     filter(!is.na(clowder_file_id))
   
   df = df %>%
-    filter(!id %in% other_match$id)
+    filter(!id %in% other_match$id) %>%
+    mutate(clowder_file_id = NA)
   
   # Recombine and return
   rbind(df, pmid_match, other_match) %>%

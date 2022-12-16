@@ -13,7 +13,7 @@ invisible(sapply(file_source[!grepl("get_unique_chemicals|_dict|log_", file_sour
 ###Main Script Section
 ################################################################################
 # outputDir = "L:/Lab/NCCT_ExpoCast/ExpoCast2022/CvT-CompletedTemplates/Format QA/0_to_qa_format/Needs Admin Check"#"QA Complete/"#"../QA CvT/QA Complete/"
-outputDir = "L:\\Lab\\NCCT_ExpoCast\\ExpoCast2022\\PKWG-CompletedTemplates\\CvT_completed_templates\\PCB"
+outputDir = "L:\\Lab\\NCCT_ExpoCast\\ExpoCast2022\\PKWG-CompletedTemplates\\CvT_completed_templates\\PFAS_PIP"
 # outputDir = "L:/Lab/NCCT_ExpoCast/ExpoCast2022/CvT-CompletedTemplates/Format QA/1_qa_format_complete"
 template_path = "L:/Lab/NCCT_ExpoCast/ExpoCast2022/CvT-CompletedTemplates/CvT_data_template_articles.xlsx"
 sheetList = c("Documents", "Studies", "Subjects", "Series", "Conc_Time_Values")
@@ -30,7 +30,7 @@ if(apiKey == "" | dsID == "") stop("Must provide apiKey and dataset ID to match 
 #Push 1 document at a time because of the need to pull unique ID values auto-generated
 #when pushed to a database table
 fileList = list.files(outputDir, full.names = TRUE, pattern=".xlsx", recursive=TRUE)
-fileList = fileList[!grepl("~|_normalize|Needs Admin|Needs Further|Reviewer Dis|needs_edits|Copy of|_log|template_metadata|Rejected", fileList)] #Remove tmp files
+fileList = fileList[!grepl("~|_normalize|Needs Admin|Needs Further|Reviewer Dis|needs_edits|Copy of|_log|template_metadata|Rejected|pdfs", fileList)] #Remove tmp files
 
 if(!dir.exists("output/normalized_templates")){
   if(!dir.exists("output")) dir.create("output")
@@ -50,9 +50,9 @@ if(!dir.exists("output/normalized_templates")){
 }
 
 for(i in seq_len(length(fileList))){
-  if(i <= 85){#Quick skip/restart logic
-    next
-  }
+  # if(i <= 85){#Quick skip/restart logic
+  #   next
+  # }
   f = fileList[i]
   #Skip already normalized template
   if(file.exists(paste0("output/normalized_templates/",gsub(".xlsx", "_normalized.xlsx", basename(f)))) |

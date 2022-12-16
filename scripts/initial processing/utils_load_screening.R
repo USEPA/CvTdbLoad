@@ -254,8 +254,8 @@ reorganize_file_flags <- function(){
                       "Hard Stop (Need Split)" = "output/normalized_templates/flagged/hard_stop/need_split/",
                       "Hard Stop (Impossible Value)" = "output/normalized_templates/flagged/hard_stop/impossible_value/",
                       "Hard Stop (Conversion Failed)" = "output/normalized_templates/flagged/hard_stop/conversion_failed/",
-                      "Hard Stop (Empty Sheet)" = "output/normalized_templates/flagged/hard_stop/conversion_failed/",
-                      "Soft Stop (Conversion Needed)" = "output/normalized_templates/flagged/soft_stop/empty_sheet/",
+                      "Hard Stop (Empty Sheet)" = "output/normalized_templates/flagged/hard_stop/empty_sheet/",
+                      "Soft Stop (Conversion Needed)" = "output/normalized_templates/flagged/soft_stop/conversion_needed/",
                       "Soft Stop (Dictionary Update)" = "output/normalized_templates/flagged/soft_stop/dictionary_update/",
                       "Soft Stop (Clowder Doc Missing)" = "output/normalized_templates/flagged/soft_stop/clowder_missing/"
         )

@@ -78,12 +78,12 @@ run_dup_comparison <- function(f = NULL, limit = 50, template_path = NULL){
 }
 
 #####################################################################################
-# out = run_dup_comparison(f = "",
-#                          template_path = "L:/Lab/NCCT_ExpoCast/ExpoCast2022/CvT-CompletedTemplates/CvT_data_template_articles.xlsx")
-# save(out, file="output/CVTDB##_candidate_dups_20221202.RData")
-# 
-# docs = lapply(out, function(doc){
-#   doc$documents
-# }) %>% dplyr::bind_rows()
-# 
-# View(docs)
+out = run_dup_comparison(f = "L:\\Lab\\HEM\\T_Wall_Projects_FY20\\cvtdb\\CvT Curation\\Ice Box\\CVTDB-59\\CVTDB59_raw_dup_test_20221215.xlsx",
+                         template_path = "L:/Lab/NCCT_ExpoCast/ExpoCast2022/CvT-CompletedTemplates/CvT_data_template_articles.xlsx")
+save(out, file="output/CVTDB##_candidate_dups_20221215.RData")
+
+docs = lapply(out, function(doc){
+  doc$documents
+}) %>% dplyr::bind_rows()
+
+View(docs)
