@@ -10,9 +10,10 @@
 #' document ID information, and generates the template
 #' @param id A named list of document ID information to filter by
 #' @param template_path File path to latest template
-cvtdb_to_template <- function(id=NULL, template_path=NULL){
+cvtdb_to_template <- function(id=NULL, template_path=NULL, template_map=NULL){
   # Check parameters
   if(is.null(template_path)) stop("Must provide a 'template_path' so data may be formatted into it.")
+  if(is.null(template_map)) stop("Must provide a 'template_map' so data field names may be mapped as needed.")
   # Allowed document ID fields to filter by
   allowed_doc_id = c("id", "pmid", "other_study_identifier")
   if(is.null(id)) stop(paste0("Must provide document id information as named list of options: ", toString(allowed_doc_id)))
@@ -23,10 +24,19 @@ cvtdb_to_template <- function(id=NULL, template_path=NULL){
   
   # Pull data
   cvt_data = get_cvt_by_doc_id(id=id)
+  if(is.null(cvt_data)) {
+    message("No CVTDB data to pull for provided document ID information...")
+    return()
+  }
   # Load empty template to populate
   # template_path = "L:/Lab/NCCT_ExpoCast/ExpoCast2022/CvT-CompletedTemplates/CvT_data_template_articles.xlsx"
   cvt_template = get_cvt_template(template_path)
-  # Process pulled data into template format
+  # Template field map
+  # template_map = "input/template_map.xlsx"
+  map = readxl::read_xlsx(template_map)
+  # Process pulled data into template format and return
+  convert_cvt_to_template(in_dat = cvt_data, template = cvt_template, map = map) %>%
+    return()
 }
 
 #' get_cvt_template
@@ -49,10 +59,16 @@ get_cvt_by_doc_id <- function(id){
   cat("...getting document data...\n")
   doc_data = query_cvt(paste0("SELECT * FROM cvt.documents WHERE ", paste0(doc_filter, collapse = " AND ")) %>% 
                          stringr::str_squish())
+  # Check if any records matched the input identifiers
+  if(!nrow(doc_data)) return(NULL)
   cat("...getting study data...\n")
   study_data = query_cvt(paste0("SELECT * FROM cvt.studies WHERE fk_extraction_document_id in (", toString(doc_data$id), ")"))
   cat("...getting reference document data...\n")
-  ref_doc_data = query_cvt(paste0("SELECT * FROM cvt.documents WHERE id in (", toString(unique(study_data$fk_reference_document_id[!is.na(study_data$fk_reference_document_id)])), ")"))
+  if(length(unique(study_data$fk_reference_document_id[!is.na(study_data$fk_reference_document_id)]))){
+    ref_doc_data = query_cvt(paste0("SELECT * FROM cvt.documents WHERE id in (", toString(unique(study_data$fk_reference_document_id[!is.na(study_data$fk_reference_document_id)])), ")"))  
+  } else {
+    ref_doc_data = NULL
+  }
   cat("...getting series data...\n")
   series_data = query_cvt(paste0("SELECT * FROM cvt.series WHERE fk_study_id in (", toString(study_data$id), ")"))
   cat("...getting subject data...\n")
@@ -65,5 +81,36 @@ get_cvt_by_doc_id <- function(id){
        Subjects = subject_data,
        Series = series_data,
        Conc_Time_Values = conc_data) %>%
+    return()
+}
+
+convert_cvt_to_template <- function(in_dat=NULL, template=NULL, map=NULL){
+  # Map field names to template
+  in_dat = lapply(names(in_dat), function(s){
+    message("Working on sheet: ", s)
+    tmp = in_dat[[s]] %T>% {
+      # Have to map CvT database names back to the template (usually a _original stem)
+      message("...Renaming mapped variables...", Sys.time())
+      names(.)[names(.) %in% map$from[map$sheet == tolower(s)]] <- left_join(data.frame(from=names(.)[names(.) %in% 
+                                                                                                        map$from[map$sheet == tolower(s)]], 
+                                                                                        stringsAsFactors = F), 
+                                                                             map[map$sheet==tolower(s),], 
+                                                                             by = "from") %>% 
+        select(to) %>% 
+        mutate(to = as.character(to)) %>% 
+        unlist()
+      message("...Returning converted data...", Sys.time())
+    } %>% 
+      # Select all template fields that exist already (ensuring clowder_file_id included)
+      select(any_of(c(names(template[[s]]), "clowder_file_id")))
+    # Fill missing template fields (happens when template is updated compared to older uploaded version)
+    tmp[names(template[[s]])[!names(template[[s]]) %in% names(tmp)]] <- NA
+    # Return converted template sheet in template order (ensuring clowder_file_id included)
+    tmp %>% 
+      select(any_of(c(names(template[[s]]), "clowder_file_id"))) %>%
+      return()
+  }) %T>% {
+    names(.) <- names(in_dat)
+  } %>% 
     return()
 }
