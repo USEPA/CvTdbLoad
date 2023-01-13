@@ -12,10 +12,10 @@ library(dplyr); library(readxl); library(purrr)
 # fileList = c("L:/Lab/NCCT_ExpoCast/ExpoCast2021/CvT-CompletedTemplates/Format QA/0_to_qa_format/toQA/20210501_SPU_rat_PK-CvT_No4_77chem_clc_AJ.xlsx",
 #              "L:/Lab/NCCT_ExpoCast/ExpoCast2021/CvT-CompletedTemplates/Format QA/0_to_qa_format/toQA/20210106_SPU_rat_PK-CvT_No1_159chem_CRT2020_0c00009(Kamiya et al)_clc_AJ.xlsx")
 # PKWG_PCB Files
-fileList = c("L:\\Lab\\NCCT_ExpoCast\\ExpoCast2022\\PKWG-CompletedTemplates\\CvT_completed_templates\\PFAS_PIP") %>%
+fileList = c("L:\\Lab\\NCCT_ExpoCast\\ExpoCast2022\\PKWG-CompletedTemplates\\CvT_completed_templates\\PCB\\Complete") %>%
   list.files(full.names = TRUE, pattern=".xlsx")
 # Update what to label output files
-runLabel = "PKWG_PFAS_PIP"
+runLabel = "PKWG_PCB"
 #outputDir = "L:\\Lab\\NCCT_ExpoCast\\ExpoCast2021\\CvT-CompletedTemplates\\Format QA\\0_to_qa_format\\Needs Admin Check"
 #f_list = list.files(outputDir, pattern="_CvT_")
 

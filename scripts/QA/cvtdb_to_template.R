@@ -102,13 +102,21 @@ convert_cvt_to_template <- function(in_dat=NULL, template=NULL, map=NULL){
       message("...Returning converted data...", Sys.time())
     } %>% 
       # Select all template fields that exist already (ensuring clowder_file_id included)
-      select(any_of(c(names(template[[s]]), "clowder_file_id")))
+      select(any_of(c("id", names(template[[s]]), "clowder_file_id")))
     # Fill missing template fields (happens when template is updated compared to older uploaded version)
     tmp[names(template[[s]])[!names(template[[s]]) %in% names(tmp)]] <- NA
     # Return converted template sheet in template order (ensuring clowder_file_id included)
-    tmp %>% 
-      select(any_of(c(names(template[[s]]), "clowder_file_id"))) %>%
-      return()
+    tmp = tmp %>% 
+      select(any_of(c("id", names(template[[s]]), "clowder_file_id"))) %>%
+      # Add QC fields
+      mutate(qc_notes = NA,
+             qc_status = NA,
+             qc_flags = NA)
+    # Add reviewer LAN ID field
+    if(s == "Documents"){
+      tmp$qc_reviewer_lanid = NA
+    }
+    return(tmp)
   }) %T>% {
     names(.) <- names(in_dat)
   } %>% 
