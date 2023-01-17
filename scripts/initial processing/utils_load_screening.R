@@ -1,4 +1,4 @@
-#Script of various utility functions to screens/prep CvT data for loading
+# Script of various utility functions to screens/prep CvT data for loading
 require(DBI); require(dplyr); require(magrittr); require(tidyr); require(readxl)
 
 #'@description A function to load and pull all sheets from files in the specified directory.
