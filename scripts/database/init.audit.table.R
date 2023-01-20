@@ -1,13 +1,12 @@
 #--------------------------------------------------------------------------------------
 #' Create audit table and add BEFORE UPDATE audit triggers to source_* tables
 #'
-#' @param db the name of the database
+#' @param db_schema the schema of the database
 #' @export
 #--------------------------------------------------------------------------------------
-init.audit.table <- function(db){
+init.audit.table <- function(db_schema){
   # List of ID fields not to be added to JSON of audit
-  id_list = c("id", "version", "qc_status",
-              "rec_create_dt", "created_by", "updated_by", "rec_update_dt")
+  id_list = c("id", "qc_status", "qc_flags", "qc_notes", "version", "rec_create_dt", "created_by")
   # Load SQL file with audit table and trigger creation queries
   audit_sql = parse_sql_file("input/audit_sql/audit_init.sql") %T>%
     { names(.) <- c("create_audit", "bu_audit_trigger", "drop_bu_audit_trigger",
@@ -17,19 +16,22 @@ init.audit.table <- function(db){
   query_cvt(query=audit_sql$create_audit)
   
   # Get list of source tables to add triggers
-  tblList = runQuery(query = paste0("SHOW TABLES FROM ", db),
-                     db=db) %>% unlist() %>% unname() %>%
+  tblList = query_cvt(query=paste0("SELECT table_name FROM information_schema.tables WHERE table_schema = '",db_schema,"'")) %>%
+    unlist() %>% 
+    unname() %>%
     # Ignore those like audit
     .[!grepl("audit", .)]
   
   # Loop through each table, get fields for JSON, reparse SQL, run Statement
   for(s_tbl in tblList){
     cat("Applying audit trigger to ", s_tbl, "\n")
-    field_list = runQuery(query=paste0("SELECT * FROM ", s_tbl, " LIMIT 1"),
-                          db=db) %>%
+    field_list = query_cvt(query=paste0("SELECT * FROM ",db_schema,".", s_tbl, " LIMIT 1")) %>%
       names()
     # Update audit fields as needed
-    audit.update.fields(s_tbl=s_tbl, field_list=field_list, db=db)
+    audit.update.fields(s_tbl=s_tbl, field_list=field_list, db_schema=db_schema)
+    # Get updated field_list after audit updates
+    field_list = query_cvt(query=paste0("SELECT * FROM ",db_schema,".", s_tbl, " LIMIT 1")) %>%
+      names()
     # Remove ID fields (don't add to JSON record field of audit table)
     field_list = field_list[!field_list %in% id_list]
     # Parse custom trigger for source table and fields
@@ -46,7 +48,7 @@ init.audit.table <- function(db){
       paste0(#"DELIMITER // \n",
         ., "\nEND;")#// DELIMITER;")
     
-    # AFTER UPDATE TRIGGER
+    # BEFORE UPDATE TRIGGER 2: increment version enforcement
     src_bu_source_trigger = audit_sql$bu_source_trigger %>%
       # Insert source table name
       gsub("cvt_table|cvt_table_update", s_tbl, .) %>%
@@ -55,18 +57,16 @@ init.audit.table <- function(db){
         ., "\nEND;")#// DELIMITER;")
     
     # Drop trigger if exists already
-    runQuery(query=audit_sql$drop_bu_audit_trigger %>%
-               gsub("cvt_table", s_tbl, .),
-             db=db)
+    query_cvt(query=audit_sql$drop_bu_audit_trigger %>%
+               gsub("cvt_table", s_tbl, .))
     
     # Drop trigger if exists already
-    runQuery(query=audit_sql$drop_bu_source_trigger %>%
-               gsub("cvt_table", s_tbl, .),
-             db=db)
+    query_cvt(query=audit_sql$drop_bu_source_trigger %>%
+               gsub("cvt_table", s_tbl, .))
     
     # Apply trigger to table
-    runQuery(query=src_bu_audit_trigger, db=db)
-    runQuery(query=src_bu_source_trigger, db=db)
+    query_cvt(query=src_bu_audit_trigger)
+    query_cvt(query=src_bu_source_trigger)
   }
 }
 
@@ -74,47 +74,50 @@ init.audit.table <- function(db){
 #' @description Function to add/modify/delete select audit columns to source table
 #' @param s_tbl Source table name to apply changes to
 #' @param field_lsit List of current field names in source table
-#' @param db the name of the database
+#' @param db_schema the schema of the database
 #--------------------------------------------------------------------------------------
-audit.update.fields <- function(s_tbl, field_list, db){
+audit.update.fields <- function(s_tbl, field_list, db_schema){
   # Update rec_create_dt to always update timestamp
   if("rec_create_dt" %in% field_list){
-    runQuery(paste0("ALTER TABLE ",s_tbl,
-                    " MODIFY rec_create_dt datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP;"),
-             db)
+    query_cvt(query = paste0("ALTER TABLE ",db_schema, ".", s_tbl,
+                    " MODIFY rec_create_dt rec_create_dt timestamp default now();"))
   } else {
     # Add rec_create_dt if not present
-    runQuery(paste0("ALTER TABLE ", s_tbl,
-                    " ADD COLUMN rec_create_dt datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP;"),
-             db=db)
+    query_cvt(query = paste0("ALTER TABLE ",db_schema, ".", s_tbl,
+                    " ADD COLUMN rec_create_dt timestamp default now();"))
   }
   
   # Drop rec_update_dt
   if("rec_update_dt" %in% field_list){
-    runQuery(query = paste0("ALTER TABLE ",s_tbl," DROP COLUMN rec_update_dt;"),
-             db=db)
+    query_cvt(query = paste0("ALTER TABLE ",db_schema, ".", s_tbl," DROP COLUMN rec_update_dt;"))
   }
   
-  update_list = c("version", "qc_status", "qc_flags", "qc_notes") %>%
+  # Drop updated_by
+  if("updated_by" %in% field_list){
+    query_cvt(query = paste0("ALTER TABLE ",db_schema, ".", s_tbl," DROP COLUMN updated_by;"))
+    
+  }
+  
+  update_list = c("qc_status", "qc_flags", "qc_notes", "version") %>%
     .[!. %in% field_list]
   for(u in update_list){
     if(!u %in% field_list){
       query = switch(u,
                      # Add version
-                     version = paste0("ALTER TABLE ",s_tbl,
-                                      " ADD COLUMN version int(11) NOT NULL DEFAULT 1 AFTER curator_comment;"),
+                     version = paste0("ALTER TABLE ",db_schema, ".", s_tbl,
+                                      " ADD version integer DEFAULT 1 NOT NULL;"),
                      # Add qc_status
-                     qc_status = paste0("ALTER TABLE ", s_tbl,
-                                        " ADD COLUMN text DEFAULT NULL AFTER version;"),
+                     qc_status = paste0("ALTER TABLE ",db_schema, ".", s_tbl,
+                                        " ADD qc_status varchar(45) DEFAULT NULL;"),
                      # Add qc_flags
-                     qc_flags = paste0("ALTER TABLE ",s_tbl,
-                                       " ADD COLUMN qc_flags text DEFAULT NULL AFTER qc_status;"),
+                     qc_flags = paste0("ALTER TABLE ",db_schema, ".", s_tbl,
+                                       " ADD qc_flags text DEFAULT NULL;"),
                      # Add qc_notes
-                     qc_notes = paste0("ALTER TABLE ",s_tbl,
-                                       " ADD COLUMN qc_notes text DEFAULT NULL AFTER qc_flags;"),
+                     qc_notes = paste0("ALTER TABLE ",db_schema, ".", s_tbl,
+                                       " ADD qc_notes text DEFAULT NULL;"),
                      { NULL }
       )
-      runQuery(query=query, db=db)
+      query_cvt(query=query)
     }
   }
 }
