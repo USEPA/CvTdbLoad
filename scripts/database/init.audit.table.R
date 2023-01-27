@@ -9,8 +9,10 @@ init.audit.table <- function(db_schema){
   id_list = c("id", "qc_status", "qc_flags", "qc_notes", "version", "rec_create_dt", "created_by")
   # Load SQL file with audit table and trigger creation queries
   audit_sql = parse_sql_file("input/audit_sql/audit_init.sql") %T>%
-    { names(.) <- c("create_audit", "bu_audit_trigger", "drop_bu_audit_trigger",
-                    "bu_source_trigger", "drop_bu_source_trigger") }
+    { names(.) <- c("create_audit", "bu_audit_trigger", "bu_audit_trigger_function", 
+                    "drop_bu_audit_trigger", "drop_bu_audit_trigger_function",
+                    "bu_source_trigger", "bu_source_trigger_function", 
+                    "drop_bu_source_trigger", "drop_bu_source_trigger_function") }
   
   # Create audit table
   query_cvt(query=audit_sql$create_audit)
@@ -21,6 +23,15 @@ init.audit.table <- function(db_schema){
     unname() %>%
     # Ignore those like audit
     .[!grepl("audit", .)]
+  
+  # Drop increment trigger function
+  query_cvt(query=audit_sql$drop_bu_source_trigger_function)
+  # Apply increment trigger functions to database
+  query_cvt(query=audit_sql$bu_source_trigger_function)
+  # Check if it was applied appropriately
+  if(!query_cvt(query = "select exists(select * from pg_proc where proname = 'increment_version_set_user');")$exists){
+    stop("Issue creating increment_version_set_user function...")
+  }
   
   # Loop through each table, get fields for JSON, reparse SQL, run Statement
   for(s_tbl in tblList){
@@ -35,15 +46,21 @@ init.audit.table <- function(db_schema){
     # Remove ID fields (don't add to JSON record field of audit table)
     field_list = field_list[!field_list %in% id_list]
     # Parse custom trigger for source table and fields
+    
     # BEFORE UPDATE TRIGGER
     src_bu_audit_trigger = audit_sql$bu_audit_trigger %>%
+      # Insert source table name
+      gsub("cvt_table", s_tbl, .)
+    
+    # BEFORE UPDATE TRIGGER FUNCTION
+    src_bu_audit_trigger_function = audit_sql$bu_audit_trigger_function %>%
       # Insert source table name
       gsub("cvt_table", s_tbl, .) %>%
       # Format JSON
       gsub("JSON_OBJECT\\(\\)", paste0("JSON_OBJECT(",
-                                       paste0("'", field_list, "', OLD.`", field_list,
-                                              collapse="`, "),
-                                       "`)"),
+                                       paste0("'", field_list, "', OLD.", field_list,
+                                              collapse=", "),
+                                       ")"),
            .) %>%
       paste0(#"DELIMITER // \n",
         ., "\nEND;")#// DELIMITER;")
@@ -60,10 +77,15 @@ init.audit.table <- function(db_schema){
     query_cvt(query=audit_sql$drop_bu_audit_trigger %>%
                gsub("cvt_table", s_tbl, .))
     
-    # Drop trigger if exists already
-    query_cvt(query=audit_sql$drop_bu_source_trigger %>%
+    # Drop trigger function if exists already
+    query_cvt(query=audit_sql$drop_bu_audit_trigger_function %>%
                gsub("cvt_table", s_tbl, .))
     
+    # Apply custom audit function to database
+    query_cvt(query=src_bu_audit_trigger_function)
+    if(!query_cvt(query = "select exists(select * from pg_proc where proname = 'documents_audit_tbl_bu');")$exists){
+      stop("Issue creating increment_version_set_user function...")
+    }
     # Apply trigger to table
     query_cvt(query=src_bu_audit_trigger)
     query_cvt(query=src_bu_source_trigger)

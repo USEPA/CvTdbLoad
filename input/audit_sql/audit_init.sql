@@ -1,4 +1,4 @@
-create table cvt.cvt_audit
+create TABLE IF NOT EXISTS cvt.cvt_audit
 (
     id            integer                    not null
         constraint cvt_audit_pk
@@ -43,13 +43,17 @@ comment on constraint cvt_unq_tbl_id_name_version on cvt.cvt_audit is 'Enforce u
 
 -- Trigger for Before Update on dataset_details table
 -- https://mysql-0v34c10ck.blogspot.com/2011/06/how-to-disableenable-triggers-on-demand.html
-CREATE TRIGGER cvt_table_audit_bu BEFORE UPDATE ON cvt.cvt_table
-  FOR EACH ROW thisTrigger: BEGIN
-    IF ((@TRIGGER_CHECKS = FALSE)) THEN
-      LEAVE thisTrigger;
-    END IF;
+CREATE TRIGGER cvt_table_audit_bu
+BEFORE UPDATE ON cvt.cvt_table
+FOR EACH ROW
+-- WHEN (current_setting('TRIGGER_CHECKS', 't')::bool)
+EXECUTE PROCEDURE cvt.cvt_table_audit_tbl_bu();
 
-    INSERT INTO cvt_audit
+--audit_bu procedure function
+CREATE OR REPLACE FUNCTION cvt.cvt_table_audit_tbl_bu() RETURNS trigger AS
+    $$
+BEGIN
+    INSERT INTO cvt.cvt_audit
       (
   	  fk_table_id,
       fk_table_name,
@@ -60,7 +64,7 @@ CREATE TRIGGER cvt_table_audit_bu BEFORE UPDATE ON cvt.cvt_table
   	  version,
       rec_create_dt,
       created_by,
-      end_time
+      rec_end_dt
       )
       VALUES
       (
@@ -75,38 +79,36 @@ CREATE TRIGGER cvt_table_audit_bu BEFORE UPDATE ON cvt.cvt_table
       OLD.created_by,
       now()
       );
+END; $$ LANGUAGE plpgsql;
 
 -- Drop trigger if need be
-DROP TRIGGER IF EXISTS cvt_table_audit_bu ON cvt_table;
+DROP TRIGGER IF EXISTS cvt_table_audit_bu ON cvt.cvt_table;
 
--- BEFORE UPDATE trigger
-CREATE TRIGGER cvt_table_update_bu BEFORE UPDATE ON cvt.cvt_table_update
-  FOR EACH ROW thisTrigger: BEGIN
-    IF ((@TRIGGER_CHECKS = FALSE)) THEN
-      LEAVE thisTrigger;
-    END IF;
-
-    SET NEW.version = OLD.version + 1;
-      IF NEW.created_by is null THEN
-        SET NEW.created_by = USER();
-      END IF;
+-- Drop trigger function if need be
+DROP FUNCTION IF EXISTS cvt.cvt_table_audit_tbl_bu() CASCADE;
 
 -- Updated postgreSQL version, still need to check user defined variable boolean
-CREATE TRIGGER cvt_table_update_bu
-AFTER INSERT OR UPDATE ON cvt.documents
+CREATE TRIGGER cvt_table_update_version_bu
+BEFORE UPDATE ON cvt.cvt_table
 FOR EACH ROW
-WHEN (current_setting('TRIGGER_CHECKS'))
-EXECUTE PROCEDURE increment_version_set_user();
+-- WHEN (current_setting('TRIGGER_CHECKS'))
+EXECUTE PROCEDURE cvt.increment_version_set_user();
 
-CREATE FUNCTION increment_version_set_user() RETURNS trigger AS
+-- Trigger procedure function
+CREATE OR REPLACE FUNCTION cvt.increment_version_set_user() RETURNS trigger AS
     $$
 BEGIN
     NEW.version := OLD.version + 1;
     IF NEW.created_by is null THEN
-        SET NEW.created_by = USER;
+        NEW.created_by := current_user;
     END IF;
     RETURN NEW;
 END; $$ LANGUAGE plpgsql;
 
 -- Drop trigger if need be
-DROP TRIGGER IF EXISTS cvt_table_update_bu ON cvt_table;
+DROP TRIGGER IF EXISTS cvt_table_update_bu ON cvt.cvt_table;
+
+-- Drop trigger function if need be
+DROP FUNCTION IF EXISTS cvt.increment_version_set_user() CASCADE;
+
+
