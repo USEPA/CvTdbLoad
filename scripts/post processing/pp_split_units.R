@@ -14,6 +14,9 @@ pp_split_units <- function(schema_name){
     filter(!grepl("dict|chemical|audit|tk_param", table_name)) %>%
     .[[1]]
   
+  # Empty lists to store cases
+  unit_data = list()
+  unhandled = data.frame()
   # Loop through each table of interest
   for(tbl_n in tbl_list){
     message("Processing table: ", tbl_n)
@@ -25,30 +28,97 @@ pp_split_units <- function(schema_name){
       } %>%
       # Filter to units columns
       .[grepl("units", .)] %>%
-      # Prepare vector of potential fields to pull
-      c(., gsub("_units", "", .))
-    
-    # Remove fields without a numeric - unit field pair
-    if(any(!u_fields %in% tbl_n_names)){
-      u_fields = u_fields %>%
-        .[!grepl(paste0(.[!. %in% tbl_n_names], collapse="|"), .)]
-    }
+      # Create dataframe of matching fields
+      data.frame(value=gsub("_units", "", .), units=.) %>%
+      # Filter to only fields within the database table
+      filter(value %in% tbl_n_names, units %in% tbl_n_names)
     
     # Remove intermediate not needed
-    rm(tbl_n_names)
+    # rm(tbl_n_names)
   
-    if(!length(u_fields)) {
+    if(!nrow(u_fields)) {
       message("...No 'units' fields found in ", tbl_n, "...skipping...")
       next
     }
-      
-    # Select fields of interest 
-    tmp = query_cvt(paste0("SELECT id, ", u_fields %>%
-                             sort() %>%
-                             toString(), 
-                           " FROM ", schema_name, ".", tbl_n))
     
-    message("...Found records to review: ", nrow(tmp))
+    # Loop through each unit-value pair and normalize
+    for(r in seq_len(nrow(u_fields))){
+      # Select fields of interest 
+      tmp = query_cvt(paste0("SELECT id, ", 
+                             u_fields[r,] %>% unlist() %>% sort() %>% toString(), 
+                             " FROM ", schema_name, ".", tbl_n)) %>%
+        # Filter to those that contain unit strings in their value field
+        filter(grepl("[A-Za-z]", !!as.symbol(u_fields$value[r])),
+               # Value field must contain a numeric value
+               grepl("[0-9]", !!as.symbol(u_fields$value[r]))) %>%
+        dplyr::rename(tempID=id) %>%
+        # Add logic to count whitespace, filter out those with > 1
+        mutate(split_value := !!as.symbol(u_fields$value[r]) %>%
+                 stringr::str_squish(),
+               ws_count = stringr::str_count(split_value, "[:space:]"))
+      
+      out = list()
+      # Filter to simple split cases (start with numeric and only one whitespace)
+      out$simple_split = tmp %>%
+        filter(grepl("^[0-9]|^[\\.]|^[>]", split_value), 
+               ws_count == 1) %>%
+        tidyr::separate(split_value, into=c("split_value", "split_units"), sep=" ")
+      tmp = tmp %>% filter(!tempID %in% out$simple_split$tempID)
+      
+      # Handle years old units
+      out$years_old = tmp %>%
+        filter(grepl("years old|yo", split_value)) %>%
+        mutate(split_units = "years",
+               split_value = gsub("years old|yo", "", split_value) %>%
+                 stringr::str_squish())
+      tmp = tmp %>% filter(!tempID %in% out$years_old$tempID)
+      
+      # Handle or, +/-, etc.
+      out$range = tmp %>%
+        # Ensure it's numbers separated by or, +/-, or -
+        filter(grepl("[0-9] or [0-9]|[0-9] ± [0-9]|[0-9] - [0-9]", split_value))
+      if(nrow(out$range)){
+        out$range = out$range %>%
+          mutate(split_units = gsub("^.* ", "", split_value))
+        rem_u = unique(out$range$split_units)
+        # Regex to remove units from value field, order by character so "g" isn't removed before "kg"
+        out$range$split_value = gsub(paste0(rem_u[order(nchar(rem_u), rem_u, decreasing = TRUE)], collapse="|"), 
+                                     "", out$range$split_value) %>% 
+          stringr::str_squish()
+      }
+      tmp = tmp %>% filter(!tempID %in% out$range$tempID)
+      
+      # Case for 2.5-150.2g or equivalent with ranged whole or decimal numbers
+      out$range_2 = tmp %>%
+        # https://stackoverflow.com/questions/22658055/regular-expression-for-number-with-a-hyphen-and-a-decimal
+        filter(grepl("^[0-9]*.?[0-9]*-[0-9]*.?[0-9][A-za-z\\s]$", split_value)) %>%
+        mutate(split_units = sub("[0-9]*.?[0-9]*-[0-9]*.?[0-9]", "", split_value),
+               split_value = sub("[^0-9.-]", "", split_value))
+      tmp = tmp %>% filter(!tempID %in% out$range$tempID)
+      # TODO handle case like 72.6-90.7 kg (mean 83.1)
+      out$range_3 = tmp %>%
+        filter(grepl("^[0-9]*.?[0-9]*-[0-9]*.?[0-9][A-za-z\\s]+\\(", split_value))
+      
+      # Recombine for return
+      out = bind_rows(out)
+      # Append to output to review
+      if(nrow(out)){
+        unit_data[[paste0(tbl_n,"_",u_fields$value[r])]] = out  
+      }
+      
+      # Track unhandled cases
+      if(nrow(tmp)){
+        message("...Unhandled cases: ", tmp$split_value %>% unique() %>% toString())  
+        unhandled = tmp %>%
+          select(split_value) %>% 
+          unique() %>%
+          mutate(table_name = tbl_n, field_name = u_fields$value[r]) %>%
+          select(table_name, field_name, case=split_value) %>%
+          rbind(unhandled, .)
+      }
+    }
   }
   
+  unit_data$unhandled = unhandled
+  writexl::write_xlsx(unit_data, paste0("output/cvt_split_units_check_", Sys.Date(), ".xlsx"))
 }
