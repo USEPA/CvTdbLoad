@@ -23,8 +23,11 @@ parse_sql_file <- function(filepath = NULL){
   tmp_query = ""
   for(i in seq_len(length(raw_query))){
     tmp_query = paste(tmp_query, raw_query[i], sep=" ")
+    # if(grepl("\\+ 1;", tmp_query)){
+    #   stop("Found case")
+    # }
     # Check if has termination ; AND next line is not an IF statement
-    if(grepl(";", raw_query[i]) & !grepl("IF |IF;|SET |INSERT|comment|RETURN|END", raw_query[i+1])){
+    if(grepl(";", raw_query[i]) & !grepl("IF |IF;|SET |INSERT|comment|RETURN|END|\\+ 1;|now\\(\\);", raw_query[i+1])){
       clean_query = append(clean_query, tmp_query %>%
                              stringr::str_squish())
       tmp_query = ""

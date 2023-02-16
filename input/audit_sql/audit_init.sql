@@ -1,6 +1,6 @@
 create TABLE IF NOT EXISTS cvt.cvt_audit
 (
-    id            integer                    not null
+    id            serial                     not null
         constraint cvt_audit_pk
             primary key,
     fk_table_id   integer                    not null,
@@ -79,6 +79,7 @@ BEGIN
       OLD.created_by,
       now()
       );
+      RETURN NEW;
 END; $$ LANGUAGE plpgsql;
 
 -- Drop trigger if need be
@@ -99,8 +100,9 @@ CREATE OR REPLACE FUNCTION cvt.increment_version_set_user() RETURNS trigger AS
     $$
 BEGIN
     NEW.version := OLD.version + 1;
+    NEW.rec_create_dt = now();
     IF NEW.created_by is null THEN
-        NEW.created_by := current_user;
+        NEW.created_by = current_user;
     END IF;
     RETURN NEW;
 END; $$ LANGUAGE plpgsql;

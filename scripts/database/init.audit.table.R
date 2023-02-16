@@ -21,8 +21,8 @@ init.audit.table <- function(db_schema){
   tblList = query_cvt(query=paste0("SELECT table_name FROM information_schema.tables WHERE table_schema = '",db_schema,"'")) %>%
     unlist() %>% 
     unname() %>%
-    # Ignore those like audit
-    .[!grepl("audit", .)]
+    # Ignore those like audit, chemicals, dictionary, tk_parameters_* linker tables
+    .[!grepl("audit|dict|chemical|parameters_", .)]
   
   # Drop increment trigger function
   query_cvt(query=audit_sql$drop_bu_source_trigger_function)
@@ -57,10 +57,10 @@ init.audit.table <- function(db_schema){
       # Insert source table name
       gsub("cvt_table", s_tbl, .) %>%
       # Format JSON
-      gsub("JSON_OBJECT\\(\\)", paste0("JSON_OBJECT(",
+      gsub("JSON_OBJECT\\(\\)", paste0("JSON_OBJECT(ARRAY[",
                                        paste0("'", field_list, "', OLD.", field_list,
                                               collapse=", "),
-                                       ")"),
+                                       "])"),
            .) %>%
       paste0(#"DELIMITER // \n",
         ., "\nEND;")#// DELIMITER;")
@@ -83,8 +83,8 @@ init.audit.table <- function(db_schema){
     
     # Apply custom audit function to database
     query_cvt(query=src_bu_audit_trigger_function)
-    if(!query_cvt(query = "select exists(select * from pg_proc where proname = 'documents_audit_tbl_bu');")$exists){
-      stop("Issue creating increment_version_set_user function...")
+    if(!query_cvt(query = paste0("select exists(select * from pg_proc where proname = '",s_tbl,"_audit_tbl_bu');"))$exists){
+      stop(paste0("Issue creating ",s_tbl,"_audit_tbl_bu function..."))
     }
     # Apply trigger to table
     query_cvt(query=src_bu_audit_trigger)
@@ -101,8 +101,8 @@ init.audit.table <- function(db_schema){
 audit.update.fields <- function(s_tbl, field_list, db_schema){
   # Update rec_create_dt to always update timestamp
   if("rec_create_dt" %in% field_list){
-    query_cvt(query = paste0("ALTER TABLE ",db_schema, ".", s_tbl,
-                    " MODIFY rec_create_dt rec_create_dt timestamp default now();"))
+    query_cvt(paste0("ALTER TABLE ",db_schema,".", s_tbl," ALTER COLUMN rec_create_dt TYPE timestamp;"))
+    query_cvt(paste0("ALTER TABLE ",db_schema,".", s_tbl," ALTER COLUMN rec_create_dt SET DEFAULT now();"))
   } else {
     # Add rec_create_dt if not present
     query_cvt(query = paste0("ALTER TABLE ",db_schema, ".", s_tbl,
