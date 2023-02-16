@@ -73,6 +73,12 @@ pp_split_units <- function(schema_name){
                  stringr::str_squish())
       tmp = tmp %>% filter(!id %in% out$years_old$id)
       
+      # Handle weeks old units
+      out$weeks_old = tmp %>%
+        filter(grepl("weeks old", split_value)) %>%
+        separate(col=split_value, into=c("split_value", "split_units"), sep=" ", extra="merge")
+      tmp = tmp %>% filter(!id %in% out$weeks_old$id)
+      
       # Handle or, +/-, etc.
       out$range = tmp %>%
         # Ensure it's numbers separated by or, +/-, or -
@@ -95,20 +101,37 @@ pp_split_units <- function(schema_name){
         mutate(split_units = sub("[0-9]*.?[0-9]*-[0-9]*.?[0-9]", "", split_value),
                split_value = sub("[^0-9.-]", "", split_value))
       tmp = tmp %>% filter(!id %in% out$range_2$id)
-      # TODO handle case like 27.82 (2.13) g
+      # Handle case like 27.82 (2.13) g
       out$parenthetic_1 = tmp %>%
-        filter(grepl(") [A-Za-z]+$", split_value))
+        filter(grepl(") [A-Za-z]+$", split_value)) %>%
+        mutate(split_units = sub('.*\\)', '', split_value) %>%
+                 stringr::str_squish(),
+               split_value = sub('\\).*', ')', split_value) %>%
+                 stringr::str_squish())
       tmp = tmp %>% filter(!id %in% out$parenthetic_1$id)
-      # TODO handle case like 72.6-90.7 kg (mean 83.1)
+      # Handle case like 72.6-90.7 kg (mean 83.1)
       out$parenthetic_2 = tmp %>%
-        filter(grepl("[0-9] [A-Za-z]+\\s\\(mean", split_value))
+        filter(grepl("[0-9] [A-Za-z]+\\s\\(mean", split_value)) %>%
+        mutate(split_units = stringr::str_extract(split_value, "\\s[A-Za-z]+\\s\\(") %>%
+                 sub("\\($", "", .) %>%
+                 stringr::str_squish(),
+               split_value=sub("\\s[A-Za-z]+\\s\\(", " (", split_value) %>%
+                 stringr::str_squish())
       tmp = tmp %>% filter(!id %in% out$parenthetic_2$id)
-      # TODO handle case like 
+      # Handle case like 
       out$parenthetic_3 = tmp %>%
-        filter(grepl("[0-9] [A-Za-z]+\\s\\([0-9]*.?[0-9]*-[0-9]*.?[0-9]\\)$", split_value))
+        filter(grepl("[0-9] [A-Za-z]+\\s\\([0-9]*.?[0-9]*-[0-9]*.?[0-9]\\)$", split_value)) %>%
+        mutate(split_units = stringr::str_extract(split_value, "\\s[A-Za-z]+\\s\\(") %>%
+                 sub("\\($", "", .) %>%
+                 stringr::str_squish(),
+               split_value=sub("\\s[A-Za-z]+\\s\\(", " (", split_value) %>%
+                 stringr::str_squish())
+      
       tmp = tmp %>% filter(!id %in% out$parenthetic_3$id)
       # Recombine for return
-      out = bind_rows(out)
+      out = bind_rows(out) %>%
+        # Add table name
+        mutate(tbl_name = tbl_n)
       # Append to output to review
       if(nrow(out)){
         unit_data[[paste0(tbl_n,"_",u_fields$value[r])]] = out  
@@ -128,5 +151,6 @@ pp_split_units <- function(schema_name){
   }
   
   unit_data$unhandled = unhandled
+  message("Exporting results...")
   writexl::write_xlsx(unit_data, paste0("output/cvt_split_units_check_", Sys.Date(), ".xlsx"))
 }
