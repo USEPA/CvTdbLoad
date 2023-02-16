@@ -51,7 +51,7 @@ pp_split_units <- function(schema_name){
         filter(grepl("[A-Za-z]", !!as.symbol(u_fields$value[r])),
                # Value field must contain a numeric value
                grepl("[0-9]", !!as.symbol(u_fields$value[r]))) %>%
-        dplyr::rename(tempID=id) %>%
+        dplyr::rename(id=id) %>%
         # Add logic to count whitespace, filter out those with > 1
         mutate(split_value := !!as.symbol(u_fields$value[r]) %>%
                  stringr::str_squish(),
@@ -63,7 +63,7 @@ pp_split_units <- function(schema_name){
         filter(grepl("^[0-9]|^[\\.]|^[>]", split_value), 
                ws_count == 1) %>%
         tidyr::separate(split_value, into=c("split_value", "split_units"), sep=" ")
-      tmp = tmp %>% filter(!tempID %in% out$simple_split$tempID)
+      tmp = tmp %>% filter(!id %in% out$simple_split$id)
       
       # Handle years old units
       out$years_old = tmp %>%
@@ -71,7 +71,7 @@ pp_split_units <- function(schema_name){
         mutate(split_units = "years",
                split_value = gsub("years old|yo", "", split_value) %>%
                  stringr::str_squish())
-      tmp = tmp %>% filter(!tempID %in% out$years_old$tempID)
+      tmp = tmp %>% filter(!id %in% out$years_old$id)
       
       # Handle or, +/-, etc.
       out$range = tmp %>%
@@ -86,7 +86,7 @@ pp_split_units <- function(schema_name){
                                      "", out$range$split_value) %>% 
           stringr::str_squish()
       }
-      tmp = tmp %>% filter(!tempID %in% out$range$tempID)
+      tmp = tmp %>% filter(!id %in% out$range$id)
       
       # Case for 2.5-150.2g or equivalent with ranged whole or decimal numbers
       out$range_2 = tmp %>%
@@ -94,11 +94,19 @@ pp_split_units <- function(schema_name){
         filter(grepl("^[0-9]*.?[0-9]*-[0-9]*.?[0-9][A-za-z\\s]$", split_value)) %>%
         mutate(split_units = sub("[0-9]*.?[0-9]*-[0-9]*.?[0-9]", "", split_value),
                split_value = sub("[^0-9.-]", "", split_value))
-      tmp = tmp %>% filter(!tempID %in% out$range$tempID)
+      tmp = tmp %>% filter(!id %in% out$range_2$id)
+      # TODO handle case like 27.82 (2.13) g
+      out$parenthetic_1 = tmp %>%
+        filter(grepl(") [A-Za-z]+$", split_value))
+      tmp = tmp %>% filter(!id %in% out$parenthetic_1$id)
       # TODO handle case like 72.6-90.7 kg (mean 83.1)
-      out$range_3 = tmp %>%
-        filter(grepl("^[0-9]*.?[0-9]*-[0-9]*.?[0-9][A-za-z\\s]+\\(", split_value))
-      
+      out$parenthetic_2 = tmp %>%
+        filter(grepl("[0-9] [A-Za-z]+\\s\\(mean", split_value))
+      tmp = tmp %>% filter(!id %in% out$parenthetic_2$id)
+      # TODO handle case like 
+      out$parenthetic_3 = tmp %>%
+        filter(grepl("[0-9] [A-Za-z]+\\s\\([0-9]*.?[0-9]*-[0-9]*.?[0-9]\\)$", split_value))
+      tmp = tmp %>% filter(!id %in% out$parenthetic_3$id)
       # Recombine for return
       out = bind_rows(out)
       # Append to output to review
@@ -110,10 +118,10 @@ pp_split_units <- function(schema_name){
       if(nrow(tmp)){
         message("...Unhandled cases: ", tmp$split_value %>% unique() %>% toString())  
         unhandled = tmp %>%
-          select(split_value) %>% 
-          unique() %>%
+          # select(split_value) %>% 
+          # unique() %>%
           mutate(table_name = tbl_n, field_name = u_fields$value[r]) %>%
-          select(table_name, field_name, case=split_value) %>%
+          select(id, table_name, field_name, case=split_value) %>%
           rbind(unhandled, .)
       }
     }
