@@ -115,6 +115,10 @@ convert_cvt_to_template <- function(in_dat=NULL, template=NULL, map=NULL){
     # Add reviewer LAN ID field
     if(s == "Documents"){
       tmp$qc_reviewer_lanid = NA
+    } else if(s == "Conc_Time_Values"){
+      # Sort by fk_series and time values
+      tmp = tmp %>%
+        arrange(fk_series_id, time)
     }
     return(tmp)
   }) %T>% {
