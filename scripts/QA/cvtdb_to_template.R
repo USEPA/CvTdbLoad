@@ -10,6 +10,7 @@
 #' document ID information, and generates the template
 #' @param id A named list of document ID information to filter by
 #' @param template_path File path to latest template
+#' @param template_map Template field name map
 cvtdb_to_template <- function(id=NULL, template_path=NULL, template_map=NULL){
   # Check parameters
   if(is.null(template_path)) stop("Must provide a 'template_path' so data may be formatted into it.")
