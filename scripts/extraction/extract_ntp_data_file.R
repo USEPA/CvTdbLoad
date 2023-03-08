@@ -24,9 +24,10 @@ extract_ntp_data_file <- function(filepath, template_map){
     tmp = readxl::read_xlsx(filepath, sheet=s)
     if(s != "Intro"){
       # Filter fields when not Intro sheet
-      tmp %>%
-        filter(!is.na(Species)) %>%
-        mutate(sheet_name = s) 
+      tmp = tmp %>%
+        filter(!is.na(Species), !is.na(`Test Article`), !is.na(Analyte)) # %>%
+        # Add sheet_name for later processing
+        # mutate(sheet_name = s)
     }
      return(tmp)
   }) %T>% {
@@ -44,7 +45,9 @@ extract_ntp_data_file <- function(filepath, template_map){
   # Remove intro data sheet, then combine
   in_dat = in_dat %>%
     purrr::list_modify("Intro" = NULL) %>%
-    dplyr::bind_rows()
+    dplyr::bind_rows() %>%
+    # Filter out any "NA" analyte entries
+    filter(!is.na(Analyte))
   
   # Pull template to map fields
   # template_path = "L:/Lab/NCCT_ExpoCast/ExpoCast2022/CvT-CompletedTemplates/CvT_data_template_articles.xlsx"
@@ -55,9 +58,11 @@ extract_ntp_data_file <- function(filepath, template_map){
   # Loop through the template and populate the fields
   # Use field map to select and populate
   # Map field names to template
-  out = lapply(names(template), function(s){
+  out = lapply(names(template)[!names(template) %in% c("Conc_Time_Values")], function(s){
     message("Working on sheet: ", s)
-    tmp = in_dat %T>% {
+    tmp = in_dat %>%
+      # Select columns of interest
+      select(any_of(map$from[map$sheet == tolower(s)])) %T>% {
       # Have to map CvT database names back to the template (usually a _original stem)
       message("...Renaming mapped variables...", Sys.time())
       names(.)[names(.) %in% map$from[map$sheet == tolower(s)]] <- left_join(data.frame(from=names(.)[names(.) %in% 
@@ -69,22 +74,87 @@ extract_ntp_data_file <- function(filepath, template_map){
         mutate(to = as.character(to)) %>% 
         unlist()
       message("...Returning converted data...", Sys.time())
-    } %>% 
-      # Select all template fields that exist already (ensuring clowder_file_id included)
-      select(any_of(names(template[[s]])))
+      } %>%
+      distinct()
+    
+    # Sheet specific transformations
+    # TODO Try to convert to switch statement
+    if(s == "Documents"){
+      tmp = tmp %>%
+        mutate(title = intro_dat$value[intro_dat$field_name == "Title"],
+               year = intro_dat$value[intro_dat$field_name == "Start Date"])
+    } else if(s == "Studies"){
+      
+      # Run through cases to adjust/rename or split out
+      fix_cols = names(tmp)[!names(tmp) %in% names(template[[s]])]
+      
+      for(f_col in fix_cols){
+        if(grepl("volume", f_col, ignore.case = TRUE)){
+          tmp = tmp %>%
+            dplyr::rename(dose_volume = f_col) %>%
+            dplyr::mutate(dose_volume_units = f_col %>%
+                            # Extract inside parentheses
+                            stringr::str_extract(., "(?<=\\().*(?=\\))")) %>%
+            arrange(test_substance_name, dose_level)
+        } else {
+          # Catch any future unhandled
+          stop("Unhandled studies field: ", f_col)
+        }
+      }
+    } else if(s == "Subjects"){
+      
+      # Qualify the Animal ID
+      tmp$curator_comment = paste0("Animal ID: ", tmp$curator_comment)
+      # Run through cases to adjust/rename or split out
+      fix_cols = names(tmp)[!names(tmp) %in% names(template[[s]])]
+      
+      for(f_col in fix_cols){
+        if(grepl("weight", f_col, ignore.case = TRUE)){
+          tmp = tmp %>%
+            dplyr::rename(weight = f_col) %>%
+            dplyr::mutate(weight_units = f_col %>%
+                            # Extract inside parentheses
+                            stringr::str_extract(., "(?<=\\().*(?=\\))"))
+        } else {
+          # Catch any future unhandled
+          stop("Unhandled subjects field: ", f_col)
+        }
+      }
+    } else if(s == "Series") {
+      # Qualify figure_name
+      tmp$figure_name = paste0("Animal ID: ", tmp$figure_name)
+      tmp = tmp %>%
+        # Splitting out columns with units in the name
+        tidyr::pivot_longer(names_to = "conc_medium", values_to = "conc", cols=contains("Concentration")) %>%
+        tidyr::separate(col=conc_medium, into=c("conc_medium", "conc_units"), sep="\\(") %>%
+        dplyr::mutate(conc_medium = gsub("Concentration", "", conc_medium),
+                      conc_units = gsub("\\)", "", conc_units),
+                      across(c("conc_medium", "conc_units"), ~stringr::str_squish(.)))
+    } else if(s == "Conc_Time_Values"){
+      
+    }
     
     # Fill missing template fields (happens when template is updated compared to older uploaded version)
     tmp[names(template[[s]])[!names(template[[s]]) %in% names(tmp)]] <- NA
     
-    # Add reviewer LAN ID field
-    if(s == "Documents"){
-      tmp$title = intro_dat$value[intro_dat$field_name == "Title"]
-      tmp$year = intro_dat$value[intro_dat$field_name == "Start Date"]
-    }
-    return(tmp %>% distinct())
+    tmp %>% 
+      distinct() %>%
+      # Reorder as template
+      #.[names(template[[s]])] %>%
+      # Add id sequence
+      dplyr::mutate(id = 1:n())
   }) %T>% {
-    names(.) <- names(template)
+    names(.) <- names(template)[!names(template) %in% c("Conc_Time_Values")]
   }
+  
+  # TODO Create conc_time_values data from splitting Series sheet
+  
+  # TODO Handle foreign key linkages using matching columns
+  
+  # Select away unnecessary columns for a given sheet
+  #.[names(template[[s]])] %>%
+  
+  # Return processed template
   return(out)
 }
 
