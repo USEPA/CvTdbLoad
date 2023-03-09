@@ -11,8 +11,11 @@
 #' extract_ntp_data_file
 #' @description Function to semi-automate extraction of NTP data to CvT template
 #' @param filepath File path to the NTP file to extract to CvT template
+#' @param template_path File path to latest template
 #' @param template_map File path to a field name map from NTP to CvT template names
-extract_ntp_data_file <- function(filepath, template_map){
+extract_ntp_data_file <- function(filepath, 
+                                  template_path = "input/CvT_data_template_articles.xlsx", 
+                                  template_map = "input/ntp_template_map.xlsx"){
   if(!is.null(filepath) & is.na(filepath)) return(NULL)
   if(!file.exists(filepath)) return(NULL)
   
@@ -25,9 +28,7 @@ extract_ntp_data_file <- function(filepath, template_map){
     if(s != "Intro"){
       # Filter fields when not Intro sheet
       tmp = tmp %>%
-        filter(!is.na(Species), !is.na(`Test Article`), !is.na(Analyte)) # %>%
-        # Add sheet_name for later processing
-        # mutate(sheet_name = s)
+        filter(!is.na(Species), !is.na(Analyte), Analyte != "NA")
     }
      return(tmp)
   }) %T>% {
@@ -49,10 +50,8 @@ extract_ntp_data_file <- function(filepath, template_map){
     # Filter out any "NA" analyte entries
     filter(!is.na(Analyte))
   
-  # Pull template to map fields
-  # template_path = "L:/Lab/NCCT_ExpoCast/ExpoCast2022/CvT-CompletedTemplates/CvT_data_template_articles.xlsx"
+  # Pull templates to map fields
   template = get_cvt_template(template_path = template_path)
-  # template_map = "input/ntp_template_map.xlsx"
   map = readxl::read_xlsx(template_map)
   
   # Loop through the template and populate the fields
@@ -60,6 +59,14 @@ extract_ntp_data_file <- function(filepath, template_map){
   # Map field names to template
   out = lapply(names(template)[!names(template) %in% c("Conc_Time_Values")], function(s){
     message("Working on sheet: ", s)
+    # Update map to include concentration columns dynamically
+    if(s %in% c("Series")){
+      map = rbind(map, 
+                  data.frame(from=names(in_dat)[grepl("Concentration", names(in_dat))]) %>%
+                    mutate(to=from,
+                           sheet=tolower(s)))  
+    }
+    # Select and rename/map columns of interest
     tmp = in_dat %>%
       # Select columns of interest
       select(any_of(map$from[map$sheet == tolower(s)])) %T>% {
@@ -82,8 +89,16 @@ extract_ntp_data_file <- function(filepath, template_map){
     if(s == "Documents"){
       tmp = tmp %>%
         mutate(title = intro_dat$value[intro_dat$field_name == "Title"],
-               year = intro_dat$value[intro_dat$field_name == "Start Date"])
+               year = intro_dat$value[intro_dat$field_name == "Start Date"],
+               other_study_identifier = intro_dat$value[intro_dat$field_name == "NTP Study Number"],
+               extracted = 1,
+               document_type = 1)
     } else if(s == "Studies"){
+      # Some NTP studies do not have a "Test Article" field which this maps for
+      if(!"test_substance_name" %in% names(tmp)){
+        tmp$test_substance_name = intro_dat$value[intro_dat$field_name == "Compound Name"]
+        tmp$test_substance_casrn = intro_dat$value[intro_dat$field_name == "CASRN"]
+      }
       
       # Run through cases to adjust/rename or split out
       fix_cols = names(tmp)[!names(tmp) %in% names(template[[s]])]
@@ -95,14 +110,13 @@ extract_ntp_data_file <- function(filepath, template_map){
             dplyr::mutate(dose_volume_units = f_col %>%
                             # Extract inside parentheses
                             stringr::str_extract(., "(?<=\\().*(?=\\))")) %>%
-            arrange(test_substance_name, dose_level)
+            arrange(test_substance_name, dose_level, administration_route)
         } else {
           # Catch any future unhandled
           stop("Unhandled studies field: ", f_col)
         }
       }
     } else if(s == "Subjects"){
-      
       # Qualify the Animal ID
       tmp$curator_comment = paste0("Animal ID: ", tmp$curator_comment)
       # Run through cases to adjust/rename or split out
@@ -121,21 +135,47 @@ extract_ntp_data_file <- function(filepath, template_map){
         }
       }
     } else if(s == "Series") {
+      # Some NTP studies do not have a "Test Article" or CASRN field which this maps for
+      if(!"test_substance_name" %in% names(tmp)){
+        tmp$test_substance_name = intro_dat$value[intro_dat$field_name == "Compound Name"]
+      }
       # Qualify figure_name
       tmp$figure_name = paste0("Animal ID: ", tmp$figure_name)
       tmp = tmp %>%
         # Splitting out columns with units in the name
-        tidyr::pivot_longer(names_to = "conc_medium", values_to = "conc", cols=contains("Concentration")) %>%
+        tidyr::pivot_longer(names_to = "conc_medium", values_to = "conc", cols=contains("Concentration (")) %>%
         tidyr::separate(col=conc_medium, into=c("conc_medium", "conc_units"), sep="\\(") %>%
         dplyr::mutate(conc_medium = gsub("Concentration", "", conc_medium),
                       conc_units = gsub("\\)", "", conc_units),
-                      across(c("conc_medium", "conc_units"), ~stringr::str_squish(.)))
-    } else if(s == "Conc_Time_Values"){
+                      across(c("conc_medium", "conc_units"), ~stringr::str_squish(.)),
+                      figure_type = "Table",
+                      log_conc_units = 0,
+                      conc_cumulative = 0,
+                      n_subjects_in_series = 1,
+                      tmp_conc_id = 1:n())
+      # Fix concentration specification fields to match conc_medium entries
+      tmp2 = tmp %>% 
+        select(tmp_conc_id, contains("Concentration Specification")) %>%
+        tidyr::pivot_longer(names_to = "conc_medium", values_to = "conc_curator_comment", cols=contains("Concentration Specification")) %>%
+        dplyr::mutate(conc_medium = gsub("Concentration Specification", "", conc_medium),
+                      across(c("conc_medium", "conc_curator_comment"), ~stringr::str_squish(.))) %>%
+        distinct() %>%
+        rowwise() %>%
+        dplyr::mutate(conc_curator_comment = ifelse((is.na(conc_curator_comment) | conc_curator_comment == "NA"), 
+                                                    "", 
+                                                    conc_curator_comment)) %>%
+        ungroup()
       
+      # Handle case where there's only 1 conc_medium specification, often called "Tissue Concentration Specification"
+      if(length(unique(tmp2$conc_medium)) == 1){
+        tmp2$conc_medium = unique(tmp$conc_medium)
+      }
+      # Re-join as comment field
+      tmp = tmp %>%
+        left_join(tmp2, 
+                  by = c("tmp_conc_id", "conc_medium")) %>%
+        select(-tmp_conc_id)
     }
-    
-    # Fill missing template fields (happens when template is updated compared to older uploaded version)
-    tmp[names(template[[s]])[!names(template[[s]]) %in% names(tmp)]] <- NA
     
     tmp %>% 
       distinct() %>%
@@ -148,11 +188,37 @@ extract_ntp_data_file <- function(filepath, template_map){
   }
   
   # TODO Create conc_time_values data from splitting Series sheet
+  out$Conc_Time_Values = out$Series %>%
+    dplyr::select(fk_series_id = id, time, conc, figure_name, conc_curator_comment) %>%
+    # Add id field
+    dplyr::mutate(id = 1:n()) %>%
+    # Format Animal ID and Concentration Specification columns to comment
+    tidyr::unite(figure_name, conc_curator_comment, col="curator_comment", sep = "; ") %>%
+    mutate(curator_comment = gsub("; $", "", curator_comment))
+
+  # Handle foreign key linkages using matching columns
+  out$Series = out$Series %>%
+    left_join(out$Studies %>%
+                select(fk_study_id=id, test_substance_name, dose_level, administration_route),
+              by=c("test_substance_name", "dose_level", "administration_route"))
   
-  # TODO Handle foreign key linkages using matching columns
+  out$Series = out$Series %>%
+    left_join(out$Subjects %>%
+                select(fk_subject_id = id, figure_name = curator_comment),
+              by="figure_name")
   
-  # Select away unnecessary columns for a given sheet
-  #.[names(template[[s]])] %>%
+  # Finish processing template
+  out = lapply(names(template), function(s){
+    tmp = out[[s]]
+    # Fill missing template fields (happens when template is updated compared to older uploaded version)
+    tmp[names(template[[s]])[!names(template[[s]]) %in% names(tmp)]] <- NA
+    # Select and reorder template columns
+    tmp %>%
+      .[names(template[[s]])] %>%
+      return()
+  }) %T>% {
+    names(.) <- names(template)
+  }
   
   # Return processed template
   return(out)
