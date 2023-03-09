@@ -43,6 +43,7 @@ extract_ntp_data_file <- function(filepath,
     } %>%
     filter(!is.na(intro_metadata)) %>%
     tidyr::separate(intro_metadata, into=c("field_name", "value"), sep=": ")
+  
   # Remove intro data sheet, then combine
   in_dat = in_dat %>%
     purrr::list_modify("Intro" = NULL) %>%
@@ -66,6 +67,7 @@ extract_ntp_data_file <- function(filepath,
                     mutate(to=from,
                            sheet=tolower(s)))  
     }
+    
     # Select and rename/map columns of interest
     tmp = in_dat %>%
       # Select columns of interest
@@ -85,7 +87,6 @@ extract_ntp_data_file <- function(filepath,
       distinct()
     
     # Sheet specific transformations
-    # TODO Try to convert to switch statement
     if(s == "Documents"){
       tmp = tmp %>%
         mutate(title = intro_dat$value[intro_dat$field_name == "Title"],
@@ -104,6 +105,7 @@ extract_ntp_data_file <- function(filepath,
       fix_cols = names(tmp)[!names(tmp) %in% names(template[[s]])]
       
       for(f_col in fix_cols){
+        # Handle dose volume/units splitting
         if(grepl("volume", f_col, ignore.case = TRUE)){
           tmp = tmp %>%
             dplyr::rename(dose_volume = f_col) %>%
@@ -117,12 +119,13 @@ extract_ntp_data_file <- function(filepath,
         }
       }
     } else if(s == "Subjects"){
-      # Qualify the Animal ID
+      # Qualify the Animal ID in comments to assist with QC
       tmp$curator_comment = paste0("Animal ID: ", tmp$curator_comment)
       # Run through cases to adjust/rename or split out
       fix_cols = names(tmp)[!names(tmp) %in% names(template[[s]])]
       
       for(f_col in fix_cols){
+        # Handle split of weight/units
         if(grepl("weight", f_col, ignore.case = TRUE)){
           tmp = tmp %>%
             dplyr::rename(weight = f_col) %>%
@@ -139,12 +142,16 @@ extract_ntp_data_file <- function(filepath,
       if(!"test_substance_name" %in% names(tmp)){
         tmp$test_substance_name = intro_dat$value[intro_dat$field_name == "Compound Name"]
       }
-      # Qualify figure_name
+      
+      # Figure name as Animal ID
       tmp$figure_name = paste0("Animal ID: ", tmp$figure_name)
+      
+      # Split columns based on conc_medium
       tmp = tmp %>%
         # Splitting out columns with units in the name
         tidyr::pivot_longer(names_to = "conc_medium", values_to = "conc", cols=contains("Concentration (")) %>%
         tidyr::separate(col=conc_medium, into=c("conc_medium", "conc_units"), sep="\\(") %>%
+        # Clean up and set default fields
         dplyr::mutate(conc_medium = gsub("Concentration", "", conc_medium),
                       conc_units = gsub("\\)", "", conc_units),
                       across(c("conc_medium", "conc_units"), ~stringr::str_squish(.)),
@@ -153,7 +160,9 @@ extract_ntp_data_file <- function(filepath,
                       conc_cumulative = 0,
                       n_subjects_in_series = 1,
                       tmp_conc_id = 1:n())
+      
       # Fix concentration specification fields to match conc_medium entries
+      # Used on conc_time_values sheet later as comments
       tmp2 = tmp %>% 
         select(tmp_conc_id, contains("Concentration Specification")) %>%
         tidyr::pivot_longer(names_to = "conc_medium", values_to = "conc_curator_comment", cols=contains("Concentration Specification")) %>%
@@ -161,6 +170,7 @@ extract_ntp_data_file <- function(filepath,
                       across(c("conc_medium", "conc_curator_comment"), ~stringr::str_squish(.))) %>%
         distinct() %>%
         rowwise() %>%
+        # Clean up NA cases
         dplyr::mutate(conc_curator_comment = ifelse((is.na(conc_curator_comment) | conc_curator_comment == "NA"), 
                                                     "", 
                                                     conc_curator_comment)) %>%
@@ -170,6 +180,7 @@ extract_ntp_data_file <- function(filepath,
       if(length(unique(tmp2$conc_medium)) == 1){
         tmp2$conc_medium = unique(tmp$conc_medium)
       }
+      
       # Re-join as comment field
       tmp = tmp %>%
         left_join(tmp2, 
@@ -177,17 +188,17 @@ extract_ntp_data_file <- function(filepath,
         select(-tmp_conc_id)
     }
     
+    # Return distinct with sequential ID field
     tmp %>% 
       distinct() %>%
-      # Reorder as template
-      #.[names(template[[s]])] %>%
       # Add id sequence
-      dplyr::mutate(id = 1:n())
+      dplyr::mutate(id = 1:n()) %>%
+      return()
   }) %T>% {
     names(.) <- names(template)[!names(template) %in% c("Conc_Time_Values")]
   }
   
-  # TODO Create conc_time_values data from splitting Series sheet
+  # Create conc_time_values data from splitting Series sheet
   out$Conc_Time_Values = out$Series %>%
     dplyr::select(fk_series_id = id, time, conc, figure_name, conc_curator_comment) %>%
     # Add id field
