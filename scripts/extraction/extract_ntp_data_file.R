@@ -25,11 +25,11 @@ extract_ntp_data_file <- function(filepath,
   # Pull data from all sheets
   in_dat = lapply(s_list, function(s){
     tmp = readxl::read_xlsx(filepath, sheet=s)
-    if(s != "Intro"){
-      # Filter fields when not Intro sheet
-      tmp = tmp %>%
-        filter(!is.na(Species), !is.na(Analyte), Analyte != "NA")
-    }
+    # if(s != "Intro"){
+    #   # Filter fields when not Intro sheet
+    #   tmp = tmp %>%
+    #     filter(!is.na(Species), !is.na(Analyte), Analyte != "NA")
+    # }
      return(tmp)
   }) %T>% {
     names(.) <- s_list
@@ -47,9 +47,9 @@ extract_ntp_data_file <- function(filepath,
   # Remove intro data sheet, then combine
   in_dat = in_dat %>%
     purrr::list_modify("Intro" = NULL) %>%
-    dplyr::bind_rows() %>%
+    dplyr::bind_rows() # %>%
     # Filter out any "NA" analyte entries
-    filter(!is.na(Analyte))
+    # filter(!is.na(Analyte))
   
   # Pull templates to map fields
   template = get_cvt_template(template_path = template_path)
@@ -61,9 +61,14 @@ extract_ntp_data_file <- function(filepath,
   out = lapply(names(template)[!names(template) %in% c("Conc_Time_Values")], function(s){
     message("Working on sheet: ", s)
     # Update map to include concentration columns dynamically
-    if(s %in% c("Series")){
+    if(s  == "Series"){
       map = rbind(map, 
                   data.frame(from=names(in_dat)[grepl("Concentration", names(in_dat))]) %>%
+                    mutate(to=from,
+                           sheet=tolower(s)))  
+    } else if (s == "Subjects"){
+      map = rbind(map, 
+                  data.frame(from=names(in_dat)[grepl("Weight", names(in_dat))]) %>%
                     mutate(to=from,
                            sheet=tolower(s)))  
     }
@@ -120,22 +125,27 @@ extract_ntp_data_file <- function(filepath,
       }
     } else if(s == "Subjects"){
       # Qualify the Animal ID in comments to assist with QC
-      tmp$curator_comment = paste0("Animal ID: ", tmp$curator_comment)
+      tmp$curator_comment = paste0("Animal ID: ", tmp$curator_comment, "_", tmp$sex)
+      
+      # TODO Handle multiple weight columns...just like concentration
+      # Split columns based on conc_medium
+      tmp = tmp %>%
+        # Splitting out columns with units in the name
+        tidyr::pivot_longer(names_to = "weight_units", values_to = "weight", cols=contains("Weight")) %>%
+        mutate(weight_units = weight_units %>%
+                 # Extract inside parentheses
+                 stringr::str_extract(., "(?<=\\().*(?=\\))"),
+               weight = suppressWarnings(as.numeric(weight))) %>%
+        # Grouped filtering to find weight values (remove duplicates)
+        group_by(curator_comment) %>%
+        filter(weight == max(weight, na.rm=TRUE))
+      
       # Run through cases to adjust/rename or split out
       fix_cols = names(tmp)[!names(tmp) %in% names(template[[s]])]
       
       for(f_col in fix_cols){
-        # Handle split of weight/units
-        if(grepl("weight", f_col, ignore.case = TRUE)){
-          tmp = tmp %>%
-            dplyr::rename(weight = f_col) %>%
-            dplyr::mutate(weight_units = f_col %>%
-                            # Extract inside parentheses
-                            stringr::str_extract(., "(?<=\\().*(?=\\))"))
-        } else {
-          # Catch any future unhandled
-          stop("Unhandled subjects field: ", f_col)
-        }
+        # Catch any future unhandled
+        stop("Unhandled subjects field: ", f_col)
       }
     } else if(s == "Series") {
       # Some NTP studies do not have a "Test Article" or CASRN field which this maps for
