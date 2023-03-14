@@ -25,12 +25,12 @@ extract_ntp_data_file <- function(filepath,
   # Pull data from all sheets
   in_dat = lapply(s_list, function(s){
     tmp = readxl::read_xlsx(filepath, sheet=s)
-    # if(s != "Intro"){
-    #   # Filter fields when not Intro sheet
-    #   tmp = tmp %>%
-    #     filter(!is.na(Species), !is.na(Analyte), Analyte != "NA")
-    # }
-     return(tmp)
+    if(s != "Intro"){
+      tmp = tmp %>%
+        # Handle cases so bind_rows() can happen later
+        mutate(across(everything(), ~as.character(.)))
+    }
+    return(tmp)
   }) %T>% {
     names(.) <- s_list
   }
@@ -48,8 +48,8 @@ extract_ntp_data_file <- function(filepath,
   in_dat = in_dat %>%
     purrr::list_modify("Intro" = NULL) %>%
     dplyr::bind_rows() # %>%
-    # Filter out any "NA" analyte entries
-    # filter(!is.na(Analyte))
+  # Filter out any "NA" analyte entries
+  # filter(!is.na(Analyte))
   
   # Pull templates to map fields
   template = get_cvt_template(template_path = template_path)
@@ -71,39 +71,41 @@ extract_ntp_data_file <- function(filepath,
                   data.frame(from=names(in_dat)[grepl("Weight", names(in_dat))]) %>%
                     mutate(to=from,
                            sheet=tolower(s)))  
+    } else if (s == "Studies"){
+      map = rbind(map, 
+                  data.frame(from=names(in_dat)[grepl("Dose", names(in_dat))]) %>%
+                    mutate(to=from,
+                           sheet=tolower(s)))  
     }
+    
+    # Create a named vector to handle renaming from the map
+    s_map = map %>%
+      filter(sheet == tolower(s))
+    s_map = s_map %>%
+      select(from) %>% 
+      unlist() %T>% {
+        names(.) <- s_map$to
+      }
     
     # Select and rename/map columns of interest
     tmp = in_dat %>%
-      # Select columns of interest
-      select(any_of(map$from[map$sheet == tolower(s)])) %T>% {
-      # Have to map CvT database names back to the template (usually a _original stem)
-      message("...Renaming mapped variables...", Sys.time())
-      names(.)[names(.) %in% map$from[map$sheet == tolower(s)]] <- left_join(data.frame(from=names(.)[names(.) %in% 
-                                                                                                        map$from[map$sheet == tolower(s)]], 
-                                                                                        stringsAsFactors = F), 
-                                                                             map[map$sheet==tolower(s),], 
-                                                                             by = "from") %>% 
-        select(to) %>% 
-        mutate(to = as.character(to)) %>% 
-        unlist()
-      message("...Returning converted data...", Sys.time())
-      } %>%
+      dplyr::rename(any_of(s_map)) %>%
+      select(any_of(names(s_map))) %>%
       distinct()
     
     # Sheet specific transformations
     if(s == "Documents"){
       tmp = tmp %>%
-        mutate(title = intro_dat$value[intro_dat$field_name == "Title"],
-               year = intro_dat$value[intro_dat$field_name == "Start Date"],
-               other_study_identifier = intro_dat$value[intro_dat$field_name == "NTP Study Number"],
+        mutate(title = toString(intro_dat$value[intro_dat$field_name == "Title"]),
+               year = toString(intro_dat$value[intro_dat$field_name %in% c("Start Date", "Approval Date")]),
+               other_study_identifier = toString(intro_dat$value[intro_dat$field_name == "NTP Study Number"]),
                extracted = 1,
                document_type = 1)
     } else if(s == "Studies"){
       # Some NTP studies do not have a "Test Article" field which this maps for
       if(!"test_substance_name" %in% names(tmp)){
-        tmp$test_substance_name = intro_dat$value[intro_dat$field_name == "Compound Name"]
-        tmp$test_substance_casrn = intro_dat$value[intro_dat$field_name == "CASRN"]
+        tmp$test_substance_name = toString(intro_dat$value[intro_dat$field_name == "Compound Name"])
+        tmp$test_substance_casrn = toString(intro_dat$value[intro_dat$field_name == "CASRN"])
       }
       
       # Run through cases to adjust/rename or split out
@@ -113,16 +115,24 @@ extract_ntp_data_file <- function(filepath,
         # Handle dose volume/units splitting
         if(grepl("volume", f_col, ignore.case = TRUE)){
           tmp = tmp %>%
-            dplyr::rename(dose_volume = f_col) %>%
+            dplyr::rename(dose_volume = all_of(f_col)) %>%
             dplyr::mutate(dose_volume_units = f_col %>%
                             # Extract inside parentheses
-                            stringr::str_extract(., "(?<=\\().*(?=\\))")) %>%
-            arrange(test_substance_name, dose_level, administration_route)
+                            stringr::str_extract(., "(?<=\\().*(?=\\))"))
+        } else if(grepl("dose", f_col, ignore.case = TRUE)) {
+          # TODO handle dose splitting
+          stop("NEED TO HANDLE DOSE SPLITTING CASE")
         } else {
           # Catch any future unhandled
           stop("Unhandled studies field: ", f_col)
         }
       }
+      # Filter out those without a dose_level (happens due to spacer row in sheets before caption)
+      tmp = tmp %>%
+        mutate(across(c("dose_level", "dose_frequency", "dose_volume"), ~as.numeric(.))) %>%
+        filter(!is.na(dose_level)) %>%
+        # Sort rows for ease of review
+        arrange(test_substance_name, administration_route, dose_level, dose_level_units)
     } else if(s == "Subjects"){
       # Qualify the Animal ID in comments to assist with QC
       tmp$curator_comment = paste0("Animal ID: ", tmp$curator_comment, "_", tmp$sex)
@@ -138,7 +148,8 @@ extract_ntp_data_file <- function(filepath,
                weight = suppressWarnings(as.numeric(weight))) %>%
         # Grouped filtering to find weight values (remove duplicates)
         group_by(curator_comment) %>%
-        filter(weight == max(weight, na.rm=TRUE))
+        filter(weight == max(weight, na.rm=TRUE)) %>%
+        ungroup()
       
       # Run through cases to adjust/rename or split out
       fix_cols = names(tmp)[!names(tmp) %in% names(template[[s]])]
@@ -150,11 +161,11 @@ extract_ntp_data_file <- function(filepath,
     } else if(s == "Series") {
       # Some NTP studies do not have a "Test Article" or CASRN field which this maps for
       if(!"test_substance_name" %in% names(tmp)){
-        tmp$test_substance_name = intro_dat$value[intro_dat$field_name == "Compound Name"]
+        tmp$test_substance_name = toString(intro_dat$value[intro_dat$field_name == "Compound Name"])
       }
       
       # Figure name as Animal ID
-      tmp$figure_name = paste0("Animal ID: ", tmp$figure_name)
+      tmp$figure_name = paste0("Animal ID: ", tmp$figure_name, "_", tmp$sex)
       
       # Split columns based on conc_medium
       tmp = tmp %>%
@@ -195,7 +206,10 @@ extract_ntp_data_file <- function(filepath,
       tmp = tmp %>%
         left_join(tmp2, 
                   by = c("tmp_conc_id", "conc_medium")) %>%
-        select(-tmp_conc_id)
+        select(-tmp_conc_id) %>%
+        # Case where the Analyte is "NA" for a baseline measurement
+        filter(analyte_name != 'NA') %>%
+        mutate(dose_level = as.numeric(dose_level))
     }
     
     # Return distinct with sequential ID field
@@ -212,11 +226,12 @@ extract_ntp_data_file <- function(filepath,
   out$Conc_Time_Values = out$Series %>%
     dplyr::select(fk_series_id = id, time, conc, figure_name, conc_curator_comment) %>%
     # Add id field
-    dplyr::mutate(id = 1:n()) %>%
+    dplyr::mutate(time = as.numeric(time), 
+                  id = 1:n()) %>%
     # Format Animal ID and Concentration Specification columns to comment
     tidyr::unite(figure_name, conc_curator_comment, col="curator_comment", sep = "; ") %>%
     mutate(curator_comment = gsub("; $", "", curator_comment))
-
+  
   # Handle foreign key linkages using matching columns
   out$Series = out$Series %>%
     left_join(out$Studies %>%
@@ -240,6 +255,16 @@ extract_ntp_data_file <- function(filepath,
   }) %T>% {
     names(.) <- names(template)
   }
+  
+  # Fill in analyte_casrn if analyte name is the same as the "Compound Name"
+  out$Series$analyte_casrn[out$Series$analyte_name == toString(intro_dat$value[intro_dat$field_name == "Compound Name"])] = toString(intro_dat$value[intro_dat$field_name == "CASRN"])
+  
+  # Fill in "ND" for conc values
+  out$Conc_Time_Values$conc[out$Conc_Time_Values$conc == "." & grepl("Not detected|ND|not detected", out$Conc_Time_Values$curator_comment)] = "ND"
+  # Fill in "NQ" for below calibration curve range
+  out$Conc_Time_Values$conc[out$Conc_Time_Values$conc == "." & grepl("calibration curve|limit of quantitation", out$Conc_Time_Values$curator_comment)] = "NQ"
+  # Fill in "NA" for No data
+  out$Conc_Time_Values$conc[out$Conc_Time_Values$conc == "." & grepl("No data", out$Conc_Time_Values$curator_comment)] = "NA"
   
   # Return processed template
   return(out)
