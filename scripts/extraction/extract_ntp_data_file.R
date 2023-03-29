@@ -47,7 +47,19 @@ extract_ntp_data_file <- function(filepath,
   # Remove intro data sheet, then combine
   in_dat = in_dat %>%
     purrr::list_modify("Intro" = NULL) %>%
-    dplyr::bind_rows() # %>%
+    dplyr::bind_rows() %>%
+    filter(!grepl(paste0( c("BLOQ",
+                            "All concentration data",
+                            "NA = Not applicable",
+                            "Approximate value",
+                            paste0(letters, ".")
+    ), collapse="|"), `Animal ID`),
+    !is.na(`Animal ID`))
+  
+  if(!nrow(in_dat)){
+    stop("No data found after initial filter...")
+  }
+    
   # Filter out any "NA" analyte entries
   # filter(!is.na(Analyte))
   
@@ -120,8 +132,10 @@ extract_ntp_data_file <- function(filepath,
                             # Extract inside parentheses
                             stringr::str_extract(., "(?<=\\().*(?=\\))"))
         } else if(grepl("dose", f_col, ignore.case = TRUE)) {
-          # TODO handle dose splitting
-          stop("NEED TO HANDLE DOSE SPLITTING CASE")
+          # Handle dose level/units splitting
+          tmp = tmp %>%
+            pivot_longer(cols=all_of(f_col), names_to = "dose_level_units", values_to = "dose_level") %>%
+            mutate(dose_level_units = stringr::str_extract(dose_level_units, "(?<=\\().*(?=\\))"))
         } else {
           # Catch any future unhandled
           stop("Unhandled studies field: ", f_col)
@@ -129,8 +143,8 @@ extract_ntp_data_file <- function(filepath,
       }
       # Filter out those without a dose_level (happens due to spacer row in sheets before caption)
       tmp = tmp %>%
-        mutate(across(c("dose_level", "dose_frequency", "dose_volume"), ~as.numeric(.))) %>%
-        filter(!is.na(dose_level)) %>%
+        dplyr::mutate(across(any_of(c("dose_level", "dose_frequency", "dose_volume")), ~as.numeric(.))) %>%
+        dplyr::filter(!is.na(dose_level)) %>%
         # Sort rows for ease of review
         arrange(test_substance_name, administration_route, dose_level, dose_level_units)
     } else if(s == "Subjects"){
@@ -145,7 +159,10 @@ extract_ntp_data_file <- function(filepath,
         mutate(weight_units = weight_units %>%
                  # Extract inside parentheses
                  stringr::str_extract(., "(?<=\\().*(?=\\))"),
-               weight = suppressWarnings(as.numeric(weight))) %>%
+               weight = weight %>%
+                 # Case where decimal number has extra space
+                 gsub("\\. ", ".", .) %>%
+                 suppressWarnings(as.numeric(.))) %>%
         # Grouped filtering to find weight values (remove duplicates)
         group_by(curator_comment) %>%
         filter(weight == max(weight, na.rm=TRUE)) %>%
@@ -159,9 +176,42 @@ extract_ntp_data_file <- function(filepath,
         stop("Unhandled subjects field: ", f_col)
       }
     } else if(s == "Series") {
+      
+      # Some NTP studies have their time/units columns together, so don't map
+      if(!any(grepl("time|dose", names(tmp), ignore.case=TRUE))){
+        # Pull in_dat again, including missing time
+        tmp = in_dat %>%
+          dplyr::rename(any_of(s_map)) %>%
+          select(any_of(names(s_map)), matches("target time|dose", ignore.case = TRUE)) %>%
+          distinct()
+      }
+      
       # Some NTP studies do not have a "Test Article" or CASRN field which this maps for
       if(!"test_substance_name" %in% names(tmp)){
         tmp$test_substance_name = toString(intro_dat$value[intro_dat$field_name == "Compound Name"])
+      }
+      
+      # Run through cases to adjust/rename or split out
+      fix_cols = names(tmp)[!names(tmp) %in% names(template[[s]])] %>%
+        .[!grepl("Concentration \\(|Concentration Specification", .)] %>%
+        .[!. %in% c("administration_route", "sex", "test_substance_name", "time", "dose_level", map$to %>% unique())]
+      
+      for(f_col in fix_cols){
+        if(!f_col %in% names(tmp)) next
+        if(grepl("target time", f_col, ignore.case = TRUE)){
+          tmp = tmp %>%
+            pivot_longer(cols=contains("target time", ignore.case=TRUE), 
+                         names_to = "time_units", values_to = "time") %>%
+            mutate(time_units = stringr::str_extract(time_units, "(?<=\\().*(?=\\))"))
+        } else if(grepl("dose", f_col, ignore.case = TRUE)) {
+          # Handle dose level/units splitting
+          tmp = tmp %>%
+            pivot_longer(cols=all_of(f_col), names_to = "dose_level_units", values_to = "dose_level") %>%
+            mutate(dose_level_units = stringr::str_extract(dose_level_units, "(?<=\\().*(?=\\))"))
+        } else {
+          # Catch any future unhandled
+          stop("Unhandled series field: ", f_col)  
+        }
       }
       
       # Figure name as Animal ID
@@ -169,6 +219,7 @@ extract_ntp_data_file <- function(filepath,
       
       # Split columns based on conc_medium
       tmp = tmp %>%
+        dplyr::mutate(across(any_of(c("dose_level", "dose_frequency", "dose_volume")), ~as.numeric(.))) %>%
         # Splitting out columns with units in the name
         tidyr::pivot_longer(names_to = "conc_medium", values_to = "conc", cols=contains("Concentration (")) %>%
         tidyr::separate(col=conc_medium, into=c("conc_medium", "conc_units"), sep="\\(") %>%
@@ -184,32 +235,36 @@ extract_ntp_data_file <- function(filepath,
       
       # Fix concentration specification fields to match conc_medium entries
       # Used on conc_time_values sheet later as comments
-      tmp2 = tmp %>% 
-        select(tmp_conc_id, contains("Concentration Specification")) %>%
-        tidyr::pivot_longer(names_to = "conc_medium", values_to = "conc_curator_comment", cols=contains("Concentration Specification")) %>%
-        dplyr::mutate(conc_medium = gsub("Concentration Specification", "", conc_medium),
-                      across(c("conc_medium", "conc_curator_comment"), ~stringr::str_squish(.))) %>%
-        distinct() %>%
-        rowwise() %>%
-        # Clean up NA cases
-        dplyr::mutate(conc_curator_comment = ifelse((is.na(conc_curator_comment) | conc_curator_comment == "NA"), 
-                                                    "", 
-                                                    conc_curator_comment)) %>%
-        ungroup()
-      
-      # Handle case where there's only 1 conc_medium specification, often called "Tissue Concentration Specification"
-      if(length(unique(tmp2$conc_medium)) == 1){
-        tmp2$conc_medium = unique(tmp$conc_medium)
+      if(any(grepl("Concentration Specification", names(tmp)))){
+        tmp2 = tmp %>% 
+          select(tmp_conc_id, contains("Concentration Specification")) %>%
+          tidyr::pivot_longer(names_to = "conc_medium", values_to = "conc_curator_comment", cols=contains("Concentration Specification")) %>%
+          dplyr::mutate(conc_medium = gsub("Concentration Specification", "", conc_medium),
+                        across(c("conc_medium", "conc_curator_comment"), ~stringr::str_squish(.))) %>%
+          distinct() %>%
+          rowwise() %>%
+          # Clean up NA cases
+          dplyr::mutate(conc_curator_comment = ifelse((is.na(conc_curator_comment) | conc_curator_comment == "NA"), 
+                                                      "", 
+                                                      conc_curator_comment)) %>%
+          ungroup()
+        
+        # Handle case where there's only 1 conc_medium specification, often called "Tissue Concentration Specification"
+        if(length(unique(tmp2$conc_medium)) == 1){
+          tmp2$conc_medium = unique(tmp$conc_medium)
+        }  
+        
+        # Re-join as comment field
+        tmp = tmp %>%
+          left_join(tmp2, 
+                    by = c("tmp_conc_id", "conc_medium")) %>%
+          select(-tmp_conc_id) %>%
+          # Case where the Analyte is "NA" for a baseline measurement
+          filter(analyte_name != 'NA') %>%
+          mutate(dose_level = as.numeric(dose_level))
+      } else {
+        tmp$conc_curator_comment = NA
       }
-      
-      # Re-join as comment field
-      tmp = tmp %>%
-        left_join(tmp2, 
-                  by = c("tmp_conc_id", "conc_medium")) %>%
-        select(-tmp_conc_id) %>%
-        # Case where the Analyte is "NA" for a baseline measurement
-        filter(analyte_name != 'NA') %>%
-        mutate(dose_level = as.numeric(dose_level))
     }
     
     # Return distinct with sequential ID field
@@ -226,7 +281,7 @@ extract_ntp_data_file <- function(filepath,
   out$Conc_Time_Values = out$Series %>%
     dplyr::select(fk_series_id = id, time, conc, figure_name, conc_curator_comment) %>%
     # Add id field
-    dplyr::mutate(time = as.numeric(time), 
+    dplyr::mutate(#time = as.numeric(time), 
                   id = 1:n()) %>%
     # Format Animal ID and Concentration Specification columns to comment
     tidyr::unite(figure_name, conc_curator_comment, col="curator_comment", sep = "; ") %>%
@@ -265,6 +320,38 @@ extract_ntp_data_file <- function(filepath,
   out$Conc_Time_Values$conc[out$Conc_Time_Values$conc == "." & grepl("calibration curve|limit of quantitation", out$Conc_Time_Values$curator_comment)] = "NQ"
   # Fill in "NA" for No data
   out$Conc_Time_Values$conc[out$Conc_Time_Values$conc == "." & grepl("No data", out$Conc_Time_Values$curator_comment)] = "NA"
+  # Substitute BLOQ with NQ
+  out$Conc_Time_Values$conc[out$Conc_Time_Values$conc == "BLOQ"] = "NQ"
+  # Remove extraneous missing appended notes
+  out$Conc_Time_Values$curator_comment = out$Conc_Time_Values$curator_comment %>%
+    gsub("; NA", "", .)
+  
+  # Foreign key checks
+  if(any(!out$Studies$fk_reference_document_id[!is.na(out$Studies$fk_reference_document_id)] %in% out$Documents$id)){
+    stop("Nonexistent fk_reference_document_id present...")
+  }
+  if(any(is.na(out$Series$fk_subject_id)) | any(!out$Series$fk_subject_id %in% out$Subjects$id)){
+    stop("Missing or Nonexistent fk_subject_id present...")
+  }
+  if(any(is.na(out$Series$fk_study_id)) | any(!out$Series$fk_study_id %in% out$Studies$id)){
+    stop("Missing or Nonexistent fk_study_id present...")
+  }
+  if(any(is.na(out$Conc_Time_Values$fk_series_id)) | any(!out$Conc_Time_Values$fk_series_id %in% out$Series$id)){
+    stop("Missing or Nonexistent fk_subject_id present...")
+  }
+  # Extraneous entries
+  if(any(!out$Documents$id %in% c(out$Studies$fk_reference_document_id, 1))){
+    warning("Extraneous fk_reference_document_id present...")
+  }
+  if(any(!out$Subjects$id %in% out$Series$fk_subject_id)){
+    warning("Extraneous fk_subject_id present...")
+  }
+  if(any(!out$Studies$id %in% out$Series$fk_study_id)){
+    warning("Extraneous fk_study_id present...")
+  }
+  if(any(!out$Series$id %in% out$Conc_Time_Values$fk_series_id)){
+    warning("Extraneous fk_subject_id present...")
+  }
   
   # Return processed template
   return(out)
