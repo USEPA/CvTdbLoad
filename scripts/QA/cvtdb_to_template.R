@@ -32,7 +32,7 @@ cvtdb_to_template <- function(id=NULL, template_path=NULL, template_map=NULL){
   # template_path = "L:/Lab/NCCT_ExpoCast/ExpoCast2022/CvT-CompletedTemplates/CvT_data_template_articles.xlsx"
   cvt_template = get_cvt_template(template_path)
   # Template field map
-  # template_map = "input/template_map.xlsx"
+  # template_map = "input/qa_template_map.xlsx"
   map = readxl::read_xlsx(template_map)
   # Process pulled data into template format and return
   convert_cvt_to_template(in_dat = cvt_data, template = cvt_template, map = map) %>%
