@@ -25,6 +25,10 @@ extract_ntp_data_file <- function(filepath,
   # Pull data from all sheets
   in_dat = lapply(s_list, function(s){
     tmp = readxl::read_xlsx(filepath, sheet=s)
+    # Return NULL if no data for a sheet
+    if(!nrow(tmp)){
+      return(NULL)
+    }
     if(s != "Intro"){
       tmp = tmp %>%
         # Handle cases so bind_rows() can happen later
@@ -33,7 +37,8 @@ extract_ntp_data_file <- function(filepath,
     return(tmp)
   }) %T>% {
     names(.) <- s_list
-  }
+  } %>%
+    purrr::compact()
   
   # Get intro data separated and transformed into usable format
   intro_dat = in_dat %>% 
@@ -45,20 +50,6 @@ extract_ntp_data_file <- function(filepath,
     tidyr::separate(intro_metadata, into=c("field_name", "value"), 
                     sep=": ", 
                     fill = "right")
-  
-  # # Remove intro data sheet, then combine
-  # in_dat = in_dat %>%
-  #   purrr::list_modify("Intro" = NULL) %>%
-  #   dplyr::bind_rows() %>%
-  #   # Filter out caption information
-  #   filter(!grepl(paste0(c("BLOQ",
-  #                          "All concentration data",
-  #                          "NA = Not applicable",
-  #                          "ND = Not detected.",
-  #                          "Approximate value",
-  #                           paste0(letters, "\\.")
-  #   ), collapse="|"), `Animal ID`),
-  #   !is.na(`Animal ID`))
   
   # Remove intro sheet
   in_dat = in_dat %>%
@@ -80,18 +71,11 @@ extract_ntp_data_file <- function(filepath,
     names(.) <- names(in_dat)
   }
   
-  # if(!nrow(in_dat)){
-  #   stop("No data found after initial filter...")
-  # }
-    
-  # Filter out any "NA" analyte entries
-  # filter(!is.na(Analyte))
-  
   # Pull templates to map fields
   template = get_cvt_template(template_path = template_path)
   map = readxl::read_xlsx(template_map)
   
-  # TODO Loop through each in_dat sheet and process into template
+  # Loop through each in_dat sheet and process into template
   out <- lapply(names(in_dat), function(s){
     format_ntp_template(s_in_dat = in_dat[[s]], 
                         map=map, 
@@ -102,19 +86,75 @@ extract_ntp_data_file <- function(filepath,
     names(.) <- names(in_dat)
   }
   
-  # TODO Combine sheets into single template (handle ID values)
-  out_full <- lapply(names(template), function(s){
-    out %>%
+  # Empty dataframe for key map
+  id_map <- data.frame()
+  # Combine sheets into single template (handle ID values)
+  out <- lapply(names(template), function(s){
+    tmp <- out %>%
       purrr::map(s) %>%
-      bind_rows() %>%
-      return()
+      bind_rows()
+    # Build key map
+    if(!s %in% c("Conc_Time_Values")){
+      id_map <<- tmp %>%
+        dplyr::select(id) %>%
+        unique() %>%
+        dplyr::mutate(sheet=s,
+               id_new = 1:n()) %>%
+        rbind(id_map, .)
+      # Renumber ID column
+      tmp <- tmp %>%
+        dplyr::mutate(id = 1:n())
+    }
+    return(tmp)
   }) %T>% {
     names(.) <- names(template)
   }
   
-  # TODO Remap ID fields
+  # Remap Foreign Key ID fields
+  # fk_study_id remap
+  out$Series <- out$Series %>%
+    dplyr::left_join(id_map %>% 
+                filter(sheet == "Studies") %>%
+                select(-sheet),
+              by=c("fk_study_id"="id")) %>%
+    dplyr::select(-fk_study_id) %>%
+    dplyr::rename(fk_study_id=id_new)
+  # fk_subject_id remap
+  out$Series <- out$Series %>%
+    dplyr::left_join(id_map %>% 
+                       filter(sheet == "Subjects") %>%
+                       select(-sheet),
+                     by=c("fk_subject_id"="id")) %>%
+    dplyr::select(-fk_subject_id) %>%
+    dplyr::rename(fk_subject_id=id_new) %>%
+    # Reorder columns
+    select(any_of(names(template$Series)))
+  # fk_series_id remap
+  out$Conc_Time_Values <- out$Conc_Time_Values %>%
+    dplyr::left_join(id_map %>% 
+                       filter(sheet == "Series") %>%
+                       select(-sheet),
+                     by=c("fk_series_id"="id")) %>%
+    dplyr::select(-fk_series_id) %>%
+    dplyr::rename(fk_series_id=id_new) %>%
+    select(any_of(names(template$Conc_Time_Values)))
   
-  # TODO Make Documents and Studies Unique (remap ID)
+  
+  # De-Dup entries (Documents and Studies)
+  # Documents sheet is always going to be all dups of the first row
+  # doc_dups <- get_ntp_dup_keys(df=out, sheet="Documents")
+  out$Documents <- out$Documents[1, ]
+  # Studies will have duplicates, so get dataframe of dups
+  study_dups <- get_ntp_dup_keys(df=out, sheet="Studies")
+  # Remove duplicates from studies
+  out$Studies <- out$Studies[!duplicated(out$Studies %>% select(-id)),]
+  # Remap dups in Series sheet
+  out$Series <- out$Series %>%
+    left_join(study_dups, 
+              by=c("fk_study_id"="dup_id")) %>%
+    dplyr::select(-fk_study_id) %>%
+    dplyr::rename(fk_study_id=id_new) %>%
+    select(any_of(names(template$Series)))
   
   # Fill in analyte_casrn if analyte name is the same as the "Compound Name"
   out$Series$analyte_casrn[out$Series$analyte_name == toString(intro_dat$value[intro_dat$field_name == "Compound Name"])] = toString(intro_dat$value[intro_dat$field_name == "CASRN"])
@@ -172,6 +212,12 @@ get_cvt_template <- function(template_path){
     return()
 }
 
+#' format_ntp_template
+#' Helper function that extracts data from NTP document sheets into CvT template format
+#' @param s_in_dat NTP document sheet data
+#' @param map NTP field map
+#' @param template CvT extraction template
+#' @param sheetname Name of the NTP sheet being processed
 format_ntp_template <- function(s_in_dat, map, template, sheetname){
   # Check if any data to process
   if(!nrow(s_in_dat)){
@@ -287,7 +333,9 @@ format_ntp_template <- function(s_in_dat, map, template, sheetname){
       
       # Filter out those without a dose_level (happens due to spacer row in sheets before caption)
       tmp = tmp %>%
-        dplyr::mutate(across(any_of(c("dose_level", "dose_frequency", "dose_volume")), ~suppressWarnings(as.numeric(.)))) %>%
+        dplyr::mutate(across(any_of(c("dose_level", 
+                                      #"dose_frequency", 
+                                      "dose_volume")), ~suppressWarnings(as.numeric(.)))) %>%
         dplyr::filter(!is.na(dose_level)) %>%
         # Sort rows for ease of review
         arrange(test_substance_name, administration_route, dose_level, dose_level_units)
@@ -408,9 +456,9 @@ format_ntp_template <- function(s_in_dat, map, template, sheetname){
         # Make names unique
         conc_cols_name <- sub('Concentration \\(.*', '', conc_cols[grepl("Concentration \\(", conc_cols)]) %>%
           stringr::str_squish() %>%
-          make.unique(sep="_") %>%
+          make.unique(sep="_") #%>%
           # Add additional suffix for cases where Conc and Unit field already present
-          paste0(., "_a")
+          # paste0(., "_a")
         
         # Get units
         conc_cols_units <- sub('.*\\(', '', conc_cols[grepl("Concentration \\(", conc_cols)]) %>%
@@ -549,4 +597,39 @@ format_ntp_template <- function(s_in_dat, map, template, sheetname){
   }
   
   return(out)
+}
+
+#'get_ntp_dup_keys
+#'Helper function to return a dataframe to rekey duplicate entries
+#'@param df Input list of extracted CvT data sheets
+#'@param sheet Name of the sheet to find dup keys
+get_ntp_dup_keys <- function(df, sheet){
+  orig_ids <- data.frame(id_new = df[[sheet]]$id,
+                         dup_id = df[[sheet]]$id)
+  # Get initial list of dups
+  dup_list <- df[[sheet]] %>%
+    dplyr::group_by(across(c(-id))) %>%
+    # Get "," separated list of related keys
+    dplyr::mutate(id_groups = paste0(id, collapse=", ")) %>%
+    dplyr::ungroup() %>%
+    # filter(grepl(", ", id_groups)) %>%
+    dplyr::select(id_groups) %>%
+    distinct() %>%
+    # Determine the parent key
+    tidyr::separate(id_groups, into=c("id_new", "dup_id"), sep=", ", 
+                    extra="merge", fill = "right")
+  # Fill in any NA values (parent but no dups)
+  dup_list$dup_id[is.na(dup_list$dup_id)] <- dup_list$id_new[is.na(dup_list$dup_id)]
+  # Split out the list into a map
+  dup_list <- dup_list %>%
+    tidyr::separate_rows(dup_id, sep=", ")
+  # Fill in keys that do not need to be changed
+  dup_list <- dup_list %>%
+    rbind(orig_ids %>% 
+            filter(!id_new %in% dup_list$dup_id)) %>%
+    dplyr::mutate(across(everything(), ~as.numeric(.))) %>%
+    # Sort and arrange fields before return
+    dplyr::arrange(dup_id, id_new) %>%
+    dplyr::select(dup_id, id_new) %>%
+    return()
 }
