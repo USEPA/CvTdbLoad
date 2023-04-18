@@ -60,6 +60,26 @@ extract_ntp_data_file <- function(filepath,
     ), collapse="|"), `Animal ID`),
     !is.na(`Animal ID`))
   
+  # # Remove intro sheet
+  # in_dat = in_dat %>%
+  #   purrr::list_modify("Intro" = NULL)
+  # 
+  # in_dat = lapply(in_dat, function(s){
+  #   s %>%
+  #     # Filter out caption information
+  #     filter(!grepl(paste0(c("BLOQ",
+  #                            "All concentration data",
+  #                            "NA = Not applicable",
+  #                            "ND = Not detected.",
+  #                            "Approximate value",
+  #                            paste0(letters, "\\.")
+  #     ), collapse="|"), `Animal ID`),
+  #     !is.na(`Animal ID`)) %>%
+  #     return()
+  # }) %T>% {
+  #   names(.) <- names(in_dat)
+  # }
+  
   if(!nrow(in_dat)){
     stop("No data found after initial filter...")
   }
@@ -177,32 +197,6 @@ extract_ntp_data_file <- function(filepath,
       
       if(length(fix_cols)) stop("Unhandled studies field: ", toString(fix_cols))
       
-      # for(f_col in fix_cols){
-      #   message("...Fixing col: ", f_col)
-      #   # Handle dose volume/units splitting
-      #   if(grepl("dose frequency", f_col, ignore.case = TRUE)) {
-      #     tmp = tmp %>%
-      #       pivot_longer(cols=all_of(f_col), names_to = "dose_frequency_units", values_to = "dose_frequency") %>%
-      #       mutate(dose_frequency_units = stringr::str_extract(dose_frequency_units, "(?<=\\().*(?=\\))")) %>%
-      #       unite(col="dose_frequency", dose_frequency, dose_frequency_units, sep = " ")
-      #     # dose_frequency
-      #     
-      #   } else if(grepl("volume", f_col, ignore.case = TRUE)){
-      #     tmp = tmp %>%
-      #       dplyr::rename(dose_volume = all_of(f_col)) %>%
-      #       dplyr::mutate(dose_volume_units = f_col %>%
-      #                       # Extract inside parentheses
-      #                       stringr::str_extract(., "(?<=\\().*(?=\\))"))
-      #   } else if(grepl("dose", f_col, ignore.case = TRUE)) {
-      #     # Handle dose level/units splitting
-      #     tmp = tmp %>%
-      #       pivot_longer(cols=all_of(f_col), names_to = "dose_level_units", values_to = "dose_level") %>%
-      #       mutate(dose_level_units = stringr::str_extract(dose_level_units, "(?<=\\().*(?=\\))"))
-      #   } else {
-      #     # Catch any future unhandled
-      #     stop("Unhandled studies field: ", f_col)
-      #   }
-      # }
       # Filter out those without a dose_level (happens due to spacer row in sheets before caption)
       tmp = tmp %>%
         dplyr::mutate(across(any_of(c("dose_level", "dose_frequency", "dose_volume")), ~suppressWarnings(as.numeric(.)))) %>%
@@ -273,12 +267,13 @@ extract_ntp_data_file <- function(filepath,
       # Remove handled cases
       fix_cols <- fix_cols[!fix_cols %in% f_col]
       
-      # Handle dose volume/units splitting
+      # Handle dose frequency/units splitting
       f_col <- fix_cols[grepl("dose frequency|dose_frequency", fix_cols, ignore.case = TRUE)]
       if(length(f_col)) {
         tmp = tmp %>%
           tidyr::pivot_longer(cols=all_of(f_col), names_to = "dose_frequency_units", values_to = "dose_frequency") %>%
           dplyr::mutate(dose_frequency_units = stringr::str_extract(dose_frequency_units, "(?<=\\().*(?=\\))")) %>%
+          filter(!is.na(dose_frequency), !is.na(dose_frequency_units)) %>%
           tidyr::unite(col="dose_frequency", dose_frequency, dose_frequency_units, sep = " ") %>%
           dplyr::mutate(dose_frequency = gsub(" NA", "", dose_frequency) %>%
                           stringr::str_squish())
@@ -299,30 +294,13 @@ extract_ntp_data_file <- function(filepath,
       
       if(length(fix_cols)) stop("Unhandled studies field: ", toString(fix_cols))
       
-      # for(f_col in fix_cols){
-      #   if(!f_col %in% names(tmp)) next
-      #   if(grepl("target time", f_col, ignore.case = TRUE)){
-      #     tmp = tmp %>%
-      #       pivot_longer(cols=contains("target time", ignore.case=TRUE), 
-      #                    names_to = "time_units", values_to = "time") %>%
-      #       mutate(time_units = stringr::str_extract(time_units, "(?<=\\().*(?=\\))"))
-      #   } else if(grepl("dose", f_col, ignore.case = TRUE)) {
-      #     # Handle dose level/units splitting
-      #     tmp = tmp %>%
-      #       pivot_longer(cols=all_of(f_col), names_to = "dose_level_units", values_to = "dose_level") %>%
-      #       mutate(dose_level_units = stringr::str_extract(dose_level_units, "(?<=\\().*(?=\\))"))
-      #   } else {
-      #     # Catch any future unhandled
-      #     stop("Unhandled series field: ", f_col)  
-      #   }
-      # }
-      
       # Figure name as Animal ID
       tmp$figure_name = paste0("Animal ID: ", tmp$figure_name, "_", tmp$sex)
       
       # Split columns based on conc_medium
       tmp = tmp %>%
-        dplyr::mutate(across(any_of(c("dose_level", "dose_frequency", "dose_volume")), ~suppressWarnings(as.numeric(.)))) %>%
+        dplyr::mutate(across(any_of(c("dose_level", #"dose_frequency", 
+                                      "dose_volume")), ~suppressWarnings(as.numeric(.)))) %>%
         # Filter out NA dose_levels
         filter(!is.na(dose_level)) %>%
         # Clean up and set default fields
@@ -335,20 +313,16 @@ extract_ntp_data_file <- function(filepath,
       # Handle case of conc_medium in "()" of a field name
       # Create a Concentration Unit field
       if(any(grepl("Concentration \\(", names(tmp)))){
-        # tmp <- tmp %>%
-        #   # Splitting out columns with units in the name
-        #   tidyr::pivot_longer(names_to = "conc_medium", values_to = "conc", cols=contains("Concentration (")) %>%
-        #   tidyr::separate(col=conc_medium, into=c("conc_medium", "conc_units"), sep="\\(") %>%
-        #   dplyr::mutate(conc_medium = gsub("Concentration", "", conc_medium),
-        #                 conc_units = gsub("\\)", "", conc_units),
-        #                 across(c("conc_medium", "conc_units"), ~stringr::str_squish(.)))
         
+        # Get list of conc fields with units in the name
         conc_cols <- names(tmp)[grepl("Concentration \\(", names(tmp))]
         
         # Make names unique
         conc_cols_name <- sub('Concentration \\(.*', '', conc_cols[grepl("Concentration \\(", conc_cols)]) %>%
           stringr::str_squish() %>%
-          make.unique(sep="_")
+          make.unique(sep="_") %>%
+          # Add additional suffix for cases where Conc and Unit field already present
+          paste0(., "_a")
         
         # Get units
         conc_cols_units <- sub('.*\\(', '', conc_cols[grepl("Concentration \\(", conc_cols)]) %>%
@@ -360,30 +334,11 @@ extract_ntp_data_file <- function(filepath,
         
         # Create concentration units columns
         for(col in conc_cols){
-          # dup_i <- 1
           tmp_col <- col %>% 
             strsplit(split="\\(") %>% unlist()
           tmp_col[1] <- tmp_col[1] %>% 
             stringr::str_squish() %>%
             paste0(., " Unit")
-          
-          # Handles case where field already exists, so adds suffix for conc value/units field name
-          # while(tmp_col[1] %in% names(tmp)){
-          #   if(dup_i == 1){
-          #     tmp_col[1] <- paste0(tmp_col[1], "_", dup_i)
-          #   } else {
-          #     tmp_col[1] <- gsub(paste0("_", dup_i-1), paste0("_", dup_i), tmp_col[1])
-          #   }
-          #   dup_i <- dup_i + 1
-          #   # Name a vector to rename
-          #   col_rename <- c(col) %T>% {
-          #     names(.) <- col %>%
-          #       sub('.*\\(', paste0(tmp_col[1], " ("), .)
-          #   }
-          #   # Rename value col as well
-          #   tmp <- tmp %>%
-          #     dplyr::rename(all_of(col_rename))
-          # }
           
           tmp[[tmp_col[1]]] <- tmp_col[2] %>% gsub("\\)", "", .)
         }
@@ -400,8 +355,6 @@ extract_ntp_data_file <- function(filepath,
           # Splitting out columns with units in the name
           tidyr::pivot_longer(names_to = "conc_medium", values_to = "conc_col_values", 
                               cols=contains("Concentration")
-                                # names(.)[grepl("Concentration", names(.)) & 
-                                #                     !grepl("Specification|Unit", names(.))]
                               ) %>%
           tidyr::separate(col=conc_medium, into=c("conc_medium", "conc_cols"), sep=" Concentration",
                           extra="merge") %>%
@@ -413,11 +366,17 @@ extract_ntp_data_file <- function(filepath,
                                                   )
                                            )) %>%
           dplyr::ungroup() %>%
-          tidyr::pivot_wider(id_cols = c(tmp_conc_id, conc_medium), 
-                             names_from = "conc_cols", values_from = "conc_col_values") %>%
+          tidyr::pivot_wider(
+            # id_cols = c(tmp_conc_id, figure_name, test_substance_name, 
+            #             dose_level, dose_level_units, administration_route, 
+            #             analyte_name, time_units, conc_medium), 
+            names_from = "conc_cols", 
+            values_from = "conc_col_values") %>%
           dplyr::mutate(conc_medium = gsub("Concentration", "", conc_medium),
                         conc_units = gsub("\\)", "", conc_units),
-                        across(any_of(c("conc_medium", "conc_units", "conc_curator_comment")), ~stringr::str_squish(.)))
+                        across(any_of(c("conc_medium", "conc_units", "conc_curator_comment")), ~stringr::str_squish(.))) %>%
+          # Filter out those without units 
+          filter(!is.na(conc_units))
       }
       
       # Fix concentration specification fields to match conc_medium entries
