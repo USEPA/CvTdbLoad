@@ -46,43 +46,43 @@ extract_ntp_data_file <- function(filepath,
                     sep=": ", 
                     fill = "right")
   
-  # Remove intro data sheet, then combine
-  in_dat = in_dat %>%
-    purrr::list_modify("Intro" = NULL) %>%
-    dplyr::bind_rows() %>%
-    # Filter out caption information
-    filter(!grepl(paste0(c("BLOQ",
-                           "All concentration data",
-                           "NA = Not applicable",
-                           "ND = Not detected.",
-                           "Approximate value",
-                            paste0(letters, "\\.")
-    ), collapse="|"), `Animal ID`),
-    !is.na(`Animal ID`))
-  
-  # # Remove intro sheet
+  # # Remove intro data sheet, then combine
   # in_dat = in_dat %>%
-  #   purrr::list_modify("Intro" = NULL)
-  # 
-  # in_dat = lapply(in_dat, function(s){
-  #   s %>%
-  #     # Filter out caption information
-  #     filter(!grepl(paste0(c("BLOQ",
-  #                            "All concentration data",
-  #                            "NA = Not applicable",
-  #                            "ND = Not detected.",
-  #                            "Approximate value",
-  #                            paste0(letters, "\\.")
-  #     ), collapse="|"), `Animal ID`),
-  #     !is.na(`Animal ID`)) %>%
-  #     return()
-  # }) %T>% {
-  #   names(.) <- names(in_dat)
-  # }
+  #   purrr::list_modify("Intro" = NULL) %>%
+  #   dplyr::bind_rows() %>%
+  #   # Filter out caption information
+  #   filter(!grepl(paste0(c("BLOQ",
+  #                          "All concentration data",
+  #                          "NA = Not applicable",
+  #                          "ND = Not detected.",
+  #                          "Approximate value",
+  #                           paste0(letters, "\\.")
+  #   ), collapse="|"), `Animal ID`),
+  #   !is.na(`Animal ID`))
   
-  if(!nrow(in_dat)){
-    stop("No data found after initial filter...")
+  # Remove intro sheet
+  in_dat = in_dat %>%
+    purrr::list_modify("Intro" = NULL)
+
+  in_dat = lapply(in_dat, function(s){
+    s %>%
+      # Filter out caption information
+      filter(!grepl(paste0(c("BLOQ",
+                             "All concentration data",
+                             "NA = Not applicable",
+                             "ND = Not detected.",
+                             "Approximate value",
+                             paste0(letters, "\\.")
+      ), collapse="|"), `Animal ID`),
+      !is.na(`Animal ID`)) %>%
+      return()
+  }) %T>% {
+    names(.) <- names(in_dat)
   }
+  
+  # if(!nrow(in_dat)){
+  #   stop("No data found after initial filter...")
+  # }
     
   # Filter out any "NA" analyte entries
   # filter(!is.na(Analyte))
@@ -91,30 +91,118 @@ extract_ntp_data_file <- function(filepath,
   template = get_cvt_template(template_path = template_path)
   map = readxl::read_xlsx(template_map)
   
+  # TODO Loop through each in_dat sheet and process into template
+  out <- lapply(names(in_dat), function(s){
+    format_ntp_template(s_in_dat = in_dat[[s]], 
+                        map=map, 
+                        template=template,
+                        sheetname=s
+                        )
+  }) %T>% {
+    names(.) <- names(in_dat)
+  }
+  
+  # TODO Combine sheets into single template (handle ID values)
+  out_full <- lapply(names(template), function(s){
+    out %>%
+      purrr::map(s) %>%
+      bind_rows() %>%
+      return()
+  }) %T>% {
+    names(.) <- names(template)
+  }
+  
+  # TODO Remap ID fields
+  
+  # TODO Make Documents and Studies Unique (remap ID)
+  
+  # Fill in analyte_casrn if analyte name is the same as the "Compound Name"
+  out$Series$analyte_casrn[out$Series$analyte_name == toString(intro_dat$value[intro_dat$field_name == "Compound Name"])] = toString(intro_dat$value[intro_dat$field_name == "CASRN"])
+  
+  # Fill in "ND" for conc values
+  out$Conc_Time_Values$conc[out$Conc_Time_Values$conc == "." & grepl("Not detected|ND|not detected", out$Conc_Time_Values$curator_comment)] = "ND"
+  # Fill in "NQ" for below calibration curve range
+  out$Conc_Time_Values$conc[out$Conc_Time_Values$conc == "." & grepl("calibration curve|limit of quantitation", out$Conc_Time_Values$curator_comment)] = "NQ"
+  # Fill in "NA" for No data
+  out$Conc_Time_Values$conc[out$Conc_Time_Values$conc == "." & grepl("No data", out$Conc_Time_Values$curator_comment)] = "NA"
+  # Substitute BLOQ with NQ
+  out$Conc_Time_Values$conc[out$Conc_Time_Values$conc == "BLOQ"] = "NQ"
+  # Remove extraneous missing appended notes
+  out$Conc_Time_Values$curator_comment = out$Conc_Time_Values$curator_comment %>%
+    gsub("; NA", "", .)
+  
+  # Foreign key checks
+  if(any(!out$Studies$fk_reference_document_id[!is.na(out$Studies$fk_reference_document_id)] %in% out$Documents$id)){
+    stop("Nonexistent fk_reference_document_id present...")
+  }
+  if(any(is.na(out$Series$fk_subject_id)) | any(!out$Series$fk_subject_id %in% out$Subjects$id)){
+    stop("Missing or Nonexistent fk_subject_id present...")
+  }
+  if(any(is.na(out$Series$fk_study_id)) | any(!out$Series$fk_study_id %in% out$Studies$id)){
+    stop("Missing or Nonexistent fk_study_id present...")
+  }
+  if(any(is.na(out$Conc_Time_Values$fk_series_id)) | any(!out$Conc_Time_Values$fk_series_id %in% out$Series$id)){
+    stop("Missing or Nonexistent fk_subject_id present...")
+  }
+  # Extraneous entries
+  if(any(!out$Documents$id %in% c(out$Studies$fk_reference_document_id, 1))){
+    warning("Extraneous fk_reference_document_id present in ", filepath)
+  }
+  if(any(!out$Subjects$id %in% out$Series$fk_subject_id)){
+    warning("Extraneous fk_subject_id present in ", filepath)
+  }
+  if(any(!out$Studies$id %in% out$Series$fk_study_id)){
+    warning("Extraneous fk_study_id present in ", filepath)
+  }
+  if(any(!out$Series$id %in% out$Conc_Time_Values$fk_series_id)){
+    warning("Extraneous fk_subject_id present in ", filepath)
+  }
+  
+  # Return processed template
+  return(out)
+}
+
+#' get_cvt_template
+#' Pull the CvT template in a list of empty dataframes
+get_cvt_template <- function(template_path){
+  s_list = readxl::excel_sheets(template_path)
+  lapply(s_list, function(s){
+    readxl::read_xlsx(template_path, sheet=s)
+  }) %T>% { names(.) <- s_list } %>%
+    return()
+}
+
+format_ntp_template <- function(s_in_dat, map, template, sheetname){
+  # Check if any data to process
+  if(!nrow(s_in_dat)){
+    message("...No data found after initial filter...")
+    return(NULL)
+  }
+  message("...Working on sheet: ", sheetname)
   # Loop through the template and populate the fields
   # Use field map to select and populate
   # Map field names to template
   out = lapply(names(template)[!names(template) %in% c("Conc_Time_Values")], function(s){
-    message("Working on sheet: ", s)
+    message("......Working on sheet: ", s)
     # Update map to include concentration columns dynamically
     if(s  == "Series"){
       map = rbind(map, 
-                  data.frame(from=names(in_dat)[grepl("Concentration|Time|Dose", names(in_dat))]) %>%
+                  data.frame(from=names(s_in_dat)[grepl("Concentration|Time|Dose", names(s_in_dat))]) %>%
                     mutate(to=from,
                            sheet=tolower(s)))  
     } else if (s == "Subjects"){
       map = rbind(map, 
-                  data.frame(from=names(in_dat)[grepl("Weight", names(in_dat))]) %>%
+                  data.frame(from=names(s_in_dat)[grepl("Weight", names(s_in_dat))]) %>%
                     mutate(to=from,
                            sheet=tolower(s)))  
     } else if (s == "Studies"){
       map = rbind(map, 
-                  data.frame(from=names(in_dat)[grepl("Dose", names(in_dat))]) %>%
+                  data.frame(from=names(s_in_dat)[grepl("Dose", names(s_in_dat))]) %>%
                     mutate(to=from,
                            sheet=tolower(s)))  
     } else if(s == "Conc_Time_Values"){
       map = rbind(map, 
-                  data.frame(from=names(in_dat)[grepl("Time", names(in_dat))]) %>%
+                  data.frame(from=names(s_in_dat)[grepl("Time", names(s_in_dat))]) %>%
                     mutate(to=from,
                            sheet=tolower(s)))  
     }
@@ -129,7 +217,7 @@ extract_ntp_data_file <- function(filepath,
       }
     
     # Select and rename/map columns of interest
-    tmp = in_dat %>%
+    tmp = s_in_dat %>%
       dplyr::rename(any_of(s_map)) %>%
       select(any_of(names(s_map))) %>%
       distinct()
@@ -167,7 +255,7 @@ extract_ntp_data_file <- function(filepath,
           dplyr::mutate(dose_frequency_units = stringr::str_extract(dose_frequency_units, "(?<=\\().*(?=\\))")) %>%
           tidyr::unite(col="dose_frequency", dose_frequency, dose_frequency_units, sep = " ") %>%
           dplyr::mutate(dose_frequency = gsub(" NA", "", dose_frequency) %>%
-                   stringr::str_squish())
+                          stringr::str_squish())
         tmp$dose_frequency[tmp$dose_frequency == "NA"] <- NA
       }
       # Remove handled cases
@@ -235,8 +323,8 @@ extract_ntp_data_file <- function(filepath,
       
       # Some NTP studies have their time/units columns together, so don't map
       if(!any(grepl("time|dose", names(tmp), ignore.case=TRUE))){
-        # Pull in_dat again, including missing time
-        tmp = in_dat %>%
+        # Pull s_in_dat again, including missing time
+        tmp = s_in_dat %>%
           dplyr::rename(any_of(s_map)) %>%
           select(any_of(names(s_map)), matches("target time|dose|concentration", ignore.case = TRUE)) %>%
           distinct()
@@ -254,7 +342,7 @@ extract_ntp_data_file <- function(filepath,
                     "Study Time", "Study Time Unit",
                     # Check for already mapped columns (not the same name to and from)
                     map$to[map$sheet == tolower(s) & map$from != map$to] %>% unique()
-                    )]
+        )]
       
       # Handle time level/units splitting
       f_col <- fix_cols[grepl("target time|time point", fix_cols, ignore.case = TRUE)]
@@ -355,7 +443,7 @@ extract_ntp_data_file <- function(filepath,
           # Splitting out columns with units in the name
           tidyr::pivot_longer(names_to = "conc_medium", values_to = "conc_col_values", 
                               cols=contains("Concentration")
-                              ) %>%
+          ) %>%
           tidyr::separate(col=conc_medium, into=c("conc_medium", "conc_cols"), sep=" Concentration",
                           extra="merge") %>%
           dplyr::rowwise() %>%
@@ -363,8 +451,8 @@ extract_ntp_data_file <- function(filepath,
                                            ifelse(grepl("Unit", conc_cols), "conc_units", 
                                                   ifelse(grepl("Specification", conc_cols), 
                                                          "conc_curator_comment", conc_cols)
-                                                  )
-                                           )) %>%
+                                           )
+          )) %>%
           dplyr::ungroup() %>%
           tidyr::pivot_wider(
             # id_cols = c(tmp_conc_id, figure_name, test_substance_name, 
@@ -418,8 +506,8 @@ extract_ntp_data_file <- function(filepath,
     # Return distinct with sequential ID field
     tmp %>% 
       distinct() %>%
-      # Add id sequence
-      dplyr::mutate(id = 1:n()) %>%
+      # Add id sequence, with sheet and sheetname
+      dplyr::mutate(id = paste0(1:n(), "_", s, "_", sheetname)) %>%
       select(-any_of(c("tmp_conc_id"))) %>%
       return()
   }) %T>% {
@@ -431,7 +519,7 @@ extract_ntp_data_file <- function(filepath,
     dplyr::select(fk_series_id = id, time, conc, figure_name, conc_curator_comment) %>%
     # Add id field
     dplyr::mutate(#time = as.numeric(time), 
-                  id = 1:n()) %>%
+      id = 1:n()) %>%
     # Format Animal ID and Concentration Specification columns to comment
     tidyr::unite(figure_name, conc_curator_comment, col="curator_comment", sep = "; ") %>%
     mutate(curator_comment = gsub("; $", "", curator_comment))
@@ -460,58 +548,5 @@ extract_ntp_data_file <- function(filepath,
     names(.) <- names(template)
   }
   
-  # Fill in analyte_casrn if analyte name is the same as the "Compound Name"
-  out$Series$analyte_casrn[out$Series$analyte_name == toString(intro_dat$value[intro_dat$field_name == "Compound Name"])] = toString(intro_dat$value[intro_dat$field_name == "CASRN"])
-  
-  # Fill in "ND" for conc values
-  out$Conc_Time_Values$conc[out$Conc_Time_Values$conc == "." & grepl("Not detected|ND|not detected", out$Conc_Time_Values$curator_comment)] = "ND"
-  # Fill in "NQ" for below calibration curve range
-  out$Conc_Time_Values$conc[out$Conc_Time_Values$conc == "." & grepl("calibration curve|limit of quantitation", out$Conc_Time_Values$curator_comment)] = "NQ"
-  # Fill in "NA" for No data
-  out$Conc_Time_Values$conc[out$Conc_Time_Values$conc == "." & grepl("No data", out$Conc_Time_Values$curator_comment)] = "NA"
-  # Substitute BLOQ with NQ
-  out$Conc_Time_Values$conc[out$Conc_Time_Values$conc == "BLOQ"] = "NQ"
-  # Remove extraneous missing appended notes
-  out$Conc_Time_Values$curator_comment = out$Conc_Time_Values$curator_comment %>%
-    gsub("; NA", "", .)
-  
-  # Foreign key checks
-  if(any(!out$Studies$fk_reference_document_id[!is.na(out$Studies$fk_reference_document_id)] %in% out$Documents$id)){
-    stop("Nonexistent fk_reference_document_id present...")
-  }
-  if(any(is.na(out$Series$fk_subject_id)) | any(!out$Series$fk_subject_id %in% out$Subjects$id)){
-    stop("Missing or Nonexistent fk_subject_id present...")
-  }
-  if(any(is.na(out$Series$fk_study_id)) | any(!out$Series$fk_study_id %in% out$Studies$id)){
-    stop("Missing or Nonexistent fk_study_id present...")
-  }
-  if(any(is.na(out$Conc_Time_Values$fk_series_id)) | any(!out$Conc_Time_Values$fk_series_id %in% out$Series$id)){
-    stop("Missing or Nonexistent fk_subject_id present...")
-  }
-  # Extraneous entries
-  if(any(!out$Documents$id %in% c(out$Studies$fk_reference_document_id, 1))){
-    warning("Extraneous fk_reference_document_id present in ", filepath)
-  }
-  if(any(!out$Subjects$id %in% out$Series$fk_subject_id)){
-    warning("Extraneous fk_subject_id present in ", filepath)
-  }
-  if(any(!out$Studies$id %in% out$Series$fk_study_id)){
-    warning("Extraneous fk_study_id present in ", filepath)
-  }
-  if(any(!out$Series$id %in% out$Conc_Time_Values$fk_series_id)){
-    warning("Extraneous fk_subject_id present in ", filepath)
-  }
-  
-  # Return processed template
   return(out)
-}
-
-#' get_cvt_template
-#' Pull the CvT template in a list of empty dataframes
-get_cvt_template <- function(template_path){
-  s_list = readxl::excel_sheets(template_path)
-  lapply(s_list, function(s){
-    readxl::read_xlsx(template_path, sheet=s)
-  }) %T>% { names(.) <- s_list } %>%
-    return()
 }
