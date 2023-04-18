@@ -383,6 +383,13 @@ format_ntp_template <- function(s_in_dat, map, template, sheetname){
         tmp$test_substance_name = toString(intro_dat$value[intro_dat$field_name == "Compound Name"])
       }
       
+      # Handle case of Dose Frequency/Unit columns
+      if(all(c("Dose Frequency", "Dose Frequency Unit") %in% names(tmp))){
+        tmp <- tmp %>%
+          unite("dose_frequency_orig", `Dose Frequency`, `Dose Frequency Unit`, sep = " ")
+        tmp$dose_frequency_orig[tmp$dose_frequency_orig == "NA NA"] <- NA
+      }
+      
       # Run through cases to adjust/rename or split out
       fix_cols = names(tmp)[!names(tmp) %in% names(template[[s]])] %>%
         .[!grepl("Concentration", .)] %>% #"Concentration \\(|Concentration Specification|\\) Concentration", .)] %>%
@@ -409,7 +416,7 @@ format_ntp_template <- function(s_in_dat, map, template, sheetname){
         tmp = tmp %>%
           tidyr::pivot_longer(cols=all_of(f_col), names_to = "dose_frequency_units", values_to = "dose_frequency") %>%
           dplyr::mutate(dose_frequency_units = stringr::str_extract(dose_frequency_units, "(?<=\\().*(?=\\))")) %>%
-          filter(!is.na(dose_frequency), !is.na(dose_frequency_units)) %>%
+          #filter(!is.na(dose_frequency), !is.na(dose_frequency_units)) %>%
           tidyr::unite(col="dose_frequency", dose_frequency, dose_frequency_units, sep = " ") %>%
           dplyr::mutate(dose_frequency = gsub(" NA", "", dose_frequency) %>%
                           stringr::str_squish())
