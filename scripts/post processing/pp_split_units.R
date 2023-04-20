@@ -8,7 +8,7 @@
 #'
 pp_split_units <- function(schema_name){
   # Pull tables of interest  
-  tbl_list = query_cvt(paste0("SELECT table_name FROM information_schema.tables WHERE table_schema = '",
+  tbl_list = db_query_cvt(paste0("SELECT table_name FROM information_schema.tables WHERE table_schema = '",
                               schema_name,"' AND table_type = 'BASE TABLE'")) %>%
     # Filter out dictionary, audit tables, etc.
     filter(!grepl("dict|chemical|audit|tk_param", table_name)) %>%
@@ -21,7 +21,7 @@ pp_split_units <- function(schema_name){
   for(tbl_n in tbl_list){
     message("Processing table: ", tbl_n)
     # Get potential columns of interest based on "units" fields
-    u_fields = query_cvt(paste0("SELECT * FROM ", schema_name, ".", tbl_n, " LIMIT 1")) %>%
+    u_fields = db_query_cvt(paste0("SELECT * FROM ", schema_name, ".", tbl_n, " LIMIT 1")) %>%
       names() %T>% {
         # Cache full table names to filter against
         tbl_n_names <<- .
@@ -44,7 +44,7 @@ pp_split_units <- function(schema_name){
     # Loop through each unit-value pair and normalize
     for(r in seq_len(nrow(u_fields))){
       # Select fields of interest 
-      tmp = query_cvt(paste0("SELECT id, ", 
+      tmp = db_query_cvt(paste0("SELECT id, ", 
                              u_fields[r,] %>% unlist() %>% sort() %>% toString(), 
                              " FROM ", schema_name, ".", tbl_n)) %>%
         # Filter to those that contain unit strings in their value field

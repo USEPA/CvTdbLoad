@@ -36,9 +36,9 @@ for(type in names(tbl_info)){
   
   #Pull data to update
   if(update_all){#Update all records
-    input = query_cvt(paste0("SELECT ", toString(tbl_info[[type]]$select_list), " FROM ", tbl_info[[type]]$update_tbl))
+    input = db_query_cvt(paste0("SELECT ", toString(tbl_info[[type]]$select_list), " FROM ", tbl_info[[type]]$update_tbl))
   } else { #Only update what is NULL
-    input = query_cvt(paste0("SELECT ", toString(tbl_info[[type]]$select_list), 
+    input = db_query_cvt(paste0("SELECT ", toString(tbl_info[[type]]$select_list), 
                              " FROM ", tbl_info[[type]]$update_tbl, " WHERE ", tbl_info[[type]]$id_col, " IS NULL"))
   }
   
@@ -50,7 +50,7 @@ for(type in names(tbl_info)){
   input = input %>%
     mutate(across(tbl_info[[type]]$mutate_list, ~tolower(trimws(.))))
   #Get dictionary to match to and normalize
-  dict = query_cvt(paste0("SELECT ", toString(tbl_info[[type]]$select_list), 
+  dict = db_query_cvt(paste0("SELECT ", toString(tbl_info[[type]]$select_list), 
                      " FROM ", tbl_info[[type]]$dict)) %>%
     dplyr::rename(!!tbl_info[[type]]$id_col := id) %>%
     mutate(across(tbl_info[[type]]$mutate_list, ~tolower(trimws(.))))
@@ -63,7 +63,7 @@ for(type in names(tbl_info)){
   message("...unmatched records: ", length(unique(output[[tbl_info[[type]]$mutate_list]][is.na(output[[tbl_info[[type]]$id_col]])])))
   
   #Push updates
-  con = connect_to_CvT()
+  con = db_connect_to_CvT()
   dbWriteTable(con, value = output, name=c("cvt", "temp_tbl"), overwrite=TRUE, row.names=FALSE)  
   dbDisconnect(con)
   
@@ -71,8 +71,8 @@ for(type in names(tbl_info)){
                  " FROM cvt.temp_tbl m",
                  " WHERE h.id = m.id")  
   #Make update (only uncomment when ready to use)
-  #query_cvt(query=query)
-  query_cvt("DROP TABLE cvt.temp_tbl")
+  #db_query_cvt(query=query)
+  db_query_cvt("DROP TABLE cvt.temp_tbl")
   
 }
 message("Done...", Sys.time())

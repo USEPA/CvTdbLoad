@@ -70,7 +70,7 @@ qa_template_to_cvtdb <- function(in_file, template_path){
   
   # Check field name alignment with database
   name_check = lapply(names(in_dat), function(tbl_name){
-    db_names = query_cvt(paste0("SELECT * FROM cvt.", tbl_name, " LIMIT 1")) %>% names()
+    db_names = db_query_cvt(paste0("SELECT * FROM cvt.", tbl_name, " LIMIT 1")) %>% names()
     qc_names = names(in_dat[[tbl_name]])
     
     return(qc_names[!qc_names %in% db_names])
@@ -86,14 +86,4 @@ qa_template_to_cvtdb <- function(in_file, template_path){
   
   # Cache normalized template
   # save_normalized_template(df=in_dat, f=f)
-}
-
-#' get_cvt_template
-#' Pull the CvT template in a list of empty dataframes
-get_cvt_template <- function(template_path){
-  s_list = readxl::excel_sheets(template_path)
-  lapply(s_list, function(s){
-    readxl::read_xlsx(template_path, sheet=s)
-  }) %T>% { names(.) <- s_list } %>%
-    return()
 }

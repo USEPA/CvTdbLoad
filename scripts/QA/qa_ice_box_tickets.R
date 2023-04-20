@@ -12,7 +12,7 @@ invisible(sapply(file_source, source,.GlobalEnv))
 query_potential_dup <- function(dup_dat = NULL){
   
   # Get potential series
-  series_id = query_cvt(paste0("SELECT * FROM cvt.conc_time_values where concat(time_original, '_', conc_original) in ('", 
+  series_id = db_query_cvt(paste0("SELECT * FROM cvt.conc_time_values where concat(time_original, '_', conc_original) in ('", 
                                paste0(dup_dat, collapse="', '"), 
                                "') or concat(time_hr, '_', conc_original) in ('", 
                                paste0(dup_dat, collapse="', '"), 
@@ -22,10 +22,10 @@ query_potential_dup <- function(dup_dat = NULL){
     return(NA)
   }
   # Get potential studies
-  study_id = query_cvt(paste0("SELECT DISTINCT fk_study_id FROM cvt.series WHERE id in ('", 
+  study_id = db_query_cvt(paste0("SELECT DISTINCT fk_study_id FROM cvt.series WHERE id in ('", 
                                  paste0(series_id$fk_series_id, collapse = "', '"), "')"))
   # Get potential documents
-  doc_id = query_cvt(paste0("SELECT DISTINCT fk_extraction_document_id FROM cvt.studies WHERE id in ('", 
+  doc_id = db_query_cvt(paste0("SELECT DISTINCT fk_extraction_document_id FROM cvt.studies WHERE id in ('", 
                               paste0(study_id$fk_study_id, collapse = "', '"), "')"))
   
   return(doc_id$fk_extraction_document_id)
@@ -37,13 +37,13 @@ get_potential_dup <- function(doc_list){
     message("Pulling document: ", doc, " of ", length(doc_list))
     doc = doc_list[doc]
     tmp = list()
-    tmp$documents = query_cvt(paste0("SELECT * FROM cvt.documents where id = ", doc))
-    tmp$studies = query_cvt(paste0("SELECT * FROM cvt.studies where fk_extraction_document_id = ", doc))
-    tmp$series = query_cvt(paste0("SELECT * FROM cvt.series where fk_study_id in ('", 
+    tmp$documents = db_query_cvt(paste0("SELECT * FROM cvt.documents where id = ", doc))
+    tmp$studies = db_query_cvt(paste0("SELECT * FROM cvt.studies where fk_extraction_document_id = ", doc))
+    tmp$series = db_query_cvt(paste0("SELECT * FROM cvt.series where fk_study_id in ('", 
                                   paste0(tmp$studies$id, collapse = "', '"), "')"))
-    tmp$subjects = query_cvt(paste0("SELECT * FROM cvt.subjects where id in ('", 
+    tmp$subjects = db_query_cvt(paste0("SELECT * FROM cvt.subjects where id in ('", 
                                     paste0(unique(tmp$series$fk_subject_id), collapse="', '"),"')"))
-    tmp$conc_time_values = query_cvt(paste0("SELECT * FROM cvt.conc_time_values where fk_series_id in ('", 
+    tmp$conc_time_values = db_query_cvt(paste0("SELECT * FROM cvt.conc_time_values where fk_series_id in ('", 
                                             paste0(tmp$series$id, collapse="', '"),"')"))
     return(tmp)
   }) %T>% {

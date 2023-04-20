@@ -1,5 +1,5 @@
 #ERMODEL chemical list
-out = query_cvt("select pmid, other_study_identifier, tentatively_identified_test_substance from cvt.documents where extracted != 1 and tentatively_identified_test_substance is not NULL")
+out = db_query_cvt("select pmid, other_study_identifier, tentatively_identified_test_substance from cvt.documents where extracted != 1 and tentatively_identified_test_substance is not NULL")
 
 bracket_out = out %>%
   filter(grepl("\\[", tentatively_identified_test_substance))

@@ -29,7 +29,7 @@ match_to_cvt_docs <- function(df=NULL){
       unname() %>% unique() %>% paste0(collapse="', '")
   }) %T>% { names(.) <- check_list }
   #Pull all document data
-  #input = query_cvt("SELECT * FROM cvt.documents")
+  #input = db_query_cvt("SELECT * FROM cvt.documents")
   #Loop through the hierarchy to verify potenital duplicates
   doc_list = list()
   for(level in check_list){#Check each level, then filter out matched and to those missing a level entry
@@ -37,7 +37,7 @@ match_to_cvt_docs <- function(df=NULL){
       #No level filter found, skip
       next
     }
-    tmp = query_cvt(paste0("SELECT id as fk_document_id, ", level," FROM cvt.documents where ", 
+    tmp = db_query_cvt(paste0("SELECT id as fk_document_id, ", level," FROM cvt.documents where ", 
                            level, " in ('", where_clause[[level]],"')"))
     doc_list[[level]] = df %>%
       filter(!is.na(!!sym(level))) %>%
@@ -76,8 +76,8 @@ filter_to_load_series <- function(df = NULL, f = NULL){
 ###########################
 #Pull directly from Clowder
 ###########################
-#push_doc_list = get_clowder_docList(apiKey, clowder_dataset)
-#download_clowder_docs(docData = push_doc_list, outputDir = outputDir, apiKey = apiKey)
+#push_doc_list = clowder_get_docList(apiKey, clowder_dataset)
+#clowder_download_docs(docData = push_doc_list, outputDir = outputDir, apiKey = apiKey)
 
 ###########################
 #Push to CvT
@@ -135,7 +135,7 @@ for(i in seq_len(length(fileList))){
   ###Push Documents Sheet to CvT
   ###########################################################################
   message("...pushing to Documents table")
-  # push_to_CvT(df=doc_sheet_list$Documents %>%
+  # db_push_to_CvT(df=doc_sheet_list$Documents %>%
   #               filter(is.na(fk_document_id)) %>%
   #               select(pmid, other_study_identifier, doi,
   #                      first_author, year, title, url, curator_comment),
@@ -145,7 +145,7 @@ for(i in seq_len(length(fileList))){
     stop("NEED TO REFINE MATCHING TO NEWLY CREATED DOC ID VALUES")
     if(match_by_whole_entry){
       stop("manually change query to fit the create date")
-      match_entry = query_cvt("select * from cvt.documents where rec_create_dt = '2022-02-01 10:17:52.031871'") %>%
+      match_entry = db_query_cvt("select * from cvt.documents where rec_create_dt = '2022-02-01 10:17:52.031871'") %>%
         select(fk_document_id=id, pmid, other_study_identifier, doi, first_author, year, title, url, curator_comment)
       doc_sheet_list$Documents = doc_sheet_list$Documents %>%
         left_join(match_entry)
@@ -160,7 +160,7 @@ for(i in seq_len(length(fileList))){
       idFilter = lapply(idFilter, function(x) x[!is.na(x)]) %>% purrr::compact()
       #Join for multiple documents (pmid or other_study_identifier)
       doc_sheet_list$Documents = doc_sheet_list$Documents %>%
-        left_join(get_tbl_id(tblName="documents",
+        left_join(db_get_tbl_id(tblName="documents",
                              idFilter = paste0("WHERE ", where_clause)) %>%
                     select(id, pmid, other_study_identifier) %>%
                     rename(fk_document_id = id),
@@ -208,11 +208,11 @@ for(i in seq_len(length(fileList))){
       select(-Validated)
     
     doc_sheet_list$Studies = doc_sheet_list$Studies %>%
-      left_join(query_cvt("SELECT id as fk_dosed_chemical_id, dsstox_substance_id FROM cvt.chemicals"),
+      left_join(db_query_cvt("SELECT id as fk_dosed_chemical_id, dsstox_substance_id FROM cvt.chemicals"),
                 by="dsstox_substance_id")
     
   } else {
-    cvt_chemicals = query_cvt("SELECT id As fk_dosed_chemical_id, dsstox_substance_id, dsstox_casrn, preferred_name FROM cvt.chemicals")
+    cvt_chemicals = db_query_cvt("SELECT id As fk_dosed_chemical_id, dsstox_substance_id, dsstox_casrn, preferred_name FROM cvt.chemicals")
     doc_sheet_list$Studies = doc_sheet_list$Studies %>%
       left_join(cvt_chemicals, by=c("dsstox_substance_id", "dsstox_casrn", "preferred_name"))
     #Filter to ones that didn't match, add new chemicals table entry
@@ -231,7 +231,7 @@ for(i in seq_len(length(fileList))){
   
   doc_sheet_list$Studies = doc_sheet_list$Studies %>%
     select(-fk_administration_route, -administration_route_normalized) %>% #remove if already present, matching here now
-    left_join(query_cvt("SELECT * FROM cvt.administration_route_dict") %>%
+    left_join(db_query_cvt("SELECT * FROM cvt.administration_route_dict") %>%
                 select(fk_administration_route = id, administration_route_original, administration_route_normalized),
               by=c("administration_route_original"))
   
@@ -239,17 +239,17 @@ for(i in seq_len(length(fileList))){
     stop("...Administration route matching produced duplicates...check")
   }
   message("...pushing to Studies table")
-  # push_to_CvT(df=doc_sheet_list$Studies %>%
+  # db_push_to_CvT(df=doc_sheet_list$Studies %>%
   #               select(-id, -dsstox_substance_id, -chemistry_team_mapping, -fk_doc_id), 
   #             tblName="studies")
   # ####Push Subjects Sheet to CvT (no fk to add)
   message("...pushing to Subjects table")
-  # push_to_CvT(df=doc_sheet_list$Subjects %>%
+  # db_push_to_CvT(df=doc_sheet_list$Subjects %>%
   #               select(-age_normalized), tblName="subjects")
   
   if(match_by_whole_entry){
     stop("manually change query to fit the create date")
-    match_entry = query_cvt("select * from cvt.studies where rec_create_dt = '2022-02-01 10:31:19.259285'") %>%
+    match_entry = db_query_cvt("select * from cvt.studies where rec_create_dt = '2022-02-01 10:31:19.259285'") %>%
       select(-fk_extraction_document_id, -created_by, -updated_by, -rec_update_dt, -rec_create_dt) %>%
       dplyr::rename(fk_studies_id = id)
     doc_sheet_list$Studies = doc_sheet_list$Studies %>%
@@ -258,7 +258,7 @@ for(i in seq_len(length(fileList))){
     #Get Studies ID values (Assumes the query returns the rows in the same order they were uploaded...)
     doc_sheet_list$Studies = doc_sheet_list$Studies %>%
       #mutate(fk_extraction_document_id = as.character(fk_extraction_document_id)) %>%
-      left_join(get_tbl_id("studies", #Left join so it only joins what records match
+      left_join(db_get_tbl_id("studies", #Left join so it only joins what records match
                            idFilter=paste0("WHERE fk_extraction_document_id IN (",
                                            toString(doc_sheet_list$Documents$fk_document_id), ")")) %>%
                   rename(fk_studies_id = id))  
@@ -268,14 +268,14 @@ for(i in seq_len(length(fileList))){
   #Doesn't handle duplicate entries...
   if(match_by_whole_entry){
     stop("manually change query to fit the create date")
-    match_entry = query_cvt("select * from cvt.subjects where rec_create_dt = '2022-02-01 10:33:49.959818'") %>%
+    match_entry = db_query_cvt("select * from cvt.subjects where rec_create_dt = '2022-02-01 10:33:49.959818'") %>%
       select(-notes, -created_by, -updated_by, -rec_update_dt, -rec_create_dt) %>%
       dplyr::rename(fk_subjects_id = id)
     doc_sheet_list$Subjects = doc_sheet_list$Subjects %>%
       left_join(match_entry)
   } else {
     doc_sheet_list$Subjects = doc_sheet_list$Subjects %>%
-      left_join(get_tbl_id("subjects", idFilter="") %>%
+      left_join(db_get_tbl_id("subjects", idFilter="") %>%
                   rename(fk_subjects_id = id))  
   }
   
@@ -310,11 +310,11 @@ for(i in seq_len(length(fileList))){
       select(-Validated)
     
     doc_sheet_list$Series = doc_sheet_list$Series %>%
-      left_join(query_cvt("SELECT id as fk_analyzed_chemical_id, dsstox_substance_id FROM cvt.chemicals"),
+      left_join(db_query_cvt("SELECT id as fk_analyzed_chemical_id, dsstox_substance_id FROM cvt.chemicals"),
                 by="dsstox_substance_id")
     
   } else {
-    cvt_chemicals = query_cvt("SELECT id As fk_analyzed_chemical_id, dsstox_substance_id, dsstox_casrn, preferred_name FROM cvt.chemicals")
+    cvt_chemicals = db_query_cvt("SELECT id As fk_analyzed_chemical_id, dsstox_substance_id, dsstox_casrn, preferred_name FROM cvt.chemicals")
     doc_sheet_list$Series = doc_sheet_list$Series %>%
       left_join(cvt_chemicals, by=c("dsstox_substance_id", "dsstox_casrn", "preferred_name"))
     #Filter to ones that didn't match, add new chemicals table entry
@@ -333,7 +333,7 @@ for(i in seq_len(length(fileList))){
   
   doc_sheet_list$Series = doc_sheet_list$Series %>%
     select(-conc_medium, -conc_medium_normalized, -conc_medium_id) %>% #remove if already present, matching here now
-    left_join(query_cvt("SELECT * FROM cvt.conc_medium_dict") %>%
+    left_join(db_query_cvt("SELECT * FROM cvt.conc_medium_dict") %>%
                 select(fk_conc_medium_id = id, conc_medium_original),
               by=c("conc_medium_original"))
   
@@ -343,12 +343,12 @@ for(i in seq_len(length(fileList))){
   
   message("...pushing to Series table")
   #xmin onward for int conversion
-  # push_to_CvT(df=doc_sheet_list$Series %>%
+  # db_push_to_CvT(df=doc_sheet_list$Series %>%
   #               select(-dsstox_substance_id, -dsstox_substance_id, -chemistry_team_mapping),
   #             tblName="series")
   #Get Series ID Values (Assumes the query returns the rows in the same order they were uploaded...)
   doc_sheet_list$Series = doc_sheet_list$Series %>%
-    left_join(get_tbl_id("Series", idFilter="") %>% #Left join so it only joins what records match
+    left_join(db_get_tbl_id("Series", idFilter="") %>% #Left join so it only joins what records match
                 rename(new_fk_series_id = id) %>%
                 mutate(across(c(loq, n_subjects_in_series), as.numeric)))
 
@@ -357,7 +357,7 @@ for(i in seq_len(length(fileList))){
   doc_sheet_list$Conc_Time_Values = doc_sheet_list$Conc_Time_Values %>%
     filter(fk_series_id %in% doc_sheet_list$Series$id)
   message("...pushing to Conc_Time_Values table")
-  # push_to_CvT(df=doc_sheet_list$Conc_Time_Values %>%
+  # db_push_to_CvT(df=doc_sheet_list$Conc_Time_Values %>%
   #               left_join(doc_sheet_list$Series %>% select(fk_series_id=id, new_fk_series_id), by=c("fk_series_id")) %>%
   #               mutate(fk_series_id = new_fk_series_id) %>%
   #               select(-new_fk_series_id, -id, -species),
@@ -373,6 +373,6 @@ for(i in seq_len(length(fileList))){
 }
 message("Done...", Sys.time())
 
-#con = connect_to_CvT()
+#con = db_connect_to_CvT()
 #dbListTables(con)
 
