@@ -4,6 +4,7 @@
 #' @param map NTP field map
 #' @param template CvT extraction template
 #' @param sheetname Name of the NTP sheet being processed
+#' @param intro_dat Intro sheet information from NTP document
 #' @return OUTPUT_DESCRIPTION
 #' @details DETAILS
 #' @examples 
@@ -21,7 +22,7 @@
 #' @importFrom dplyr mutate filter select rename any_of distinct all_of across arrange contains group_by ungroup matches n rowwise left_join
 #' @importFrom tidyr unite pivot_longer separate pivot_wider
 #' @importFrom stringr str_extract str_squish
-format_ntp_template <- function(s_in_dat, map, template, sheetname){
+format_ntp_template <- function(s_in_dat, map, template, sheetname, intro_dat){
   # Check if any data to process
   if(!nrow(s_in_dat)){
     message("...No data found after initial filter...")

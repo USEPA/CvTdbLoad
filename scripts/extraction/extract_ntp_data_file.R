@@ -98,7 +98,8 @@ extract_ntp_data_file <- function(filepath,
     format_ntp_template(s_in_dat = in_dat[[s]], 
                         map=map, 
                         template=template,
-                        sheetname=s
+                        sheetname=s,
+                        intro_dat=intro_dat
                         )
   }) %T>% {
     names(.) <- names(in_dat)
