@@ -76,7 +76,10 @@ format_ntp_template <- function(s_in_dat, map, template, sheetname, intro_dat){
     if(s == "Documents"){
       tmp = tmp %>%
         dplyr::mutate(title = toString(intro_dat$value[intro_dat$field_name == "Title"]),
-               year = toString(intro_dat$value[intro_dat$field_name %in% c("Start Date", "Approval Date")]),
+               year = toString(intro_dat$value[intro_dat$field_name %in% c("Start Date", "Approval Date")]) %>% 
+                 # Convert to date and extract just year
+                 as.Date("%m/%d/%y") %>% 
+                 format("%Y"),
                other_study_identifier = toString(intro_dat$value[intro_dat$field_name == "NTP Study Number"]),
                extracted = 1,
                document_type = 1)
