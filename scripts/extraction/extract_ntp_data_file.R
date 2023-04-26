@@ -179,16 +179,38 @@ extract_ntp_data_file <- function(filepath,
   out$Series$analyte_casrn[out$Series$analyte_name == toString(intro_dat$value[intro_dat$field_name == "Compound Name"])] = toString(intro_dat$value[intro_dat$field_name == "CASRN"])
   
   # Fill in "ND" for conc values
-  out$Conc_Time_Values$conc[out$Conc_Time_Values$conc == "." & grepl("Not detected|ND|not detected", out$Conc_Time_Values$curator_comment)] = "ND"
+  out$Conc_Time_Values$conc[out$Conc_Time_Values$conc == "." & 
+                              grepl("Not detected|ND|not detected|below the estimated detection iimit|below the estimated detection limit", 
+                                    out$Conc_Time_Values$curator_comment)] = "ND"
   # Fill in "NQ" for below calibration curve range
-  out$Conc_Time_Values$conc[out$Conc_Time_Values$conc == "." & grepl("calibration curve|limit of quantitation", out$Conc_Time_Values$curator_comment)] = "NQ"
+  out$Conc_Time_Values$conc[out$Conc_Time_Values$conc == "." & 
+                              grepl("calibration curve|limit of quantitation|concentration curve", 
+                                    out$Conc_Time_Values$curator_comment)] = "NQ"
   # Fill in "NA" for No data
-  out$Conc_Time_Values$conc[out$Conc_Time_Values$conc == "." & grepl("No data", out$Conc_Time_Values$curator_comment)] = "NA"
+  out$Conc_Time_Values$conc[out$Conc_Time_Values$conc == "." & 
+                              grepl("No data", out$Conc_Time_Values$curator_comment)] = "NA"
   # Substitute BLOQ with NQ
-  out$Conc_Time_Values$conc[out$Conc_Time_Values$conc == "BLOQ"] = "NQ"
+  out$Conc_Time_Values$conc[out$Conc_Time_Values$conc %in% c("BLOQ", "ALOQc")] = "NQ"
+  # Substitute BLOD with ND
+  out$Conc_Time_Values$conc[out$Conc_Time_Values$conc %in% c("BLOD", "NDa", "NDb")] = "ND"
+  # Substituting additional string values
+  out$Conc_Time_Values$conc[out$Conc_Time_Values$conc %in% c("NAa", "NAb")] = "NA"
+  # Fix decimals with spaces before/after
+  out$Conc_Time_Values <- out$Conc_Time_Values %>%
+    mutate(conc = gsub("\\. ", ".", conc) %>%
+             gsub(" \\.", ".", .) %>%
+             stringr::str_squish())
+    
+  # Extract between parentheses: C92012B_Individual_Animal_Data_autoextract.xlsx
+  out$Conc_Time_Values$conc[grepl("\\(", out$Conc_Time_Values$conc)] <- out$Conc_Time_Values$conc[grepl("\\(", out$Conc_Time_Values$conc)] %>%
+    stringr::str_extract(., "(?<=\\().*(?=\\))")
+
   # Remove extraneous missing appended notes
   out$Conc_Time_Values$curator_comment = out$Conc_Time_Values$curator_comment %>%
     gsub("; NA", "", .)
+  
+  # TODO Fix time units split and not matching (field header was one unit, values contained another)
+  
   
   # Foreign key checks
   if(any(!out$Studies$fk_reference_document_id[!is.na(out$Studies$fk_reference_document_id)] %in% out$Documents$id)){

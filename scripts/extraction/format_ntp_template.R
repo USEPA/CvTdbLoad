@@ -360,7 +360,9 @@ format_ntp_template <- function(s_in_dat, map, template, sheetname, intro_dat){
           # Case where the Analyte is "NA" for a baseline measurement
           dplyr::filter(analyte_name != 'NA') %>%
           dplyr::mutate(dose_level = suppressWarnings(as.numeric(dose_level)))
-      } else {
+      } 
+      # Fill in if missing
+      if(!"conc_curator_comment" %in% names(tmp)){
         tmp$conc_curator_comment = NA
       }
     }
