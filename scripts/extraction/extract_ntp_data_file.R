@@ -209,8 +209,46 @@ extract_ntp_data_file <- function(filepath,
   out$Conc_Time_Values$curator_comment = out$Conc_Time_Values$curator_comment %>%
     gsub("; NA", "", .)
   
-  # TODO Fix time units split and not matching (field header was one unit, values contained another)
+  # Fix time units split and not matching (field header was one unit, values contained another)
+  out$Conc_Time_Values <- out$Conc_Time_Values %>%
+    dplyr::mutate(tempID = 1:n(),
+                  time_units_fix = NA,
+                  time_conv = time)
   
+  time_fix = out$Conc_Time_Values %>%
+    # Only fix times that have a numeric values with letters/words after
+    filter(grepl("^(0|[1-9][0-9]*)(\\.[0-9]+)? [a-zA-z]", time))
+  # Only fix if a fix is needed
+  if(nrow(time_fix)){
+    out$Conc_Time_Values = out$Conc_Time_Values %>% 
+      filter(!tempID %in% time_fix$tempID)
+    
+    time_fix <- extract_units(x = time_fix, 
+                              # Using dose_duration as unit_type since it's time units
+                              units_col="time_units_fix", conv_col="time_conv", unit_type="dose_duration") %>%
+      tidyr::separate(time, into=c("time", "unit_comment"), sep=" ", extra="merge") %>%
+      dplyr::mutate(dplyr::across(c(time, unit_comment), ~stringr::str_squish(.))) %>%
+      tidyr::unite(curator_comment, curator_comment, unit_comment, sep="; ")
+    
+    out$Conc_Time_Values <- rbind(out$Conc_Time_Values %>%
+                                    mutate(time_units_fix=NA), 
+                                  time_fix) %>%
+      select(-time_conv, -tempID)
+    
+    out$Series <- out$Series %>%
+      left_join(out$Conc_Time_Values %>%
+                  select(fk_series_id, time_units_fix),
+                by=c("id"="fk_series_id"))
+    
+    # Compare and apply unit fix for Series
+    out$Series$time_units[!is.na(out$Series$time_units_fix) & 
+                            (out$Series$time_units != out$Series$time_units_fix)] <- out$Series$time_units_fix[!is.na(out$Series$time_units_fix) & 
+                                                                                                                 (out$Series$time_units != out$Series$time_units_fix)] 
+    
+    # Remove time fix columns
+    out$Conc_Time_Values$time_units_fix = NULL
+    out$Series$time_units_fix = NULL
+  }
   
   # Foreign key checks
   if(any(!out$Studies$fk_reference_document_id[!is.na(out$Studies$fk_reference_document_id)] %in% out$Documents$id)){
