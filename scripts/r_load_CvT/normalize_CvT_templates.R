@@ -93,7 +93,7 @@ for(i in seq_len(length(fileList))){
   #
   #
   #
-  # doc_check = query_cvt(paste0("SELECT pmid FROM documents where pmid in ('", 
+  # doc_check = db_query_cvt(paste0("SELECT pmid FROM documents where pmid in ('", 
   #                              doc_sheet_list$Documents$pmid, " AND extracted != 0')"))
   # 
   # if(nrow(doc_check)){
@@ -121,7 +121,7 @@ for(i in seq_len(length(fileList))){
                 dplyr::rename(fk_administration_route = id),
               by="administration_route_original")
   #Check Species
-  species_check = query_cvt(paste0("SELECT DISTINCT species FROM cvt.subjects"))
+  species_check = db_query_cvt(paste0("SELECT DISTINCT species FROM cvt.subjects"))
   if(any(!doc_sheet_list$Subjects$species %in% species_check$species)){
     message("...File contains species not already in database: ", doc_sheet_list$Subjects$species[!doc_sheet_list$Subjects$species %in% species_check$species])
     log_CvT_doc_load(f, m="species_not_found")

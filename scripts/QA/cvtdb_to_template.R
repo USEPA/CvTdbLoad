@@ -40,16 +40,6 @@ cvtdb_to_template <- function(id=NULL, template_path=NULL, template_map=NULL){
     return()
 }
 
-#' get_cvt_template
-#' Pull the CvT template in a list of empty dataframes
-get_cvt_template <- function(template_path){
-  s_list = readxl::excel_sheets(template_path)
-  lapply(s_list, function(s){
-    readxl::read_xlsx(template_path, sheet=s)
-  }) %T>% { names(.) <- s_list } %>%
-    return()
-}
-
 get_cvt_by_doc_id <- function(id){
   doc_filter = lapply(names(id), function(i){
     if(is.null(id[[i]])) return(NULL)
@@ -58,24 +48,24 @@ get_cvt_by_doc_id <- function(id){
   }) %>% purrr::compact()
   
   cat("...getting document data...\n")
-  doc_data = query_cvt(paste0("SELECT * FROM cvt.documents WHERE ", paste0(doc_filter, collapse = " AND ")) %>% 
+  doc_data = db_query_cvt(paste0("SELECT * FROM cvt.documents WHERE ", paste0(doc_filter, collapse = " AND ")) %>% 
                          stringr::str_squish())
   # Check if any records matched the input identifiers
   if(!nrow(doc_data)) return(NULL)
   cat("...getting study data...\n")
-  study_data = query_cvt(paste0("SELECT * FROM cvt.studies WHERE fk_extraction_document_id in (", toString(doc_data$id), ")"))
+  study_data = db_query_cvt(paste0("SELECT * FROM cvt.studies WHERE fk_extraction_document_id in (", toString(doc_data$id), ")"))
   cat("...getting reference document data...\n")
   if(length(unique(study_data$fk_reference_document_id[!is.na(study_data$fk_reference_document_id)]))){
-    ref_doc_data = query_cvt(paste0("SELECT * FROM cvt.documents WHERE id in (", toString(unique(study_data$fk_reference_document_id[!is.na(study_data$fk_reference_document_id)])), ")"))  
+    ref_doc_data = db_query_cvt(paste0("SELECT * FROM cvt.documents WHERE id in (", toString(unique(study_data$fk_reference_document_id[!is.na(study_data$fk_reference_document_id)])), ")"))  
   } else {
     ref_doc_data = NULL
   }
   cat("...getting series data...\n")
-  series_data = query_cvt(paste0("SELECT * FROM cvt.series WHERE fk_study_id in (", toString(study_data$id), ")"))
+  series_data = db_query_cvt(paste0("SELECT * FROM cvt.series WHERE fk_study_id in (", toString(study_data$id), ")"))
   cat("...getting subject data...\n")
-  subject_data = query_cvt(paste0("SELECT * FROM cvt.subjects WHERE id in (", toString(unique(series_data$fk_subject_id)), ")"))
+  subject_data = db_query_cvt(paste0("SELECT * FROM cvt.subjects WHERE id in (", toString(unique(series_data$fk_subject_id)), ")"))
   cat("...getting conc data...\n")
-  conc_data = query_cvt(paste0("SELECT * FROM cvt.conc_time_values WHERE fk_series_id in (", toString(series_data$id), ")"))
+  conc_data = db_query_cvt(paste0("SELECT * FROM cvt.conc_time_values WHERE fk_series_id in (", toString(series_data$id), ")"))
   cat("...returning...\n")
   list(Documents = rbind(doc_data, ref_doc_data),
        Studies = study_data,

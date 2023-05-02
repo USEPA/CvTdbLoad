@@ -9,24 +9,24 @@ file_source = list.files("scripts/initial processing", pattern="utils_", full.na
 invisible(sapply(file_source, source,.GlobalEnv))
 
 #Conc without series link
-conc_missing_series = query_cvt("SELECT * FROM cvt.conc_time_values WHERE fk_series_id IS NULL")
+conc_missing_series = db_query_cvt("SELECT * FROM cvt.conc_time_values WHERE fk_series_id IS NULL")
 #Get list of series linked to conc_time_values table
-conc_series = query_cvt("SELECT DISTINCT fk_series_id FROM cvt.conc_time_values WHERE fk_series_id IS NOT NULL")
+conc_series = db_query_cvt("SELECT DISTINCT fk_series_id FROM cvt.conc_time_values WHERE fk_series_id IS NOT NULL")
 #Series without Conc Information
-no_conc_series = query_cvt(paste0("SELECT id, fk_study_id, fk_subject_id FROM cvt.series WHERE id not in (",
+no_conc_series = db_query_cvt(paste0("SELECT id, fk_study_id, fk_subject_id FROM cvt.series WHERE id not in (",
                                   toString(conc_series$fk_series_id),")"))
 #Series without study information
-no_study_series = query_cvt("SELECT * FROM cvt.series where fk_study_id IS NULL")
+no_study_series = db_query_cvt("SELECT * FROM cvt.series where fk_study_id IS NULL")
 #Series without subject information
-no_subject_series = query_cvt("SELECT * FROM cvt.series where fk_subject_id IS NULL")
+no_subject_series = db_query_cvt("SELECT * FROM cvt.series where fk_subject_id IS NULL")
 #Studies not connected to a document
-no_doc_study = query_cvt("SELECT * FROM cvt.studies WHERE fk_extraction_document_id IS NULL AND fk_reference_document_id IS NULL")
-no_ext_doc_study = query_cvt("SELECT * FROM cvt.studies WHERE fk_extraction_document_id IS NULL")
-no_ref_doc_study = query_cvt("SELECT * FROM cvt.studies WHERE fk_reference_document_id IS NULL")
+no_doc_study = db_query_cvt("SELECT * FROM cvt.studies WHERE fk_extraction_document_id IS NULL AND fk_reference_document_id IS NULL")
+no_ext_doc_study = db_query_cvt("SELECT * FROM cvt.studies WHERE fk_extraction_document_id IS NULL")
+no_ref_doc_study = db_query_cvt("SELECT * FROM cvt.studies WHERE fk_reference_document_id IS NULL")
 #Studies not connected to a series
-no_series_study = query_cvt("SELECT * FROM cvt.studies WHERE id NOT in (SELECT DISTINCT fk_study_id FROM cvt.series)")
+no_series_study = db_query_cvt("SELECT * FROM cvt.studies WHERE id NOT in (SELECT DISTINCT fk_study_id FROM cvt.series)")
 #Subjects not connected to a series
-no_series_subject = query_cvt("SELECT * FROM cvt.subjects WHERE id NOT in (SELECT DISTINCT fk_subject_id FROM cvt.series)")
+no_series_subject = db_query_cvt("SELECT * FROM cvt.subjects WHERE id NOT in (SELECT DISTINCT fk_subject_id FROM cvt.series)")
 
 cat("---Report Start ---\n",
     paste0(nrow(conc_missing_series), " conc entries without a series link\n"),

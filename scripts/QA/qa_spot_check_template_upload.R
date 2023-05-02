@@ -20,27 +20,27 @@ stop("Adapt the below code for the above use cases")
 out = lapply(seq_len(nrow(doc_list)), function(r){
   message("Pulling data for row: ", r, " ID: ", doc_list$id[r])
   #Get document sheet
-  document = query_cvt(paste0("SELECT * FROM cvt.documents WHERE id = ", doc_list$id[r])) %>%
+  document = db_query_cvt(paste0("SELECT * FROM cvt.documents WHERE id = ", doc_list$id[r])) %>%
     select(-ends_with("_by"), -ends_with("_dt"))
   #Get associated studies
-  study = query_cvt(paste0("SELECT * from cvt.studies where fk_extraction_document_id = ", doc_list$id[r],
+  study = db_query_cvt(paste0("SELECT * from cvt.studies where fk_extraction_document_id = ", doc_list$id[r],
                            " OR fk_reference_document_id = ", doc_list$id[r])) %>%
     select(-ends_with("_by"), -ends_with("_dt"))
   #Return empty if no studies associated wtih document
   if(!nrow(study)) { message("...no studies associated with document..."); return("...no studies associated with document...") }
   #Get associated series
-  series = query_cvt(paste0("SELECT * from cvt.series where fk_study_id in (", 
+  series = db_query_cvt(paste0("SELECT * from cvt.series where fk_study_id in (", 
                             toString(study$id),")")) %>%
     select(-ends_with("_by"), -ends_with("_dt"))
   
   if(!nrow(series)) { message("...no series associated with document..."); return("...no series associated with document...") }
   #Get subject data
   if(!length(series$fk_subject_id[!is.na(series$fk_subject_id)])) { message("...CURATION ERROR: no subjects associated with series..."); return("...CURATION ERROR: no subjects associated with series...") }
-  subjects = query_cvt(paste0("SELECT * FROM cvt.subjects where id in (",
+  subjects = db_query_cvt(paste0("SELECT * FROM cvt.subjects where id in (",
                               toString(series$fk_subject_id), ")")) %>%
     select(-ends_with("_by"), -ends_with("_dt"))
   #Get conc data
-  conc = query_cvt(paste0("SELECT * from cvt.conc_time_values where fk_series_id in (", 
+  conc = db_query_cvt(paste0("SELECT * from cvt.conc_time_values where fk_series_id in (", 
                           toString(series$id),")")) %>%
     select(-ends_with("_by"), -ends_with("_dt"))
   
