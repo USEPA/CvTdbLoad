@@ -15,7 +15,7 @@ library(dplyr); library(readxl); library(purrr)
 fileList = c("L:\\Lab\\NCCT_ExpoCast\\ExpoCast2022\\PKWG-CompletedTemplates\\CvT_completed_templates\\PCB\\Complete") %>%
   list.files(full.names = TRUE, pattern=".xlsx")
 # Update what to label output files
-runLabel = "PKWG_PCB"
+runLabel = "CVT_dermal"
 #outputDir = "L:\\Lab\\NCCT_ExpoCast\\ExpoCast2021\\CvT-CompletedTemplates\\Format QA\\0_to_qa_format\\Needs Admin Check"
 #f_list = list.files(outputDir, pattern="_CvT_")
 

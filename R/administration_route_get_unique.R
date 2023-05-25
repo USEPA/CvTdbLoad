@@ -20,6 +20,7 @@
 administration_route_get_unique <- function(fileList, template_path){
   #Get administration route from files
   ar = lapply(fileList, function(f){
+    message("Loading file: ", f)
     s_list = load_sheet_group(fileName = f, template_path = template_path)
     s_list$Studies %>% 
       dplyr::select(administration_route_original = administration_route) %>% 
@@ -32,7 +33,7 @@ administration_route_get_unique <- function(fileList, template_path){
     dplyr::mutate(administration_route_original = trimws(tolower(administration_route_original))) %>%
     dplyr::distinct() %>%
     #Attempt match
-    dplyr::left_join(get_administration_route_dict(), by="administration_route_original") %>%
+    dplyr::left_join(administration_route_get_dict(), by="administration_route_original") %>%
     dplyr::filter(is.na(administration_route_normalized)) %>%
     dplyr::select(filepath, administration_route_original, administration_route_normalized)
   

@@ -13,5 +13,5 @@
 #' @rdname dose_frequency_get_dict
 #' @export 
 dose_frequency_get_dict <- function(){
-  return(db_query_cvt("SELECT * FROM dose_frequency_dict"))
+  return(db_query_cvt("SELECT * FROM cvt.dose_frequency_dict"))
 }

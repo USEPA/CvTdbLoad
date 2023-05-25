@@ -11,5 +11,5 @@
 #' @rdname conc_medium_get_dict
 #' @export 
 conc_medium_get_dict <- function(){
-  return(query_cvt("SELECT * FROM cvt.conc_medium_dict"))
+  return(db_query_cvt("SELECT * FROM cvt.conc_medium_dict"))
 }
