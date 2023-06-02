@@ -3,11 +3,6 @@
 # Modified 2023-6-2
 # R version 4.1.2 (2021-11-01)
 
-# id_list = c(32, 60, 14, 1, 36, 18, 38, 59, 46, 45, 51, 129, 130, 132, 133, 135, 131, 158, 159, 160, 161, 162, 164, 157, 170, 159, 137, 175, 141, 6, 24785, 24983)
-# id_list = c(1, 129, 130, 132, 133, 131, 135, 6, 137, 134, 139, 141, 14, 18, 149, 150, 24983, 151, 153, 157, 158, 159, 32, 160, 161, 162, 36, 164, 38, 165, 166, 167, 170, 169, 171, 45, 46, 175, 172, 173, 174, 51, 59, 60, 192, 24785)
-
-# id_list = c(11, 14, 17, 22, 30, 31, 46, 48, 50, 51, 52, 62, 63, 64, 128, 192, 244)
-
 #' @title Pull CvTdb as Template
 #' @description Pull CvTdb data into CvT template by document identifiers
 #' @param id_list Named list of document identifiers to pull
@@ -26,7 +21,7 @@ orchestrate_cvtdb_to_template <- function(id_list,
   allowed_doc_id = c("id", "pmid", "other_study_identifier")
   if(is.null(id_list)) stop(paste0("Must provide document id information as named list of options: ", toString(allowed_doc_id)))
   if(!is.list(id_list)) stop(paste0("Must provide document id information as named list of options: ", toString(allowed_doc_id)))
-  if(is.null(names(id))) stop(paste0("Must provide document id information as named list of options: ", toString(allowed_doc_id)))
+  if(is.null(names(id_list))) stop(paste0("Must provide document id information as named list of options: ", toString(allowed_doc_id)))
   unsupported_id = names(id_list)[!names(id_list) %in% allowed_doc_id]
   if(length(unsupported_id)) stop(paste0("Unsupported input document id: ", toString(unsupported_id)))
   
