@@ -246,8 +246,10 @@ extract_ntp_data_file <- function(filepath,
                                                                                                                  (out$Series$time_units != out$Series$time_units_fix)] 
     
     # Remove time fix columns
-    out$Conc_Time_Values$time_units_fix = NULL
-    out$Series$time_units_fix = NULL
+    out$Conc_Time_Values = out$Conc_Time_Values %>%
+      dplyr::select(dplyr::any_of(names(template$Conc_Time_Values)))
+    out$Series = out$Series %>% 
+      dplyr::select(dplyr::any_of(names(template$Series)))
   }
   
   # Foreign key checks
