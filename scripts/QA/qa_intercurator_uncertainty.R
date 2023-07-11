@@ -19,6 +19,7 @@
 #' @export 
 #' @importFrom dplyr filter mutate across
 #' @importFrom pracma trapz
+#' @importFrom purrr compact
 qa_intercurator_uncertainty <- function(curator_1, curator_2){
   # Check if inputs are NULL
   if(is.null(curator_1) | is.null(curator_2)){
@@ -37,9 +38,6 @@ qa_intercurator_uncertainty <- function(curator_1, curator_2){
   # Load curator data
   curator_1_data <- get_intercurator_data(curator_1)
   curator_2_data <- get_intercurator_data(curator_2)
-  
-  # Set seed for reproducibility
-  set.seed(1)
   
   # Calculate AUC and plotArea per series for curator_1
   curator_1_out <- lapply(unique(curator_1_data$Conc_Time_Values$fk_series_id), function(series_id){
@@ -78,11 +76,10 @@ qa_intercurator_uncertainty <- function(curator_1, curator_2){
   }
   
   # Compare each series AUC and normalize by plotArea
-  out <- data.frame()
-  for(series_id in names(curator_1_out)){
+  out <- lapply(names(curator_1_out), function(series_id){
     if(series_id %in% names(curator_2_out)){
       if(curator_1_out[[series_id]]$plotArea == curator_2_out[[series_id]]$plotArea){
-        out = data.frame(
+        data.frame(
           series_id = series_id,
           curator_1_auc = curator_1_out[[series_id]]$auc,
           curator_2_auc = curator_2_out[[series_id]]$auc,
@@ -90,12 +87,17 @@ qa_intercurator_uncertainty <- function(curator_1, curator_2){
           AUCFracVar = round((curator_1_out[[series_id]]$auc - curator_2_out[[series_id]]$auc) / curator_1_out[[series_id]]$plotArea, 3)
         ) %>%
           dplyr::mutate(AUCFracVar_perc = AUCFracVar * 100) %>%
-          rbind(out, .)
+          return()
       } else {
         message("Skipping comparison of series '", series_id, "' due to incompatible plotArea values...")
+        return(NULL)
       }
     }
-  }
+  }) %>%
+    # Remove NULL values
+    purrr::compact() %>%
+    # Combine into dataframe
+    dplyr::bind_rows()
   
   # Return all input, intermediates, and output
   return(list(curator_1_data = curator_1_data,
