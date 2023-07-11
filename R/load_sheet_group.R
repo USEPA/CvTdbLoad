@@ -23,6 +23,11 @@
 #' @importFrom tidyr all_of
 load_sheet_group <- function(fileName="", template_path=""){
   
+  if(is.null(template_path) | template_path == ""){
+    message("...passed template file path doesn't exist...using default template...")
+    template_path <- "input/CvT_data_template_articles.xlsx"
+  }
+  
   template = tryCatch({
     template_sheets = readxl::excel_sheets(template_path)
     lapply(template_sheets, function(s){
@@ -31,32 +36,6 @@ load_sheet_group <- function(fileName="", template_path=""){
   },
   error=function(cond){ message("...Error: ", cond); return(NULL) }
   )
-  
-  if(is.null(template)){
-    message("...passed template file path doesn't exist...using default template...")
-    template = list("Documents" = c("pmid", "other_study_identifier", "doi", "first_author", 
-                                    "year", "title","url", "curator_comment"),
-                    "Studies" = c("id", "test_substance_name", "test_substance_name_secondary", 
-                                  "test_substance_casrn", "dose_level", "dose_level_units", 
-                                  "administration_route", "dose_duration", "dose_frequency",     
-                                  "dose_vehicle", "dose_volume", "fasting_period", "author_comment", 
-                                  "curator_comment", "dermal_dose_vehicle", "dermal_dose_vehicle_pH", 
-                                  "dermal_applied_area", "dermal_applied_area_units",
-                                  "aerosol_particle_diameter_mean", "aerosol_particle_diameter_gsd", 
-                                  "aerosol_particle_diameter_units", "aerosol_particle_density",
-                                  "aerosol_particle_density_units"),
-                    "Subjects" = c("id", "species", "subtype", "sex", "age", "age_units", "age_category", 
-                                   "height", "height_units", "weight", "weight_units", "curator_comment"),
-                    "Series" = c("id", "analyte_name", "analyte_name_secondary", 
-                                 "analyte_casrn", "figure_name", "figure_type", 
-                                 "figure_series_identifier", "x_min", "x_max", "y_min", "y_max", 
-                                 "time_units", "conc_units", "log_conc_units", "loq", "loq_units", 
-                                 "lod", "lod_units", "analytical_method_detail", 
-                                 "radiolabeled", "fk_study_id", "fk_subject_id", "n_subjects_in_series", 
-                                 "conc_medium", "curator_comment"),
-                    "Conc_Time_Values" = c("fk_series_id", "time", "conc", "conc_sd", "conc_lower_bound", 
-                                           "conc_upper_bound", "curator_comment"))
-  }
   
   tryCatch({
     sheetNames = readxl::excel_sheets(fileName)
