@@ -1,3 +1,24 @@
+# install.packages('pracma')
+
+#' @title qa_intercurator_uncertainty
+#' @description FUNCTION_DESCRIPTION
+#' @param curator_1 PARAM_DESCRIPTION
+#' @param curator_2 PARAM_DESCRIPTION
+#' @return OUTPUT_DESCRIPTION
+#' @details DETAILS
+#' @examples 
+#' \dontrun{
+#' if(interactive()){
+#'  #EXAMPLE1
+#'  }
+#' }
+#' @seealso 
+#'  \code{\link[dplyr]{filter}}, \code{\link[dplyr]{mutate}}, \code{\link[dplyr]{across}}
+#'  \code{\link[pracma]{trapz}}
+#' @rdname qa_intercurator_uncertainty
+#' @export 
+#' @importFrom dplyr filter mutate across
+#' @importFrom pracma trapz
 qa_intercurator_uncertainty <- function(curator_1, curator_2){
   # Check if inputs are NULL
   if(is.null(curator_1) | is.null(curator_2)){
@@ -23,14 +44,14 @@ qa_intercurator_uncertainty <- function(curator_1, curator_2){
   # Calculate AUC per series for curator_1
   curator_1_out <- lapply(unique(curator_1_data$Conc_Time_Values$fk_series_id), function(series_id){
     tmp <- curator_1_data$Conc_Time_Values %>%
-      filter(fk_series_id == series_id) %>%
+      dplyr::filter(fk_series_id == series_id) %>%
       dplyr::mutate(dplyr::across(c(time, conc), ~as.numeric(.)))
     
     tmp2 <- curator_1_data$Series %>%
       dplyr::filter(id == series_id) %>%
       dplyr::mutate(dplyr::across(c(x_min, x_max, y_min, y_max), ~as.numeric(.)))
     
-    list(auc = colMeans(caTools::colAUC(tmp$time, tmp$conc)),
+    list(auc = pracma::trapz(tmp$time, tmp$conc),
          plotArea = (tmp2$x_max-tmp2$x_min)*(tmp2$y_max-tmp2$y_min)
     )
   }) %T>% {
@@ -40,14 +61,14 @@ qa_intercurator_uncertainty <- function(curator_1, curator_2){
   # Calculate AUC per series for curator_2
   curator_2_out <- lapply(unique(curator_2_data$Conc_Time_Values$fk_series_id), function(series_id){
     tmp <- curator_2_data$Conc_Time_Values %>%
-      filter(fk_series_id == series_id) %>%
+      dplyr::filter(fk_series_id == series_id) %>%
       dplyr::mutate(dplyr::across(c(time, conc), ~as.numeric(.)))
     
     tmp2 <- curator_2_data$Series %>%
       dplyr::filter(id == series_id) %>%
       dplyr::mutate(dplyr::across(c(x_min, x_max, y_min, y_max), ~as.numeric(.)))
     
-    list(auc = colMeans(caTools::colAUC(tmp$time, tmp$conc)),
+    list(auc = pracma::trapz(tmp$time, tmp$conc),
          plotArea = (tmp2$x_max-tmp2$x_min)*(tmp2$y_max-tmp2$y_min)
     )
   }) %T>% {
@@ -59,13 +80,14 @@ qa_intercurator_uncertainty <- function(curator_1, curator_2){
   for(series_id in names(curator_1_out)){
     if(series_id %in% names(curator_2_out)){
       if(curator_1_out[[series_id]]$plotArea == curator_2_out[[series_id]]$plotArea){
-       out = data.frame(
+        out = data.frame(
           series_id = series_id,
           curator_1_auc = curator_1_out[[series_id]]$auc,
           curator_2_auc = curator_2_out[[series_id]]$auc,
           plotArea = curator_1_out[[series_id]]$plotArea,
           AUCFracVar = round((curator_1_out[[series_id]]$auc - curator_2_out[[series_id]]$auc) / curator_1_out[[series_id]]$plotArea, 3)
         ) %>%
+          dplyr::mutate(AUCFracVar_perc = AUCFracVar * 100) %>%
           rbind(out, .)
       } else {
         message("Skipping comparison of series '", series_id, "' due to incompatible plotArea values...")
@@ -80,6 +102,19 @@ qa_intercurator_uncertainty <- function(curator_1, curator_2){
               out=out))
 }
 
+#' @title FUNCTION_TITLE
+#' @description FUNCTION_DESCRIPTION
+#' @param in_data PARAM_DESCRIPTION
+#' @return OUTPUT_DESCRIPTION
+#' @details DETAILS
+#' @examples 
+#' \dontrun{
+#' if(interactive()){
+#'  #EXAMPLE1
+#'  }
+#' }
+#' @rdname qa_intercurator_uncertainty
+#' @export 
 get_intercurator_data <- function(in_data){
   
   # Check if input filepath exists if not dataframe
