@@ -1,15 +1,15 @@
 # install.packages('pracma')
 
 #' @title qa_intercurator_uncertainty
-#' @description FUNCTION_DESCRIPTION
-#' @param curator_1 PARAM_DESCRIPTION
-#' @param curator_2 PARAM_DESCRIPTION
-#' @return OUTPUT_DESCRIPTION
+#' @description QA function to compare the extracted Conc_Time_Values for Series entries by curators.
+#' @param curator_1 File path or template DataFrame list for an extraction template for one curator
+#' @param curator_2 File path or template DataFrame list for an extraction template for another curator
+#' @return A list of dataframes of input, intermediates, and output
 #' @details DETAILS
 #' @examples 
 #' \dontrun{
 #' if(interactive()){
-#'  #EXAMPLE1
+#'  # EXAMPLE1
 #'  }
 #' }
 #' @seealso 
@@ -41,8 +41,9 @@ qa_intercurator_uncertainty <- function(curator_1, curator_2){
   # Set seed for reproducibility
   set.seed(1)
   
-  # Calculate AUC per series for curator_1
+  # Calculate AUC and plotArea per series for curator_1
   curator_1_out <- lapply(unique(curator_1_data$Conc_Time_Values$fk_series_id), function(series_id){
+    # Filter to series
     tmp <- curator_1_data$Conc_Time_Values %>%
       dplyr::filter(fk_series_id == series_id) %>%
       dplyr::mutate(dplyr::across(c(time, conc), ~as.numeric(.)))
@@ -58,8 +59,9 @@ qa_intercurator_uncertainty <- function(curator_1, curator_2){
     names(.) <- unique(curator_1_data$Conc_Time_Values$fk_series_id)
   }
   
-  # Calculate AUC per series for curator_2
+  # Calculate AUC and plotArea per series for curator_2
   curator_2_out <- lapply(unique(curator_2_data$Conc_Time_Values$fk_series_id), function(series_id){
+    # Filter to series
     tmp <- curator_2_data$Conc_Time_Values %>%
       dplyr::filter(fk_series_id == series_id) %>%
       dplyr::mutate(dplyr::across(c(time, conc), ~as.numeric(.)))
@@ -95,6 +97,7 @@ qa_intercurator_uncertainty <- function(curator_1, curator_2){
     }
   }
   
+  # Return all input, intermediates, and output
   return(list(curator_1_data = curator_1_data,
               curator_2_data = curator_2_data,
               curator_1_out = curator_1_out,
@@ -102,15 +105,15 @@ qa_intercurator_uncertainty <- function(curator_1, curator_2){
               out=out))
 }
 
-#' @title FUNCTION_TITLE
-#' @description FUNCTION_DESCRIPTION
-#' @param in_data PARAM_DESCRIPTION
-#' @return OUTPUT_DESCRIPTION
+#' @title get_intercurator_data
+#' @description Function to validate the input intercurator params and load data as necessar.
+#' @param in_data Input param for \code{qa_intercurator_uncertainty} function
+#' @return Loaded input data in a named list of CvT template sheet dataframes
 #' @details DETAILS
 #' @examples 
 #' \dontrun{
 #' if(interactive()){
-#'  #EXAMPLE1
+#'  # EXAMPLE1
 #'  }
 #' }
 #' @rdname qa_intercurator_uncertainty
@@ -122,13 +125,14 @@ get_intercurator_data <- function(in_data){
     if(!file.exists(in_data)){
       stop("File path '", in_data,"' does not exist...")
     }
-    # Load input
+    # Load input, must be an XLSX file
     if(strsplit(basename(in_data), split="\\.")[[1]][2] != "xlsx"){
       stop("Expected input file type of XLSX...")
     }
     in_data <- load_sheet_group(in_data)
   }
   
+  # Check of input list of dataframes, must contain Series and Conc_Time_Values named elements
   if(!all(c("Series", "Conc_Time_Values") %in% names(in_data))){
     stop("Input dataframe list must contain named 'Series' and 'Conc_Time_Values' list elements")
   }
