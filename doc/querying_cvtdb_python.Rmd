@@ -1,0 +1,155 @@
+---
+title: "Querying CvTdb (Python)"
+description: >
+  The following is a guide for querying the Concentration versus Time (CvT) database with Python.
+  This includes sample queries and example cases.
+resource_files:
+  - images/CvTdb_EER.jpg
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Querying CvTdb (Python)}
+  %\VignetteEngine{knitr::rmarkdown}
+  \usepackage[utf8]{inputenc}
+---
+
+```{r, echo = FALSE, message = FALSE, warning = FALSE}
+knitr::opts_chunk$set(collapse = T, comment = "#>")
+options(tibble.print_min = 4L, tibble.print_max = 4L)
+```
+
+## Getting Started
+
+### Credential Security
+
+One of the most important considerations to make when programmatically accessing databases is how to secure your database credentials. **NEVER HARDCODE CREDENTIALS**. Each programming language provides means to externalize such information and bring it into the environment. For `Python`, the `config.ini` file is where you can store your database connection credentials to then be used by the script. \> Note: When using online repositories like `GitHub` or `Bitbucket`, be sure to configure your `.gitignore` files appropriately so that your externalized credentials files (e.g., `config.ini`, `.env`, etc.) are not uploaded with your code. See [here](https://github.com/github/gitignore) for additional examples across coding languages.
+
+An example config.ini looks like the following, replacing the appropriate placeholders with their respective values:
+
+    [CVTDB]     
+    user=username-here      
+    password=password-here      
+    host=host-here      
+    database=database-here
+
+### Querying Databases
+
+Queries can be made by using pure SQL (as with the example query_cvt() helper function).
+
+### Database Schema Diagrams
+
+The EER diagram shows how the tables are linked together, which help with join queries. See [here](https://www.lucidchart.com/pages/ER-diagram-symbols-and-meaning) for help in reading the diagram.
+
+### CvTdb EER Diagram
+
+```{r out.height = "400px", out.width = "400px", echo = FALSE}
+knitr::include_graphics("images/CvTdb_EER.jpg")
+```
+
+### Install required packages
+
+```{bash, echo = T, results = 'hide'}
+pip install pandas psycopg2
+```
+
+### Load required packages
+
+```{python}
+import configparser
+import pandas as pd
+import psycopg2
+
+pd.set_option('display.max_columns', None)
+```
+
+### Helper Functions for Connecting and Querying the Database
+
+```{python}
+def connect_to_db():
+  '''
+  Returns a postgres database connection.
+  Handles errors with Exceptions.
+  
+  Returns:
+      (psycopg2.extensions.connection):Postgres database connection.
+  '''
+  try:
+    config = configparser.ConfigParser()
+    config.read('config.ini')
+
+    conn = psycopg2.connect(
+	    host=config['CVTDB']['host'],
+	    database=config['CVTDB']['database'],
+  	  user=config['CVTDB']['user'],
+  	  password=config['CVTDB']['password']
+    )
+    return conn
+  except Exception as e:
+    print(e)
+    return None
+
+def query_db(query, inputs, schema):
+  '''
+  Returns a Pandas DataFrame with the query results.
+  Handles errors with Exceptions.
+
+  Parameters:
+      query (str):A SQL query string to query the database with.
+      inputs (list):A list of inputs when using "WHERE x IN list" clauses.
+      schema (str):The schema name to use for the Postgres connection.
+  Returns:
+      (pd.DataFrame):The queried results in a Pandas DataFrame object.
+  '''
+  if not query:
+    print('Must provide a query to send')
+    return None
+  
+  conn = connect_to_db()
+  cursor = conn.cursor()
+  
+  try:
+    query = query.replace("FROM ", f"FROM {schema}.")
+    query = query.replace("JOIN ", f"JOIN {schema}.")
+    cursor.execute(query, inputs)
+    rows = cursor.fetchall()
+    colnames = [desc[0] for desc in cursor.description]
+    return pd.DataFrame(rows, columns=colnames)
+  except Exception as e:
+    print(e)
+    return None
+  finally:
+    conn.close()
+```
+
+## Sample Queries
+
+### Loading CvTdb Documents Table
+
+```{python}
+query = 'SELECT pmid, year, first_author, title FROM documents LIMIT 10'
+df = query_db(query, None, 'cvt')
+df.head()
+```
+
+### Pull all data by input document identifier
+
+```{python}
+# PMID list of interest
+pmid_list = ['43370', '422270', '422271', '538758', '629888', '731724', '734422', '843463', '843464', '926203']
+# placeholders for a variable number of inputs for the query
+placeholders = ', '.join(['%s'] * len(pmid_list))
+
+# Select columns of interest
+query = '''SELECT distinct e.pmid, b.analyte_name_original, c.dose_level_original, c.dose_level_original_units, 
+d.species, b.conc_medium_original, a.time_original, b.time_units_original, a.conc_original, b.conc_units_original 
+FROM conc_time_values a 
+LEFT JOIN series b on b.id = a.fk_series_id 
+LEFT JOIN studies c on c.id = b.fk_study_id 
+LEFT JOIN subjects d on d.id = b.fk_subject_id 
+LEFT JOIN documents e on c.fk_extraction_document_id = e.id 
+WHERE e.pmid in (%s)''' % placeholders # Filter to PMID of interest, substituting the list length for inputs by placeholders
+
+df = query_db(query, pmid_list, 'cvt')
+df.head()
+```
+
+### Pull all data by chemical identifier
