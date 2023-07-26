@@ -39,7 +39,7 @@ vignettes/*.pdf
 .Renviron
 
 # Python Environment Variables
-config.ini
+.env
 
 # pkgdown site
 docs/

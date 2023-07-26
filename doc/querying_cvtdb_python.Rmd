@@ -21,14 +21,13 @@ options(tibble.print_min = 4L, tibble.print_max = 4L)
 
 ### Credential Security
 
-One of the most important considerations to make when programmatically accessing databases is how to secure your database credentials. **NEVER HARDCODE CREDENTIALS**. Each programming language provides means to externalize such information and bring it into the environment. For `Python`, the `config.ini` file is where you can store your database connection credentials to then be used by the script. \> Note: When using online repositories like `GitHub` or `Bitbucket`, be sure to configure your `.gitignore` files appropriately so that your externalized credentials files (e.g., `config.ini`, `.env`, etc.) are not uploaded with your code. See [here](https://github.com/github/gitignore) for additional examples across coding languages.
+One of the most important considerations to make when programmatically accessing databases is how to secure your database credentials. **NEVER HARDCODE CREDENTIALS**. Each programming language provides means to externalize such information and bring it into the environment. For `Python`, the `.env` file is where you can store your database connection credentials to then be used by the script. \> Note: When using online repositories like `GitHub` or `Bitbucket`, be sure to configure your `.gitignore` files appropriately so that your externalized credentials files (e.g., `.Renviron`, `.env`, etc.) are not uploaded with your code. See [here](https://github.com/github/gitignore) for additional examples across coding languages.
 
-An example config.ini looks like the following, replacing the appropriate placeholders with their respective values:
+An example .env looks like the following, replacing the appropriate placeholders with their respective values:
 
-    [CVTDB]     
-    user=username-here      
-    password=password-here      
-    host=host-here      
+    user=username-here
+    password=password-here
+    host=host-here
     database=database-here
 
 ### Querying Databases
@@ -48,13 +47,14 @@ knitr::include_graphics("images/CvTdb_EER.jpg")
 ### Install required packages
 
 ```{bash, echo = T, results = 'hide'}
-pip install pandas psycopg2
+pip install python-dotenv pandas psycopg2
 ```
 
 ### Load required packages
 
 ```{python}
-import configparser
+from dotenv import load_dotenv
+import os
 import pandas as pd
 import psycopg2
 
@@ -65,42 +65,50 @@ pd.set_option('display.max_columns', None)
 
 ```{python}
 def connect_to_db():
-  '''
+  """
   Returns a postgres database connection.
   Handles errors with Exceptions.
   
-  Returns:
-      (psycopg2.extensions.connection):Postgres database connection.
-  '''
+  Returns
+  -------
+  psycopg2.extensions.connection
+    Postgres database connection.
+  """
   try:
-    config = configparser.ConfigParser()
-    config.read('config.ini')
+    load_dotenv()
 
     conn = psycopg2.connect(
-	    host=config['CVTDB']['host'],
-	    database=config['CVTDB']['database'],
-  	  user=config['CVTDB']['user'],
-  	  password=config['CVTDB']['password']
+	    host=os.getenv('host'),
+	    database=os.getenv('database'),
+  	  user=os.getenv('user'),
+  	  password=os.getenv('password')
     )
     return conn
   except Exception as e:
     print(e)
     return None
 
-def query_db(query, inputs, schema):
-  '''
-  Returns a Pandas DataFrame with the query results.
+def query_db(query, inputs=None, schema=None):
+  """
+  Returns a Pandas DataFrame with the query results from a Postgres database.
   Handles errors with Exceptions.
 
-  Parameters:
-      query (str):A SQL query string to query the database with.
-      inputs (list):A list of inputs when using "WHERE x IN list" clauses.
-      schema (str):The schema name to use for the Postgres connection.
-  Returns:
-      (pd.DataFrame):The queried results in a Pandas DataFrame object.
-  '''
+  Parameters
+  ----------
+  query: str, required
+    A SQL query string to query the database with.
+  inputs: list, optional
+    A list of inputs when using "WHERE x IN list" clauses.
+  schema: str, optional
+    The schema name to use for the Postgres connection.
+  
+  Returns
+  -------
+  pandas.DataFrame
+    The queried results in a Pandas DataFrame object.
+  """
   if not query:
-    print('Must provide a query to send')
+    print("Must provide a query to send")
     return None
   
   conn = connect_to_db()
@@ -125,7 +133,7 @@ def query_db(query, inputs, schema):
 ### Loading CvTdb Documents Table
 
 ```{python}
-query = 'SELECT pmid, year, first_author, title FROM documents LIMIT 10'
+query = "SELECT pmid, year, first_author, title FROM documents LIMIT 10"
 df = query_db(query, None, 'cvt')
 df.head()
 ```
@@ -139,14 +147,14 @@ pmid_list = ['43370', '422270', '422271', '538758', '629888', '731724', '734422'
 placeholders = ', '.join(['%s'] * len(pmid_list))
 
 # Select columns of interest
-query = '''SELECT distinct e.pmid, b.analyte_name_original, c.dose_level_original, c.dose_level_original_units, 
+query = """SELECT distinct e.pmid, b.analyte_name_original, c.dose_level_original, c.dose_level_original_units, 
 d.species, b.conc_medium_original, a.time_original, b.time_units_original, a.conc_original, b.conc_units_original 
 FROM conc_time_values a 
 LEFT JOIN series b on b.id = a.fk_series_id 
 LEFT JOIN studies c on c.id = b.fk_study_id 
 LEFT JOIN subjects d on d.id = b.fk_subject_id 
 LEFT JOIN documents e on c.fk_extraction_document_id = e.id 
-WHERE e.pmid in (%s)''' % placeholders # Filter to PMID of interest, substituting the list length for inputs by placeholders
+WHERE e.pmid in ({inputs})""".format(inputs=placeholders) # Filter to PMID of interest, substituting the list length for inputs by placeholders
 
 df = query_db(query, pmid_list, 'cvt')
 df.head()
