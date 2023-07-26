@@ -513,6 +513,42 @@ for help in reading the diagram.</p>
 </div>
 <div id="pull-all-data-by-chemical-identifier" class="section level3">
 <h3>Pull all data by chemical identifier</h3>
+<div class="sourceCode" id="cb7"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Chemical list of interest using DTXSID</span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>dtxsid_list <span class="op">=</span> [<span class="st">&#39;DTXSID0021383&#39;</span>, <span class="st">&#39;DTXSID2020139&#39;</span>, <span class="st">&#39;DTXSID0020868&#39;</span>, <span class="st">&#39;DTXSID4020533&#39;</span>, <span class="st">&#39;DTXSID0020442&#39;</span>]</span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a><span class="co"># placeholders for a variable number of inputs for the query</span></span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>placeholders <span class="op">=</span> <span class="st">&#39;, &#39;</span>.join([<span class="st">&#39;</span><span class="sc">%s</span><span class="st">&#39;</span>] <span class="op">*</span> <span class="bu">len</span>(dtxsid_list))</span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a><span class="co"># Select columns of interest</span></span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a>query <span class="op">=</span> <span class="st">&quot;&quot;&quot;SELECT distinct a.dsstox_substance_id, a.dsstox_casrn, b.radiolabeled, c.test_substance_name_original, b.analyte_name_original, d.administration_route_original</span></span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a><span class="st">FROM chemicals a </span></span>
+<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a><span class="st">LEFT JOIN series b on b.fk_test_chemical_id = a.id </span></span>
+<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a><span class="st">LEFT JOIN studies c on c.fk_dosed_chemical_id = b.fk_test_chemical_id </span></span>
+<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a><span class="st">LEFT JOIN administration_route_dict d on d.id = c.fk_administration_route </span></span>
+<span id="cb7-12"><a href="#cb7-12" aria-hidden="true" tabindex="-1"></a><span class="st">WHERE a.dsstox_substance_id in (</span><span class="sc">{inputs}</span><span class="st">)&quot;&quot;&quot;</span>.<span class="bu">format</span>(inputs<span class="op">=</span>placeholders)</span>
+<span id="cb7-13"><a href="#cb7-13" aria-hidden="true" tabindex="-1"></a>df <span class="op">=</span> query_db(query, dtxsid_list, <span class="st">&#39;cvt&#39;</span>)</span>
+<span id="cb7-14"><a href="#cb7-14" aria-hidden="true" tabindex="-1"></a>df.head()</span>
+<span id="cb7-15"><a href="#cb7-15" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;   dsstox_substance_id dsstox_casrn  radiolabeled test_substance_name_original  \</span></span>
+<span id="cb7-16"><a href="#cb7-16" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 0       DTXSID2020139      50-32-8           NaN           [3H]benzo(a)pyrene   </span></span>
+<span id="cb7-17"><a href="#cb7-17" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 1       DTXSID0021383      79-01-6           NaN            Trichloroethylene   </span></span>
+<span id="cb7-18"><a href="#cb7-18" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 2       DTXSID2020139      50-32-8           NaN               benzo(a)pyrene   </span></span>
+<span id="cb7-19"><a href="#cb7-19" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 3       DTXSID4020533     123-91-1           NaN                  1,4-dioxane   </span></span>
+<span id="cb7-20"><a href="#cb7-20" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 4       DTXSID2020139      50-32-8           NaN               benzo(a)pyrene   </span></span>
+<span id="cb7-21"><a href="#cb7-21" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb7-22"><a href="#cb7-22" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;             analyte_name_original administration_route_original  </span></span>
+<span id="cb7-23"><a href="#cb7-23" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 0  benzo(a)pyrene-4,5-dihydrodiol                 intratracheal  </span></span>
+<span id="cb7-24"><a href="#cb7-24" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 1             dichloroacetic acid                          oral  </span></span>
+<span id="cb7-25"><a href="#cb7-25" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 2         1-hydroxybenzo(a)pyrene                            ip  </span></span>
+<span id="cb7-26"><a href="#cb7-26" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 3                     1,4-dioxane                    inhalation  </span></span>
+<span id="cb7-27"><a href="#cb7-27" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 4  benzo(a)pyrene-7,8-dihydrodiol                intra-arterial</span></span></code></pre></div>
+<p><strong>Note:</strong> It is important to point out the distinction
+between the test_substance from the studies table, and the analyte from
+the series table. The test substance represents the chemical being
+administered to the subject, whereas the analyte represents the chemical
+being measured in the subject as a result of the test substance. These
+substances may be the same, however concentration data may be available
+for multiple analytes as the result of a single test substance. It may
+be important to alter your query to search for one or the other
+depending on your intended uses.</p>
 </div>
 </div>
 
