@@ -20,7 +20,8 @@ options(tibble.print_min = 4L, tibble.print_max = 4L)
 ## Getting Started
 ### Credential Security
 One of the most important considerations to make when programmatically accessing databases is how to secure your database credentials. **NEVER HARDCODE CREDENTIALS**. Each programming language provides means to externalize such information and bring it into the environment. For `R`, the `.Renviron` file is where you can store your database connection credentials to then be used by the script.
-> Note: When using online repositories like `GitHub` or `Bitbucket`, be sure to configure your `.gitignore` files appropriately so that your externalized credentials files (e.g., `.Renviron`, `.env`, etc.) are not uploaded with your code. An example .gitignore for `R` code has been provided. See [here](https://github.com/github/gitignore) for additional examples across coding languages.
+
+> **Note:** When using online repositories like `GitHub` or `Bitbucket`, be sure to configure your `.gitignore` files appropriately so that your externalized credentials files (e.g., `.Renviron`, `.env`, etc.) are not uploaded with your code. An example .gitignore for `R` code has been provided. See [here](https://github.com/github/gitignore) for additional examples across coding languages.
 
 ### Querying Databases
 Queries can be made either by using pure SQL (as with the example `query_cvt()` helper function), or through dplyr notation (see [dplyr]( https://db.rstudio.com/r-packages/dplyr/) and [tidyverse](https://dbplyr.tidyverse.org/) for additional information).
