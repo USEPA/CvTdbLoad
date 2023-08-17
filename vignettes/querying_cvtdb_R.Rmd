@@ -229,12 +229,72 @@ compare_sql_dbplyr()
 
 ### Pull all data by chemical identifier (SQL)
 ```{r}
-
+# PMID list of interest
+dtxsid_list <- c('DTXSID0021383', 'DTXSID2020139', 'DTXSID0020868', 'DTXSID4020533', 'DTXSID0020442')
+                # Select columns of interest
+query <- paste0("SELECT distinct a.dsstox_substance_id, a.dsstox_casrn, b.radiolabeled, ",
+                "c.test_substance_name_original, b.analyte_name_original, d.administration_route_original ",
+                "FROM chemicals a ",
+                # Join to series table by series ID
+                "LEFT JOIN series b on b.fk_test_chemical_id = a.id ",
+                # Join to studies table by study ID
+                "LEFT JOIN studies c on c.fk_dosed_chemical_id = b.fk_test_chemical_id ",
+                # Join to subjects table by subject ID
+                "LEFT JOIN administration_route_dict d on d.id = c.fk_administration_route ",
+                # Filter to PMID of interest
+                "WHERE a.dsstox_substance_id in ('",
+                # Using paste instead of toString() for cases where identifiers
+                # are alphanumeric strings
+                paste0(dtxsid_list, collapse="', '"),
+                "')")
+df_sql <- query_db(query = query, 
+               con_type = "postgres", 
+               schema = "cvt")
+head(df_sql)
 ```
 
 ### Pull all data by chemical identifier (dbplyr)
 ```{r}
+con <- connect_to_db(con_type = "postgres")
 
+# Wrapped in a tryCatch so the connection is always closed in case of error
+df_dbplyr <- tryCatch(
+  {
+    # Store table pointers with column name prefixes
+    chemicals = tbl(con, in_schema("cvt", "chemicals")) %>% rename_all(function(x) paste0("a.", x))
+    series = tbl(con, in_schema("cvt", "series")) %>% rename_all(function(x) paste0("b.", x))
+    studies = tbl(con, in_schema("cvt", "studies")) %>% rename_all(function(x) paste0("c.", x))
+    administration_route_dict = tbl(con, in_schema("cvt", "administration_route_dict")) %>%                                              rename_all(function(x) paste0("d.", x))
+    
+    out <- chemicals %>%
+      left_join(series, 
+                by=c("a.id"="b.fk_test_chemical_id")) %>%
+      left_join(studies, 
+                by=c("b.fk_test_chemical_id"="c.fk_dosed_chemical_id")) %>%
+      left_join(administration_route_dict, 
+                by=c("c.fk_administration_route"="d.id")) %>%
+      filter(a.dsstox_substance_id %in% dtxsid_list) %>%
+      select(a.dsstox_substance_id, a.dsstox_casrn, b.radiolabeled,                                                   c.test_substance_name_original, b.analyte_name_original,                                                 d.administration_route_original) %>%
+      distinct() %>%
+      collect() %>%
+      as.data.frame()
+    
+    # Remove column prefixes
+    colnames(out) = sub('.*\\.', '', colnames(out))
+    
+    out
+  
+  },
+  error=function(e) {
+    message(e)
+    return(NULL)
+  },
+  finally={
+    dbDisconnect(con)
+  }
+)
+
+head(df_dbplyr)
 ```
 
 #### Compare SQL vs. dbplyr output
