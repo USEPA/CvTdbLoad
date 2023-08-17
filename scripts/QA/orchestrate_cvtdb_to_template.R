@@ -1,6 +1,7 @@
 # Orchestration script for pulling CvTdb data into template format
 # Jonathan Taylor Wall
-# Modified 2023-6-2
+# Created 2023-6-2
+# Modified 2023-8-15
 # R version 4.1.2 (2021-11-01)
 
 #' @title Pull CvTdb as Template
@@ -70,4 +71,78 @@ orchestrate_cvtdb_to_template <- function(id_list,
                                       ".xlsx"))
     } 
   }
+}
+
+#'@title get_jira_queued_cvt_qc
+#'@description Function to pull a report from CVTDB Jira and filter to QC ticketed document ID values.
+#'@param auth_token Jira API authentication token.
+#'@param jira_project Name of Jira Project. Default CVTDB.
+#'@return Vector of CVTDB document ID's already ticketed in Jira
+get_jira_queued_cvt_qc <- function(auth_token = NULL, jira_project="CVTDB"){
+  # Format headers
+  if(!is.null(auth_token)){
+    headers <- c(Authorization = paste0("Bearer ", auth_token))
+  } else {
+    headers <- NULL
+  }
+  
+  # Pull CSV export from Jira
+  url = paste0("https://jira.epa.gov/sr/jira.issueviews:searchrequest-csv-all-fields/temp/SearchRequest.csv?jqlQuery=project+%3D+", 
+               jira_project)
+  
+  temp_in <- tempfile()
+  in_data_url <- tryCatch({ 
+    utils::download.file(url = url, 
+                         destfile = temp_in,
+                         headers = headers)
+    in_data_url <- readr::read_csv(temp_in, 
+                                   col_types = readr::cols()) 
+  }, error=function(e) {
+    message(e)
+    return(NULL)
+  }, finally = { unlink(temp_in) })
+  
+  if(is.null(in_data_url)){
+    return()
+  }
+  # Process jira data to get CVT QC Queued Document Information
+  out <- in_data_url %>%
+    # Filter to QC tickets
+    dplyr::filter(`Custom field (Epic Link)` == "CVTDB-75",
+                  # Filter to those with document ID values
+                  grepl("QC - Document ID", Summary, fixed = TRUE)) %>%
+    # Convert to document ID values
+    dplyr::mutate(doc_id = Summary %>%
+                    gsub("QC - Document ID", "", .) %>%
+                    as.numeric()) %>%
+    # Get document ID values
+    dplyr::select(doc_id)
+  
+  return(out$doc_id)
+}
+
+#'@title get_cvt_qc_queue
+#'@description Function to pull CVTDB document entries with data that have not been
+#'queued for QC in Jira.
+#'@param auth_token Jira API authentication token.
+#'@return DataFrame of CVTDB document entries not queued in Jira for QC.
+get_cvt_qc_queue <- function(auth_token = NULL){
+  # Pull document information that has CvT data
+  ## Conc_Time_Values entries with fk_series_id
+  ## fk_study_id for those series ID values
+  ## fk_extraction_document_id for those study ID values
+  docs_with_data <- db_query_cvt(paste0("SELECT * FROM cvt.Documents where id IN ",
+                                        "(SELECT DISTINCT fk_extraction_document_id ",
+                                        "FROM cvt.Studies WHERE ID IN ",
+                                        "(SELECT DISTINCT fk_study_id ",
+                                        "FROM cvt.Series where id IN ",
+                                        "(SELECT DISTINCT fk_series_id ",
+                                        "FROM cvt.Conc_Time_Values WHERE fk_series_id IS NOT NULL)))"))
+  # Get already queued QC document IDs
+  jira_queued <- get_jira_queued_cvt_qc(auth_token)
+  
+  # Filter out already queued QC document IDs and return
+  docs_with_data %>%
+    dplyr::filter(!id %in% jira_queued) %>%
+    return()
 }
