@@ -229,7 +229,7 @@ compare_sql_dbplyr()
 
 ### Pull all data by chemical identifier (SQL)
 ```{r}
-# PMID list of interest
+# DTXSID list of interest
 dtxsid_list <- c('DTXSID0021383', 'DTXSID2020139', 'DTXSID0020868', 'DTXSID4020533', 'DTXSID0020442')
                 # Select columns of interest
 query <- paste0("SELECT distinct a.dsstox_substance_id, a.dsstox_casrn, b.radiolabeled, ",
