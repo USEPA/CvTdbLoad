@@ -236,7 +236,7 @@ query <- paste0("SELECT distinct a.dsstox_substance_id, a.dsstox_casrn, b.radiol
                 "c.test_substance_name_original, b.analyte_name_original, d.administration_route_original ",
                 "FROM chemicals a ",
                 # Join to series table by series ID
-                "LEFT JOIN series b on b.fk_test_chemical_id = a.id ",
+                "LEFT JOIN series b on b.fk_analyzed_chemical_id = a.id ",
                 # Join to studies table by study ID
                 "LEFT JOIN studies c on c.fk_dosed_chemical_id = b.fk_test_chemical_id ",
                 # Join to subjects table by subject ID
@@ -268,7 +268,7 @@ df_dbplyr <- tryCatch(
     
     out <- chemicals %>%
       left_join(series, 
-                by=c("a.id"="b.fk_test_chemical_id")) %>%
+                by=c("a.id"="b.fk_analyzed_chemical_id")) %>%
       left_join(studies, 
                 by=c("b.fk_test_chemical_id"="c.fk_dosed_chemical_id")) %>%
       left_join(administration_route_dict, 

@@ -171,7 +171,7 @@ placeholders = ', '.join(['%s'] * len(dtxsid_list))
 # Select columns of interest
 query = """SELECT distinct a.dsstox_substance_id, a.dsstox_casrn, b.radiolabeled, c.test_substance_name_original, b.analyte_name_original, d.administration_route_original
 FROM chemicals a 
-LEFT JOIN series b on b.fk_test_chemical_id = a.id 
+LEFT JOIN series b on b.fk_analyzed_chemical_id = a.id 
 LEFT JOIN studies c on c.fk_dosed_chemical_id = b.fk_test_chemical_id 
 LEFT JOIN administration_route_dict d on d.id = c.fk_administration_route 
 WHERE a.dsstox_substance_id in ({inputs})""".format(inputs=placeholders)
