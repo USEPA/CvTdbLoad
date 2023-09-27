@@ -1,4 +1,4 @@
-# Download.py
+# Extract.py
 This script is used to extract CvT templates from pharmapendium documents. This file is typically to be run after running the download script, as it requires the filename column to be present.
 
 ## Setup
