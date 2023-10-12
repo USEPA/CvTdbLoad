@@ -20,17 +20,6 @@ import warnings
 # Environment variables
 load_dotenv(".env")
 
-email = os.getenv("email")
-password = os.getenv("password")
-in_dir = os.getenv("in_dir")
-out_dir = os.getenv("out_dir")
-
-login_url = "https://www.pharmapendium.com/welcome"
-
-# Number of rows to skip before reaching the column_names row
-skiprows = 5
-
-
 def wait_for_element(driver, xpath, delay=10):
     try:
         myElem = WebDriverWait(driver, delay).until(
@@ -229,53 +218,66 @@ def add_filenames_to_df(df, urls):
     return df
 
 
-# Create selenium driver and login to pharmapendium for pdf scraping
-driver = get_driver()
-login_to_pharmapendium(driver, login_url)
+if __name__ == "__main__":
+    # Load environmental variables
+    email = os.getenv("email")
+    password = os.getenv("password")
+    in_dir = os.getenv("in_dir")
+    out_dir = os.getenv("out_dir")
+    
+    # Base url
+    login_url = "https://www.pharmapendium.com/welcome"
 
-# Get the list of files to loop through
-files = os.listdir(in_dir)
+    # Number of rows to skip before reaching the column_names row
+    skiprows = 5
 
-# Initialize a set of missing pdfs
-missing_pdfs = set()
-
-# Loops through each unique document link and downloads the pdf, where applicable
-# Outputs to the output directory the pdfs, a new excel sheet with filename column, and
-# a text file with the links that were unable to be downloaded
-for i, filename in enumerate(files):
-    print(f"Attemping to download PDFs from {filename}")
-    # Read in the excel file
-    with warnings.catch_warnings(record=True):
-        warnings.simplefilter("always")
-        df = pd.read_excel(
-            in_dir + filename, skiprows=skiprows, index_col=0, engine="openpyxl"
-        )
-
-    # Get the unique source links
-    df = df[df["Concomitants"].astype(str).str.lower().isin(["fed", "fasted", "nan"])]
-    df["Source Link"] = df["Source Link"].astype(str)
-    unique_documents = {
-        url.split("?", 1)[0]: None for url in df["Source Link"].unique()
-    }
-    chemical_name = df.head(1).Drug[0]
-
-    # Download all unique files, if possible, and create a new excel with filename column
-    urls = download_pdfs_pharma(driver, unique_documents, out_dir, chemical_name)
-    df = add_filenames_to_df(df, urls)
-    urls = download_pdfs_doi(urls, out_dir, chemical_name)
-    df = add_filenames_to_df(df, urls)
-    df.to_excel(str(out_dir + filename).replace(".xlsx", "_new.xlsx"))
-
-    # Create file for missing pharmapendium files and doi files
-    missing_pdf_names = df[df["filename"].isnull()]["Source Link"]
-    missing_pdfs.update(missing_pdf_names)
-
-print("Creating missing_pdfs.txt..")
-# Create a .txt file with the missing pdfs from all the documents
-with open(os.path.join(out_dir, f"missing_pdfs.txt"), "w") as file:
-    for pdf_name in missing_pdfs:
-        file.write(pdf_name + "\n")
-
-driver.close()
-
-print("Process complete!")
+    # Create selenium driver and login to pharmapendium for pdf scraping
+    driver = get_driver()
+    login_to_pharmapendium(driver, login_url)
+    
+    # Get the list of files to loop through
+    files = os.listdir(in_dir)
+    
+    # Initialize a set of missing pdfs
+    missing_pdfs = set()
+    
+    # Loops through each unique document link and downloads the pdf, where applicable
+    # Outputs to the output directory the pdfs, a new excel sheet with filename column, and
+    # a text file with the links that were unable to be downloaded
+    for i, filename in enumerate(files):
+        print(f"Attemping to download PDFs from {filename}")
+        # Read in the excel file
+        with warnings.catch_warnings(record=True):
+            warnings.simplefilter("always")
+            df = pd.read_excel(
+                in_dir + filename, skiprows=skiprows, index_col=0, engine="openpyxl"
+            )
+    
+        # Get the unique source links
+        df = df[df["Concomitants"].astype(str).str.lower().isin(["fed", "fasted", "nan"])]
+        df["Source Link"] = df["Source Link"].astype(str)
+        unique_documents = {
+            url.split("?", 1)[0]: None for url in df["Source Link"].unique()
+        }
+        chemical_name = df.head(1).Drug[0]
+    
+        # Download all unique files, if possible, and create a new excel with filename column
+        urls = download_pdfs_pharma(driver, unique_documents, out_dir, chemical_name)
+        df = add_filenames_to_df(df, urls)
+        urls = download_pdfs_doi(urls, out_dir, chemical_name)
+        df = add_filenames_to_df(df, urls)
+        df.to_excel(str(out_dir + filename).replace(".xlsx", "_new.xlsx"))
+    
+        # Create file for missing pharmapendium files and doi files
+        missing_pdf_names = df[df["filename"].isnull()]["Source Link"]
+        missing_pdfs.update(missing_pdf_names)
+    
+    print("Creating missing_pdfs.txt..")
+    # Create a .txt file with the missing pdfs from all the documents
+    with open(os.path.join(out_dir, f"missing_pdfs.txt"), "w") as file:
+        for pdf_name in missing_pdfs:
+            file.write(pdf_name + "\n")
+    
+    driver.close()
+    
+    print("Process complete!")
