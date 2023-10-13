@@ -20,7 +20,19 @@ import warnings
 # Environment variables
 load_dotenv(".env")
 
+
 def wait_for_element(driver, xpath, delay=10):
+    """
+    Wait for html element to be present on the page with a specified timeout.
+
+    Args:
+        driver (selenium.webdriver.chrome.webdriver.WebDriver): Selenium driver object.
+        xpath (str): Html path to desired element.
+        delay (int, optional): maximum wait time. Defaults to 10.
+
+    Returns:
+        selenium.webdriver.WebElement: Selenium web element.
+    """
     try:
         myElem = WebDriverWait(driver, delay).until(
             EC.presence_of_element_located(
@@ -41,8 +53,7 @@ def download_wait(filepath, timeout=120):
     """
     Wait for downloads to finish with a specified timeout.
 
-    Args
-    ----
+    Args:
     filepath : str
         The path to the file to wait for.
     timeout : int
@@ -64,6 +75,12 @@ def download_wait(filepath, timeout=120):
 
 
 def get_driver():
+    """
+    Get the Seleneium driver object with specified settings.
+
+    Returns:
+        selenium.webdriver.chrome.webdriver.WebDriver: Selenium WebDriver object
+    """
     print("Setting up web driver...")
     Options = webdriver.ChromeOptions()
     prefs = {
@@ -86,6 +103,13 @@ def get_driver():
 
 
 def login_to_pharmapendium(driver, url):
+    """
+    Login to pharmapendium website using Selenium
+
+    Args:
+        driver (selenium.webdriver.chrome.webdriver.WebDriver): Selenium Webdriver object.
+        url (str): Base URL to access Pharmapendium.
+    """
     # Navigate to the base URL
     print("Navigating to base url...")
     driver.get(url)
@@ -126,6 +150,18 @@ def login_to_pharmapendium(driver, url):
 
 
 def download_pdfs_pharma(driver, urls, out_dir, chemical_name=None):
+    """
+    Download a list of pharmapendium PDFs from a URL dictionary using Selenium.
+
+    Args:
+        driver (selenium.webdriver.chrome.webdriver.WebDriver): Selenium WebDriver object
+        urls (dict): A dictionary of PharmaPendium URL's initialized with empty values.
+        out_dir (url): The path to the directory for downloaded PDFs.
+        chemical_name (str, optional): Chemical Name to append to associated PDFs. Defaults to None.
+
+    Returns:
+        dict: A dictionary with the original URLs, and updated values representing the downloaded filenames.
+    """
     for url in progressbar(urls):
         file_hash = None
 
@@ -194,6 +230,17 @@ def download_pdfs_pharma(driver, urls, out_dir, chemical_name=None):
 
 
 def download_pdfs_doi(urls, out_dir, chemical_name=None):
+    """
+    Download a list of DOI PDFs from a URL dictionary using API.
+
+    Args:
+        urls (dict): A dictionary of PharmaPendium URL's initialized with empty values.
+        out_dir (url): The path to the directory for downloaded PDFs.
+        chemical_name (str, optional): Chemical Name to append to associated PDFs. Defaults to None.
+
+    Returns:
+        dict: A dictionary with the original URLs, and updated values representing the downloaded filenames.
+    """
     dois = [url for url in urls if "doi" in url]
 
     for i, doi in enumerate(dois):
@@ -211,6 +258,16 @@ def download_pdfs_doi(urls, out_dir, chemical_name=None):
 
 
 def add_filenames_to_df(df, urls):
+    """
+    Add a collection of filenames associated to their source links to a PharmaPendium export file.
+
+    Args:
+        df (pandas.DataFrame): A PharmaPendium export Dataframe to add the file names to.
+        urls (dict): A dictionary with download URLs and associated file names.
+
+    Returns:
+        pandas.DataFrame: A PharmaPendium dataframe with added file names.
+    """
     df["filename"] = df["Source Link"].apply(
         lambda x: next((urls[url] for url in urls if url in x), None)
     )
@@ -224,7 +281,7 @@ if __name__ == "__main__":
     password = os.getenv("password")
     in_dir = os.getenv("in_dir")
     out_dir = os.getenv("out_dir")
-    
+
     # Base url
     login_url = "https://www.pharmapendium.com/welcome"
 
@@ -234,13 +291,13 @@ if __name__ == "__main__":
     # Create selenium driver and login to pharmapendium for pdf scraping
     driver = get_driver()
     login_to_pharmapendium(driver, login_url)
-    
+
     # Get the list of files to loop through
     files = os.listdir(in_dir)
-    
+
     # Initialize a set of missing pdfs
     missing_pdfs = set()
-    
+
     # Loops through each unique document link and downloads the pdf, where applicable
     # Outputs to the output directory the pdfs, a new excel sheet with filename column, and
     # a text file with the links that were unable to be downloaded
@@ -252,32 +309,34 @@ if __name__ == "__main__":
             df = pd.read_excel(
                 in_dir + filename, skiprows=skiprows, index_col=0, engine="openpyxl"
             )
-    
+
         # Get the unique source links
-        df = df[df["Concomitants"].astype(str).str.lower().isin(["fed", "fasted", "nan"])]
+        df = df[
+            df["Concomitants"].astype(str).str.lower().isin(["fed", "fasted", "nan"])
+        ]
         df["Source Link"] = df["Source Link"].astype(str)
         unique_documents = {
             url.split("?", 1)[0]: None for url in df["Source Link"].unique()
         }
         chemical_name = df.head(1).Drug[0]
-    
+
         # Download all unique files, if possible, and create a new excel with filename column
         urls = download_pdfs_pharma(driver, unique_documents, out_dir, chemical_name)
         df = add_filenames_to_df(df, urls)
         urls = download_pdfs_doi(urls, out_dir, chemical_name)
         df = add_filenames_to_df(df, urls)
         df.to_excel(str(out_dir + filename).replace(".xlsx", "_new.xlsx"))
-    
+
         # Create file for missing pharmapendium files and doi files
         missing_pdf_names = df[df["filename"].isnull()]["Source Link"]
         missing_pdfs.update(missing_pdf_names)
-    
+
     print("Creating missing_pdfs.txt..")
     # Create a .txt file with the missing pdfs from all the documents
     with open(os.path.join(out_dir, f"missing_pdfs.txt"), "w") as file:
         for pdf_name in missing_pdfs:
             file.write(pdf_name + "\n")
-    
+
     driver.close()
-    
+
     print("Process complete!")
