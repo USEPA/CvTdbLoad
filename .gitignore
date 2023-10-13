@@ -38,6 +38,9 @@ vignettes/*.pdf
 # R Environment Variables
 .Renviron
 
+# Python Environment Variables
+.env
+
 # pkgdown site
 docs/
 
@@ -53,5 +56,4 @@ output/
 # Ignore CvT Curation Temp Files
 CvT Curation/
 Planning/
-/doc/
 /Meta/
