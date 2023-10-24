@@ -3,18 +3,25 @@
 # Created 2023-10-19
 # Script to pull CvT templates directly from Jira for processing
 
-load_file_from_api <- function(url, headers, file_type){
-  temp_in <- tempfile()
+load_file_from_api <- function(url, headers, file_type, mode = "w"){
+  temp_in <- tempfile(fileext = paste0(".", file_type))
   out <- tryCatch({ 
     utils::download.file(url = url, 
-                         destfile = paste0(temp_in, ".", file_type),
-                         headers = headers)
+                         destfile = temp_in,
+                         headers = headers,
+                         mode = mode)
     if(file_type == "csv"){
       readr::read_csv(temp_in, 
                       col_types = readr::cols()) %>%
         return()
     } else if(file_type == "xlsx"){
-      readxl::read_xlsx(temp_in)
+      sheet_ls = readxl::excel_sheets(temp_in)
+      lapply(sheet_ls, function(s_name){
+        readxl::read_xlsx(temp_in,
+                          sheet=s_name)  
+      }) %T>% {
+        names(.) <- sheet_ls
+      }
     } else {
       stop("'load_file_from_api()' unsupported file_type '", file_type,"'")
     }
@@ -108,7 +115,8 @@ pull_jira_templates <- function(jira_project, in_file = NULL, download_bulk = FA
                      by=c("Epic Link"="Issue key")) %>%
     dplyr::filter(`Epic Name` == "Document Curation",
                   `Issue Type` != "Epic",
-                  Status =="Done") %>%
+                  Status =="Done"
+                  ) %>%
     dplyr::select(-`Issue Type`) %>%
     # Clean labels for better subfolder grouping
     dplyr::mutate(Labels = Labels %>%
@@ -137,23 +145,6 @@ pull_jira_templates <- function(jira_project, in_file = NULL, download_bulk = FA
                   attachment_name = attachment_name %>%
                     gsub("Attachment...", "", .) %>%
                     as.numeric())
-  
-  # Test loading Clowder file directly
-  # 65318469e4b045b9ff7b00d8
-  tmp = load_file_from_api(url = paste0("https://clowder.edap-cluster.com/api/files/65318469e4b045b9ff7b00d8"),
-                     headers <- c(`X-API-Key` = apiKey),
-                     file_type = "xlsx")
-  
-  downloader::download(paste0("https://clowder.edap-cluster.com/api/files/", 
-                              "65318469e4b045b9ff7b00d8", "?apiKey=", apiKey), 
-                       paste0("output/", 
-                              #sub("^.*?([A-Z])", "\\1", 
-                              "test_clowder_file.xlsx"
-                              #   )
-                       ), #Remove starting hashkey string before first capitalization
-                       mode = "wb", 
-                       quiet=TRUE)
-  
   
   ################################################################################
   ### Bulk Download
@@ -240,5 +231,151 @@ pull_jira_templates <- function(jira_project, in_file = NULL, download_bulk = FA
     }
   }
   
-  return(out_summary)
+  return(list(out_summary=out_summary,
+              ticket_attachment_metadata=ticket_attachment_metadata))
+}
+
+clowder_get_dataset_files <- function(dsID, baseurl, apiKey){
+  # Rest between requests
+  Sys.sleep(0.25)
+  # Pull all Clowder Files from input dataset
+  c_files_list = httr::GET(
+    paste0(baseurl, "/api/datasets/", dsID,"/listAllFiles?limit=0"),
+    httr::accept_json(),
+    httr::content_type_json(),
+    # Use API Key for authorization
+    httr::add_headers(`X-API-Key` = apiKey),
+    encode = "json"
+  ) %>%
+    httr::content()
+  # Format data
+  c_files_list = lapply(c_files_list, function(f){
+    f %>%
+      data.frame() %>%
+      tidyr::unnest(cols=c())
+  }) %>%
+    dplyr::bind_rows() %>%
+    dplyr::select(clowder_id = id, `folders.name`, filename) %>%
+    return()
+}
+
+upload_file_metadata <- function(metadata, dsID, idCol, userID, baseurl, apiKey){
+  ################################################################################
+  ### Push metadata
+  ################################################################################
+  
+  c_files_list <- clowder_get_dataset_files(dsID, baseurl, apiKey)
+  
+  # Map metadata to Clowder Doc
+  metadata = c_files_list %>%
+    dplyr::left_join(metadata,
+                     by=c("folders.name" = "Issue key", "filename")) %>%
+    dplyr::rename(jira_upload_date=date, jira_ticket_id=`folders.name`) %>%
+    dplyr::select(-attachment_name, -filename)
+    
+  # Prep metadata JSON with userID
+  md = list(
+    "@context"= c(
+      "https://clowder.ncsa.illinois.edu/contexts/metadata.jsonld",
+      list("@vocab"= "https://clowder.ncsa.illinois.edu/contexts/metadata.jsonld")
+    ),
+    "agent"= list(
+      "@type"= "cat:user",
+      "user_id"= paste0("http://clowder-test.edap-cluster.com/api/users/", userID)
+    ),
+    "content"= c()
+  )
+  
+  # add all metadata
+  cat("...pushing metadata to files...\n")
+  
+  for(u in unique(metadata$clowder_id)){
+    cat("...pushing Clowder File ", u, " (", which(metadata$clowder_id == u), " of ", length(unique(metadata$clowder_id)),")\n")
+    content = metadata[metadata$clowder_id == u,]
+    
+    # Compare metadata
+    old_metadata = clowder_get_file_metadata(fileID = u, baseurl, apiKey)
+    
+    compare_metadata = old_metadata %>%
+      dplyr::select(any_of(names(content)))
+    
+    # Skip if old metadata matches new metadata
+    if(identical(content, compare_metadata)) next
+    
+    # Create dictionary of metadata name value pairs
+    md$content = metadata %>%
+      dplyr::filter(clowder_id == u) %>%
+      dplyr::select(-clowder_id) %>%
+      purrr::flatten()
+    # POST metadata for 'u' file
+    # Rest between requests
+    Sys.sleep(0.25)
+    httr::POST(
+      paste0(baseurl, "/api/files/",u ,"/metadata.jsonld"),
+      httr::accept_json(),
+      httr::content_type_json(),
+      # Use API Key for authorization
+      httr::add_headers(`X-API-Key` = apiKey),
+      encode = "json",
+      body=md
+    )
+  }
+  cat("Done...\n")
+}
+
+clowder_get_file_metadata <- function(fileID, baseurl, apiKey){
+  # Rest between requests
+  Sys.sleep(0.25)
+  
+  # Format URL for request
+  url = paste0(baseurl, "/api/files/metadata.jsonld?id=", 
+               # Combine multiple file ID values if provided
+               paste0(fileID, collapse="&id="), 
+               "&?limit=0")
+  # Pull metadata for input files
+  metadata = httr::GET(
+    url=url,
+    httr::accept_json(),
+    httr::content_type_json(),
+    # Use API Key for authorization
+    httr::add_headers(`X-API-Key` = apiKey),
+    encode = "json"
+  ) %>%
+    httr::content()
+  
+  # Format data to return (combine across multiple metadata submissions)
+  lapply(metadata, function(f){
+    lapply(f, function(ff){
+      ff %>%
+        purrr::pluck("content") %>%
+        purrr::compact() %>%
+        data.frame() %>%
+        tidyr::unnest(cols=c()) %>%
+        dplyr::mutate(dplyr::across(dplyr::everything(), ~as.character(.)))
+    }) %>%
+      dplyr::bind_cols()
+  }) %>%
+    dplyr::bind_rows() %>%
+    dplyr::mutate(clowder_id = fileID) %>%
+    return()
+}
+
+process_jira_files <- function(dsID, baseurl, apiKey){
+  # Pull full list of Clowder files in dataset
+  c_files_list <- clowder_get_dataset_files(dsID, baseurl, apiKey)
+  # Filter to those marked as "to_load"
+  if(length(c_files_list) > 100){
+    # Add logic to chunk
+    to_load_files = clowder_get_file_metadata(fileID=c_files_list$clowder_id[1:100], baseurl, apiKey) %>%
+      dplyr::filter(cvt_to_load == 1) %>%
+      dplyr::select(clowder_id)
+  }
+  
+  # Pull temp file to process
+  tmp = load_file_from_api(url = paste0("https://clowder.edap-cluster.com/api/files/65318469e4b045b9ff7b00d8/blob"),
+                           headers = c(`X-API-Key` = apiKey),
+                           mode = "wb",
+                           file_type = "xlsx")
+  
+  # Insert/connect logic to processing a template
 }
