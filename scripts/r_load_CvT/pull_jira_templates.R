@@ -34,18 +34,17 @@ load_file_from_api <- function(url, headers, file_type, mode = "w"){
   return(out)
 }
 
-#' @title pull_jira_templates
+#' @title pull_jira_info
 #' @description Script to process CSV export of Jira into a status log
 #' @param jira_project Jira project code (e.g. CVTDB)
 #' @param download_bulk Boolean whether to bulk download ticket attachments, Default: FALSE.
-#' @param reset_download Boolean whether to re-download ticket attachments, Default: FALSE.
 #' @param auth_token Authorization token for Jira
 #' @return Summary DataFrame of Jira tickets by Epic, Label, and Status
 #' @details DETAILS
 #' @examples 
 #' \dontrun{
 #' if(interactive()){
-#'  out = jira_summary_bulk_download(jira_project="project_name", download_bulk = FALSE, reset_download = FALSE)
+#'  out = pull_jira_info(jira_project="project_name")
 #'  }
 #' }
 #' @seealso 
@@ -54,14 +53,14 @@ load_file_from_api <- function(url, headers, file_type, mode = "w"){
 #'  [select][dplyr::select], [contains][dplyr::contains], [mutate][dplyr::mutate], [everything][dplyr::everything], [filter][dplyr::filter], [distinct][dplyr::distinct], [left_join][dplyr::left_join], [group_by][dplyr::group_by], [summarise][dplyr::summarise], [n][dplyr::n]
 #'  [unite][tidyr::unite]
 #'  [str_squish][stringr::str_squish]
-#' @rdname jira_summary_bulk_download
+#' @rdname pull_jira_info
 #' @export 
 #' @importFrom utils download.file unzip
 #' @importFrom readr read_csv cols
 #' @importFrom dplyr select contains mutate everything filter distinct left_join group_by summarise n
 #' @importFrom tidyr unite
 #' @importFrom stringr str_squish
-pull_jira_templates <- function(jira_project, in_file = NULL, download_bulk = FALSE, reset_download = FALSE, auth_token = NULL){
+pull_jira_info <- function(jira_project, in_file = NULL, auth_token = NULL){
   
   # Format headers
   if(!is.null(auth_token)){
@@ -144,75 +143,64 @@ pull_jira_templates <- function(jira_project, in_file = NULL, download_bulk = FA
     dplyr::mutate(file_ext = tools::file_ext(filename),
                   attachment_name = attachment_name %>%
                     gsub("Attachment...", "", .) %>%
-                    as.numeric())
+                    as.numeric()) %>%
+    dplyr::left_join(in_data %>% 
+                       select(`Issue key`, `Epic Name`, Labels),
+                     by = "Issue key")
   
+  return(list(in_data=in_data,
+              out_summary=out_summary,
+              ticket_attachment_metadata=ticket_attachment_metadata))
+}
+
+jira_download_templates <- function(in_data){
   ################################################################################
   ### Bulk Download
   ################################################################################
-  if(download_bulk){
-    bulk_download <- in_data # %>%
-    # filter(`Epic Name` %in% epics_to_download,
-    #        !Status %in% c("Ice Box", "Rejected"))
+  bulk_download <- in_data # %>%
+  # filter(`Epic Name` %in% epics_to_download,
+  #        !Status %in% c("Ice Box", "Rejected"))
+  
+  # epics_to_download <- c("Document Curation", "CVTDB QC")
+  epics_to_download <- paste0("output/", bulk_download$`Epic Name`) %>% unique()
+  
+  bulk_download <- bulk_download %>%
+    tidyr::unite(col="destdir", `Epic Name`, Labels, sep="/", remove=FALSE) %>%
+    dplyr::mutate(destdir = paste0("output/", destdir))
+  
+  # Make directories by Epic
+  for(epic in epics_to_download){
+    # Make if not exist
+    if(!dir.exists(epic)) dir.create(epic)
+  }
+  
+  # Make subdirectories by Label
+  for(d_dir in unique(bulk_download$destdir)){
+    if(!dir.exists(d_dir)) dir.create(d_dir, recursive = TRUE)
+  }
+  
+  # Bulk download and unzip files
+  for(i in seq_len(nrow(bulk_download))){
+    message("Working on ticket ", i, " of ", nrow(bulk_download))
+    destfile <- paste0(bulk_download$destdir[i], "/", bulk_download$`Issue key`[i],".zip")
+    zipDir <- destfile %>% gsub(".zip", "", .)
     
-    # epics_to_download <- c("Document Curation", "CVTDB QC")
-    epics_to_download <- paste0("output/", bulk_download$`Epic Name`) %>% unique()
+    # Check if already downloaded/unzipped
+    if(dir.exists(zipDir)) next
     
-    bulk_download <- bulk_download %>%
-      tidyr::unite(col="destdir", `Epic Name`, Labels, sep="/", remove=FALSE) %>%
-      dplyr::mutate(destdir = paste0("output/", destdir))
-    
-    # Make directories by Epic
-    for(epic in epics_to_download){
-      # Make if not exist
-      if(!dir.exists(epic)) dir.create(epic)
-    }
-    
-    # Make subdirectories by Label
-    for(d_dir in unique(bulk_download$destdir)){
-      if(!dir.exists(d_dir)) dir.create(d_dir, recursive = TRUE)
-    }
-    
-    # Bulk download and unzip files
-    for(i in seq_len(nrow(bulk_download))){
-      message("Working on ticket ", i, " of ", nrow(bulk_download))
-      destfile <- paste0(bulk_download$destdir[i], "/", bulk_download$`Issue key`[i],".zip")
-      zipDir <- destfile %>% gsub(".zip", "", .)
+    # Unzip already downloaded but not unzipped .zip
+    if(!file.exists(destfile)){
+      url <- paste0("https://jira.epa.gov/secure/attachmentzip/",bulk_download$`Issue id`[i],".zip")
       
-      # Check if already downloaded/unzipped
-      if(dir.exists(zipDir)) next
-      
-      # Unzip already downloaded but not unzipped .zip
-      if(!file.exists(destfile)){
-        url <- paste0("https://jira.epa.gov/secure/attachmentzip/",bulk_download$`Issue id`[i],".zip")
-        
-        # Download files as subdirectories
-        # Bulk download of ticket zip files
-        # jira.epa.gov/secure/attachmentzip/*key*.zip
-        tryCatch(
-          {
-            utils::download.file(url = url, 
-                                 destfile = destfile,
-                                 method = "libcurl",
-                                 headers = headers)
-          },
-          error=function(cond) {
-            message("Problem with ticket: ", bulk_download$`Issue key`[i])
-            message(cond)
-          },
-          warning=function(cond) {
-            message("Warning with ticket: ", bulk_download$`Issue key`[i])
-            message(cond)
-          }
-        ) 
-      }
-      
-      # Unzip files
+      # Download files as subdirectories
+      # Bulk download of ticket zip files
+      # jira.epa.gov/secure/attachmentzip/*key*.zip
       tryCatch(
         {
-          # Only unzip if exists
-          if(file.exists(destfile)){
-            utils::unzip(destfile, exdir=zipDir)
-          }
+          utils::download.file(url = url, 
+                               destfile = destfile,
+                               method = "libcurl",
+                               headers = headers)
         },
         error=function(cond) {
           message("Problem with ticket: ", bulk_download$`Issue key`[i])
@@ -223,16 +211,31 @@ pull_jira_templates <- function(jira_project, in_file = NULL, download_bulk = FA
           message(cond)
         }
       ) 
-      
-      # Only unzip if exists
-      if(file.exists(destfile)){
-        file.remove(destfile) 
+    }
+    
+    # Unzip files
+    tryCatch(
+      {
+        # Only unzip if exists
+        if(file.exists(destfile)){
+          utils::unzip(destfile, exdir=zipDir)
+        }
+      },
+      error=function(cond) {
+        message("Problem with ticket: ", bulk_download$`Issue key`[i])
+        message(cond)
+      },
+      warning=function(cond) {
+        message("Warning with ticket: ", bulk_download$`Issue key`[i])
+        message(cond)
       }
+    ) 
+    
+    # Only unzip if exists
+    if(file.exists(destfile)){
+      file.remove(destfile) 
     }
   }
-  
-  return(list(out_summary=out_summary,
-              ticket_attachment_metadata=ticket_attachment_metadata))
 }
 
 clowder_get_dataset_files <- function(dsID, baseurl, apiKey){
@@ -259,19 +262,23 @@ clowder_get_dataset_files <- function(dsID, baseurl, apiKey){
     return()
 }
 
-upload_file_metadata <- function(metadata, dsID, idCol, userID, baseurl, apiKey){
+upload_file_metadata <- function(metadata, dsID, userID, baseurl, apiKey){
   ################################################################################
   ### Push metadata
   ################################################################################
   
-  c_files_list <- clowder_get_dataset_files(dsID, baseurl, apiKey)
+  c_files_list <- clowder_get_dataset_files(dsID, baseurl, apiKey) %>%
+    tidyr::unite(join_key, `folders.name`, filename, sep="_cvtjoin_")
   
   # Map metadata to Clowder Doc
-  metadata = c_files_list %>%
-    dplyr::left_join(metadata,
-                     by=c("folders.name" = "Issue key", "filename")) %>%
-    dplyr::rename(jira_upload_date=date, jira_ticket_id=`folders.name`) %>%
-    dplyr::select(-attachment_name, -filename)
+  metadata = metadata %>%
+    tidyr::unite(join_key, `Issue key`, filename, sep="_cvtjoin_") %>%
+    dplyr::left_join(c_files_list,
+                     by="join_key") %>%
+    tidyr::separate(join_key, into = c("jira_ticket_id", "filename"), sep="_cvtjoin_") %>%
+    dplyr::rename(jira_upload_date=date) %>%
+    dplyr::select(-attachment_name, -filename) %>%
+    dplyr::filter(!is.na(clowder_id))
     
   # Prep metadata JSON with userID
   md = list(
@@ -378,4 +385,67 @@ process_jira_files <- function(dsID, baseurl, apiKey){
                            file_type = "xlsx")
   
   # Insert/connect logic to processing a template
+}
+
+################################################################################
+update_jira_clowder_info <- function(jira_project, in_file, auth_token, reset_attachments=FALSE, dsID, baseurl, userID, apiKey){
+  # Pull initial Jira information
+  jira_info = pull_jira_info(jira_project=jira_project,
+                             in_file=in_file,
+                             auth_token=auth_token)
+  # Download attachments as needed
+  # Pull all
+  if(reset_attachments){
+    jira_download_templates(in_data = jira_info$in_data)
+    metadata = jira_info$ticket_attachment_metadata
+  } else {
+    # Only pull those not already on Clowder
+    ds_file_list = clowder_get_dataset_files(dsID=dsID,
+                                             baseurl=baseurl,
+                                             apiKey=apiKey)
+    bulk_download = jira_info$ticket_attachment_metadata %>%
+      dplyr::filter(!filename %in% ds_file_list$filename)
+    metadata = bulk_download %>% 
+      dplyr::select(-any_of(c("destdir", "Epic Link", "Epic Name")))
+      
+    # Set up directory
+    # epics_to_download <- c("Document Curation", "CVTDB QC")
+    epics_to_download <- paste0("output/", bulk_download$`Epic Name`) %>% unique()
+    
+    bulk_download <- bulk_download %>%
+      tidyr::unite(col="destdir", `Epic Name`, Labels, `Issue key`, sep="/", remove=FALSE) %>%
+      dplyr::mutate(destdir = paste0("output/", destdir))
+    
+    # Make directories by Epic
+    for(epic in epics_to_download){
+      # Make if not exist
+      if(!dir.exists(epic)) dir.create(epic)
+    }
+    
+    # Make subdirectories by Label and Jira ticket
+    for(d_dir in unique(bulk_download$destdir)){
+      if(!dir.exists(d_dir)) dir.create(d_dir, recursive = TRUE)
+    }
+    
+    # Iterate through files not on Clowder to download
+    for(filename in bulk_download$filename){
+      message("Working on ticket ", which(bulk_download$filename == filename), " of ", nrow(bulk_download))
+      # Set destination file name
+      destfile <- paste0(bulk_download$destdir[bulk_download$filename == filename], "/", 
+                         filename)
+      # Download if does not exist
+      if(!file.exists(destfile)){
+        utils::download.file(url = bulk_download$jira_link[bulk_download$filename == filename],
+                             destfile = destfile,
+                             headers = c(`X-API-Key` = apiKey),
+                             mode = "wb")  
+      }
+    }
+  }
+  
+  upload_file_metadata(metadata=metadata, 
+                       dsID=dsID, 
+                       userID=userID, 
+                       baseurl=baseurl, 
+                       apiKey=apiKey)
 }
