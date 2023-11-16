@@ -363,7 +363,7 @@ clowder_get_file_metadata <- function(fileID, baseurl, apiKey){
       dplyr::bind_cols()
   }) %>%
     dplyr::bind_rows() %>%
-    dplyr::mutate(clowder_id = fileID) %>%
+    dplyr::mutate(clowder_id = names(metadata)) %>%
     return()
 }
 
@@ -371,7 +371,7 @@ process_jira_files <- function(dsID, baseurl, apiKey){
   # Pull full list of Clowder files in dataset
   c_files_list <- clowder_get_dataset_files(dsID, baseurl, apiKey)
   # Filter to those marked as "to_load"
-  if(length(c_files_list) > 100){
+  if(nrow(c_files_list) > 100){
     # Add logic to chunk
     to_load_files = clowder_get_file_metadata(fileID=c_files_list$clowder_id[1:100], baseurl, apiKey) %>%
       dplyr::filter(cvt_to_load == 1) %>%
