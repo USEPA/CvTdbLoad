@@ -363,28 +363,8 @@ clowder_get_file_metadata <- function(fileID, baseurl, apiKey){
       dplyr::bind_cols()
   }) %>%
     dplyr::bind_rows() %>%
-    dplyr::mutate(clowder_id = fileID) %>%
+    dplyr::mutate(clowder_id = names(metadata)) %>%
     return()
-}
-
-process_jira_files <- function(dsID, baseurl, apiKey){
-  # Pull full list of Clowder files in dataset
-  c_files_list <- clowder_get_dataset_files(dsID, baseurl, apiKey)
-  # Filter to those marked as "to_load"
-  if(length(c_files_list) > 100){
-    # Add logic to chunk
-    to_load_files = clowder_get_file_metadata(fileID=c_files_list$clowder_id[1:100], baseurl, apiKey) %>%
-      dplyr::filter(cvt_to_load == 1) %>%
-      dplyr::select(clowder_id)
-  }
-  
-  # Pull temp file to process
-  tmp = load_file_from_api(url = paste0("https://clowder.edap-cluster.com/api/files/65318469e4b045b9ff7b00d8/blob"),
-                           headers = c(`X-API-Key` = apiKey),
-                           mode = "wb",
-                           file_type = "xlsx")
-  
-  # Insert/connect logic to processing a template
 }
 
 ################################################################################
@@ -448,4 +428,27 @@ update_jira_clowder_info <- function(jira_project, in_file, auth_token, reset_at
                        userID=userID, 
                        baseurl=baseurl, 
                        apiKey=apiKey)
+}
+
+################################################################################
+#' process_jira_files
+#' Function to pull Clowder templates to process based on metadata "cvt_to_load"
+process_jira_files <- function(dsID, baseurl, apiKey){
+  # Pull full list of Clowder files in dataset
+  c_files_list <- clowder_get_dataset_files(dsID, baseurl, apiKey)
+  # Filter to those marked as "cvt_to_load"
+  if(nrow(c_files_list) > 100){
+    # Add logic to chunk
+    to_load_files = clowder_get_file_metadata(fileID=c_files_list$clowder_id[1:100], baseurl, apiKey) %>%
+      dplyr::filter(cvt_to_load == 1) %>%
+      dplyr::select(clowder_id)
+  }
+  
+  # Pull temp file to process
+  tmp = load_file_from_api(url = paste0("https://clowder.edap-cluster.com/api/files/65318469e4b045b9ff7b00d8/blob"),
+                           headers = c(`X-API-Key` = apiKey),
+                           mode = "wb",
+                           file_type = "xlsx")
+  
+  # Insert/connect logic to processing a template
 }
