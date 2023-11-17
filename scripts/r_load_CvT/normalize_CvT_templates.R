@@ -138,7 +138,8 @@ normalize_CvT_templates <- function(file_location = "clowder",
     #   log_CvT_doc_load(f, m="already_loaded")
     #   next
     # }
-    # TO DO - uncomment Clowder when ready to use
+    
+    # TODO - Improve Clowder ID mapping logic (case where template has clowder_id field)
     # Match to Clowder documents
     doc_sheet_list$Documents=clowder_match_docs(df=doc_sheet_list$Documents,
                                                 dsID=doc_dsID,
@@ -180,14 +181,14 @@ normalize_CvT_templates <- function(file_location = "clowder",
     # }
     
     #Match curated chemicals - rename columns to generic names 
-    tmp = match_curated_chemicals(df=doc_sheet_list$Studies %>%
+    tmp = chemical_curation_match_curated_chemicals(df=doc_sheet_list$Studies %>%
                                     select(name=test_substance_name, 
                                            name_secondary=test_substance_name_secondary, 
                                            casrn=test_substance_casrn), 
                                   f_name=curated_chemicals)
     doc_sheet_list$Studies = cbind(doc_sheet_list$Studies, tmp)
     #Match curated chemicals - rename columns to generic names 
-    tmp = match_curated_chemicals(df=doc_sheet_list$Series %>%
+    tmp = chemical_curation_match_curated_chemicals(df=doc_sheet_list$Series %>%
                                     select(name=analyte_name, 
                                            name_secondary=analyte_name_secondary, 
                                            casrn=analyte_casrn), 

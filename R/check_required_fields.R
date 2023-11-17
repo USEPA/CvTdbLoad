@@ -19,18 +19,19 @@ check_required_fields <- function(df, f){
   for(t in names(df)){
     req_fields = switch(t,
                         "Documents" = c("id", "document_type", "extracted", 
-                                        "tk_params", "effects_data", "httk_data"),
+                                        # "tk_params", "effects_data", "httk_data"
+                                        ),
                         "Studies" = c("id", "dose_level", "administration_route_normalized",
                                       "dose_frequency"),
                         "Subjects" = c("id", "species"),
-                        "Series" = c("id", "radiolabeled", "figure_name", "time_units_original", 
-                                     "conc_units_original", "conc_medium_normalized",
+                        "Series" = c("id", "radiolabeled", "figure_name", "time_units", 
+                                     "conc_units", "conc_medium_normalized",
                                      "fk_study_id", "fk_subject_id", "n_subjects_in_series"),
                         "Conc_Time_Values" = c("fk_series_id", "time_original", "conc")
     )  
     #Check if missing required field entirely
     if(any(!req_fields %in% names(df[[t]]))){
-      message("Required field missing: ", req_fields[!req_fields %in% names(df[[t]])])
+      message("Required field missing: ", toString(req_fields[!req_fields %in% names(df[[t]])]))
       #Flag missing fields
       for(field in req_fields[!req_fields %in% names(df[[t]])]){
         #message(paste0("missing_required_field_", field))
@@ -149,7 +150,7 @@ check_required_fields <- function(df, f){
     
     if(t == "Conc_Time_Values"){
       #Check if conc_bound_type present (if conc lower, upper, or sd present)
-      if((any(!is.na(df[[t]]$conc_upper_bound)) | any(is.na(df[[t]]$conc_lower_bound)) | any(!is.na(df[[t]]$conc_sd))) & 
+      if((any(!is.na(df[[t]]$conc_upper_bound)) | any(!is.na(df[[t]]$conc_lower_bound)) | any(!is.na(df[[t]]$conc_sd))) & 
          all(is.na(df[[t]]$conc_bound_type))){
         log_CvT_doc_load(f=f, m="missing_conc_bound_type")
       }
