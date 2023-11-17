@@ -99,7 +99,7 @@ normalize_CvT_templates <- function(file_location = "clowder",
     message("Normalizing file (", i, "/", nrow(fileList),"): ", f, "...", Sys.time())
     #Load Documents Sheet
     if(file_location == "local"){
-      doc_sheet_list = load_sheet_group(fileName = f, template_path = template_path)   
+      doc_sheet_list = load_sheet_group(fileName = f, template_path = template_path)
     } else {
       # # Pull temp file to process
       doc_sheet_list = load_file_from_api(url = paste0(baseurl,"/api/files/",fileList$clowder_id[i],"/blob"),

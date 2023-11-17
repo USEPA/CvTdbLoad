@@ -18,13 +18,15 @@
 check_required_fields <- function(df, f){
   for(t in names(df)){
     req_fields = switch(t,
-                        "Documents" = c("id", "document_type"),
-                        "Studies" = c("id", "dose_level", #"dose_vehicle", 
-                                      "administration_route_normalized"),
-                        "Subjects" = c("id", "weight_kg", "species"),
-                        "Series" = c("id", "radiolabeled", "conc_units", "conc_medium_normalized",
-                                     "fk_study_id", "fk_subject_id"),
-                        "Conc_Time_Values" = c("fk_series_id", "time_hr")
+                        "Documents" = c("id", "document_type", "extracted", 
+                                        "tk_params", "effects_data", "httk_data"),
+                        "Studies" = c("id", "dose_level", "administration_route_normalized",
+                                      "dose_frequency"),
+                        "Subjects" = c("id", "species"),
+                        "Series" = c("id", "radiolabeled", "figure_name", "time_units_original", 
+                                     "conc_units_original", "conc_medium_normalized",
+                                     "fk_study_id", "fk_subject_id", "n_subjects_in_series"),
+                        "Conc_Time_Values" = c("fk_series_id", "time_original", "conc")
     )  
     #Check if missing required field entirely
     if(any(!req_fields %in% names(df[[t]]))){
@@ -50,6 +52,7 @@ check_required_fields <- function(df, f){
         log_CvT_doc_load(f=f, m="missing_document_identifier")
       }
     }
+    
     if(t == "Studies"){
       #Check chemical information (each row needs something in test_substance_name, test_substance_name_secondary, test_substance_casrn)
       tmp = lapply(seq_len(nrow(df[[t]])), function(r){
@@ -60,24 +63,44 @@ check_required_fields <- function(df, f){
       }
       
       if(all(c("dose_duration", "dose_duration_units") %in% names(df[[t]]))){
-        #Check if dose_duration present (if dose_frequency present)
-        #if the dose frequency is "1" i guess you wouldn't need a dose duration - Risa Sayre 2021-12-1
-        tmp = df[[t]] %>%
-          dplyr::filter(dose_frequency != 1)
-        if(any(!is.na(tmp$dose_frequency)) & all(is.na(tmp$dose_duration))){
-          log_CvT_doc_load(f=f, m="dose_frequency_present_without_dose_duration")
-        } 
-      }
-      if(all(c("dose_duration", "dose_duration_units") %in% names(df[[t]]))){
+        # #Check if dose_duration present (if dose_frequency present)
+        # #if the dose frequency is "1" i guess you wouldn't need a dose duration - Risa Sayre 2021-12-1
+        # tmp = df[[t]] %>%
+        #   dplyr::filter(dose_frequency != 1)
+        # if(any(!is.na(tmp$dose_frequency)) & all(is.na(tmp$dose_duration))){
+        #   log_CvT_doc_load(f=f, m="dose_frequency_present_without_dose_duration")
+        # }
         #Check if dose_duration_units present (if dose_duration present)
         if(any(!is.na(df[[t]]$dose_duration)) & all(is.na(df[[t]]$dose_duration_units))){
           log_CvT_doc_load(f=f, m="missing_dose_duration_units")
         }
       }
+      
       if(all(c("administration_term", "administration_term_units") %in% names(df[[t]]))){
         #Check if administration_term_units present (if administration_term present)
         if(any(!is.na(df[[t]]$administration_term)) & all(is.na(df[[t]]$dose_duration_units))){
           log_CvT_doc_load(f=f, m="missing_administration_term_units")
+        }
+      }
+      
+      if(all(c("dose_volume", "dose_volume_units") %in% names(df[[t]]))){
+        #Check if dose_volume_units present (if dose_volume present)
+        if(any(!is.na(df[[t]]$dose_volume)) & all(is.na(df[[t]]$dose_volume_units))){
+          log_CvT_doc_load(f=f, m="missing_dose_volume_units")
+        }
+      }
+      
+      if(all(c("dermal_applied_area", "dermal_applied_area_units") %in% names(df[[t]]))){
+        #Check if dermal_applied_area_units present (if dermal_applied_area present)
+        if(any(!is.na(df[[t]]$dermal_applied_area)) & all(is.na(df[[t]]$dermal_applied_area_units))){
+          log_CvT_doc_load(f=f, m="missing_dermal_applied_area_units")
+        }
+      }
+      
+      if(all(c("aerosol_particle_density", "aerosol_particle_density_units") %in% names(df[[t]]))){
+        #Check if aerosol_particle_density_units present (if aerosol_particle_density present)
+        if(any(!is.na(df[[t]]$aerosol_particle_density)) & all(is.na(df[[t]]$aerosol_particle_density_units))){
+          log_CvT_doc_load(f=f, m="missing_aerosol_particle_density_units")
         }
       }
         
@@ -91,6 +114,29 @@ check_required_fields <- function(df, f){
       }
     }
     
+    if(t == "Subjects"){
+      if(all(c("age", "age_units") %in% names(df[[t]]))){
+        #Check if age_units present (if age present)
+        if(any(!is.na(df[[t]]$age)) & all(is.na(df[[t]]$age_units))){
+          log_CvT_doc_load(f=f, m="missing_age_units")
+        }
+      }
+      
+      if(all(c("height", "height_units") %in% names(df[[t]]))){
+        #Check if height_units present (if height present)
+        if(any(!is.na(df[[t]]$height)) & all(is.na(df[[t]]$height_units))){
+          log_CvT_doc_load(f=f, m="missing_height_units")
+        }
+      }
+      
+      if(all(c("weight", "weight_units") %in% names(df[[t]]))){
+        #Check if weight_units present (if weight present)
+        if(any(!is.na(df[[t]]$weight)) & all(is.na(df[[t]]$weight_units))){
+          log_CvT_doc_load(f=f, m="missing_weight_units")
+        }
+      }
+    }
+    
     if(t == "Series"){
       #Check chemical information (each row needs something in analyte_name, analyte_name_secondary, analyte_casrn)
       tmp = lapply(seq_len(nrow(df[[t]])), function(r){
@@ -98,6 +144,14 @@ check_required_fields <- function(df, f){
       }) %>% unlist()
       if(any(tmp == FALSE)){
         log_CvT_doc_load(f=f, m="missing_required_test_substance_chemical_info")
+      }
+    }
+    
+    if(t == "Conc_Time_Values"){
+      #Check if conc_bound_type present (if conc lower, upper, or sd present)
+      if((any(!is.na(df[[t]]$conc_upper_bound)) | any(is.na(df[[t]]$conc_lower_bound)) | any(!is.na(df[[t]]$conc_sd))) & 
+         all(is.na(df[[t]]$conc_bound_type))){
+        log_CvT_doc_load(f=f, m="missing_conc_bound_type")
       }
     }
   }
