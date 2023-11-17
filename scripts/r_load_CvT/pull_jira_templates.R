@@ -353,10 +353,11 @@ clowder_get_file_metadata <- function(fileID, baseurl, apiKey){
   # Format data to return (combine across multiple metadata submissions)
   lapply(metadata, function(f){
     lapply(f, function(ff){
-      ff %>%
+      tmp = ff %>%
         purrr::pluck("content") %>%
         purrr::compact() %>%
         data.frame() %>%
+        # TODO Suppress new name print output
         tidyr::unnest(cols=c()) %>%
         dplyr::mutate(dplyr::across(dplyr::everything(), ~as.character(.)))
     }) %>%
@@ -431,24 +432,28 @@ update_jira_clowder_info <- function(jira_project, in_file, auth_token, reset_at
 }
 
 ################################################################################
-#' process_jira_files
+#' pull_clowder_files_to_load
 #' Function to pull Clowder templates to process based on metadata "cvt_to_load"
-process_jira_files <- function(dsID, baseurl, apiKey){
+pull_clowder_files_to_load <- function(dsID, baseurl, apiKey){
   # Pull full list of Clowder files in dataset
   c_files_list <- clowder_get_dataset_files(dsID, baseurl, apiKey)
-  # Filter to those marked as "cvt_to_load"
-  if(nrow(c_files_list) > 100){
+  
+  # Split into chunks to pull metadata
+  # Have to limit due to URL length constraints (see clowder_get_file_metadata)
+  limit = 100
+  nr <- nrow(c_files_list)
+  to_load_files = split(c_files_list, rep(1:ceiling(nr/limit), each=limit, length.out=nr))
+  # Loop through each chunk and filter to those marked as "cvt_to_load"
+  to_load_files = lapply(seq_len(length(to_load_files)), function(i){
     # Add logic to chunk
-    to_load_files = clowder_get_file_metadata(fileID=c_files_list$clowder_id[1:100], baseurl, apiKey) %>%
-      dplyr::filter(cvt_to_load == 1) %>%
-      dplyr::select(clowder_id)
-  }
+    to_load_files[[i]] = clowder_get_file_metadata(fileID=c_files_list[[i]]$clowder_id, baseurl, apiKey)
+  }) %>%
+    dplyr::bind_rows() %>%
+    dplyr::filter(cvt_to_load == 1) %>%
+    dplyr::select(clowder_id)
   
-  # Pull temp file to process
-  tmp = load_file_from_api(url = paste0("https://clowder.edap-cluster.com/api/files/65318469e4b045b9ff7b00d8/blob"),
-                           headers = c(`X-API-Key` = apiKey),
-                           mode = "wb",
-                           file_type = "xlsx")
-  
-  # Insert/connect logic to processing a template
+  # Filter original list to get ticket number and filename
+  to_load_files = c_files_list %>%
+    dplyr::filter(clowder_id %in% to_load_files$clowder_id) %>%
+    return()
 }
