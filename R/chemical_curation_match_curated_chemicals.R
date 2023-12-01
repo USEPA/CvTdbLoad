@@ -25,9 +25,9 @@ chemical_curation_match_curated_chemicals <- function(df, f_name){
   #   bind_rows()
   #f_name = "input/chemicals/curated_chemicals_comparison_2021-11-23.xlsx"
   #Get curated chemicals
-  curation_files = get_curation_files(f_name)
+  curation_files = chemical_curation_get_curation_files(f_name)
   #Prep chemical names
-  df = prep_chemical_name_match(df)
+  df = chemical_curation_prep_name_match(df)
   df$tempID = 1:nrow(df)
   out = list()
   #Remove names that are already DTXSID values (HERO docs)

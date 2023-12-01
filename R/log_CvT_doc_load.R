@@ -1,8 +1,9 @@
 #' @title log_CvT_doc_load
 #' @description FUNCTION_DESCRIPTION
-#' @param f PARAM_DESCRIPTION
-#' @param m PARAM_DESCRIPTION, Default: NULL
-#' @param reset PARAM_DESCRIPTION, Default: FALSE
+#' @param f Filename to flag.
+#' @param m Log field name, Default: NULL
+#' @param reset Boolean to reset a row's flags, Default: FALSE
+#' @param val Custom field value. Default: NULL
 #' @return OUTPUT_DESCRIPTION
 #' @details DETAILS
 #' @examples 
@@ -20,7 +21,7 @@
 #' @importFrom readxl read_xlsx
 #' @importFrom stats setNames
 #' @importFrom writexl write_xlsx
-log_CvT_doc_load <- function(f, m=NULL, reset=FALSE){
+log_CvT_doc_load <- function(f, m=NULL, reset=FALSE, val=NULL){
   if(file.exists("output\\template_normalization_log.xlsx")){
     log = readxl::read_xlsx("output\\template_normalization_log.xlsx")
     log$timestamp = as.character(log$timestamp)  
@@ -31,24 +32,32 @@ log_CvT_doc_load <- function(f, m=NULL, reset=FALSE){
   #Add a new flag column if it doesn't exist
   if(!is.null(m)){
     if(!m %in% names(log)){
-      log[[m]] <- 0
+      log[[m]] <- "0"
     }  
   }
   if(f %in% log$filename){
     if(reset){#Reset to 0 for entry
-      log[log$filename == f, names(log)[!names(log) %in% c("filename", "timestamp")]] <- 0
+      log[log$filename == f, names(log)[!names(log) %in% c("filename", "timestamp")]] <- "0"
     }
     if(!is.null(m)){
       #Set new flag
-      log[log$filename == f, m] <- 1
+      if(!is.null(val)){
+        log[log$filename == f, m] <- val
+      } else {
+        log[log$filename == f, m] <- "1"
+      }
       log[log$filename == f, "timestamp"] <- as.character(Sys.time())  
     }
   } else {
     tmp = stats::setNames(data.frame(matrix(ncol = length(log), nrow = 1)), names(log))
-    tmp[, names(tmp)[!names(tmp) %in% c("filename", "timestamp")]] <- 0
+    tmp[, names(tmp)[!names(tmp) %in% c("filename", "timestamp")]] <- "0"
     tmp$filename = f
     if(!is.null(m)){
-      tmp[m] = 1  
+      if(!is.null(val)){
+        tmp[m] = val
+      } else {
+        tmp[m] = "1"
+      }
     }
     tmp$timestamp <- as.character(Sys.time())
     log = rbind(log, tmp)

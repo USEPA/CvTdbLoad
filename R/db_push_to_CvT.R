@@ -27,13 +27,16 @@ db_push_to_CvT <- function(df=NULL, tblName=NULL){
     return()
   }
   df = df[!names(df) %in% c("id")]
+  # Filter out NA fields (which will automatically be NULL in the database)
+  df = df[ , colSums(is.na(df)) < nrow(df)]
   tryCatch({
     con = db_connect_to_CvT()
     RPostgreSQL::dbWriteTable(con, value = df, name=c("cvt", "temp_tbl"), overwrite=TRUE, row.names=FALSE)  
     
-    DBI::dbSendStatement(con, paste0("INSERT INTO cvt.", tblName, " (\"", paste0(names(df), collapse='","'),
-                                "\") SELECT \"", paste0(names(df), collapse='","'), "\" FROM cvt.temp_tbl")) %T>% 
+    DBI::dbSendStatement(con, paste0("INSERT INTO cvt.", tblName, " (", paste0(names(df), collapse=','),
+                                ") SELECT ", paste0(names(df), collapse=','), " FROM cvt.temp_tbl")) %T>% 
       RPostgreSQL::dbClearResult()
+    
     DBI::dbSendStatement(con, "DROP TABLE cvt.temp_tbl") %T>% 
       RPostgreSQL::dbClearResult() #Drop temporary table
   },

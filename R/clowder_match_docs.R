@@ -16,13 +16,16 @@
 #' @rdname clowder_match_docs
 #' @export 
 #' @importFrom dplyr filter mutate left_join arrange
-clowder_match_docs <- function(df=NULL, dsID=NULL, apiKey=NULL){
+clowder_match_docs <- function(df=NULL, dsID=NULL, baseurl=NULL, apiKey=NULL){
   if(is.null(apiKey)) stop("Error: missing required Clowder apiKey")
   if(is.null(dsID)) stop("Error: missing required Clowder dataset ID")
+  if(is.null(baseurl)) stop("Error: missing required Clowder URL")
   
   if(!"pdf_filepath" %in% names(df)){ df$pdf_filepath = NA }
   # Attempt to match to PMID
-  c_docs = get_clowder_docList_2(dsID=dsID, apiKey=apiKey)
+  # c_docs = get_clowder_docList_2(dsID=dsID, baseurl=baseurl, apiKey=apiKey)
+  c_docs = clowder_get_dataset_files(dsID=dsID, baseurl=baseurl, apiKey=apiKey) %>%
+    dplyr::rename(clowder_file_id = clowder_id)
   pmid_match = df %>%
     dplyr::filter(!is.na(pmid)) %>%
     dplyr::mutate(pdf_filepath = paste0("PMID", pmid, ".pdf")) %>%
