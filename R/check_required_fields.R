@@ -18,7 +18,7 @@
 check_required_fields <- function(df, f){
   for(t in names(df)){
     req_fields = switch(t,
-                        "Documents" = c("id", "document_type", "extracted", 
+                        "Documents" = c("id", "document_type", "extracted"#, 
                                         # "tk_params", "effects_data", "httk_data"
                                         ),
                         "Studies" = c("id", "dose_level", "administration_route_normalized",
