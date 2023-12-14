@@ -111,7 +111,104 @@ if(nrow(to_load)){
       doc_sheet_list$Studies$fk_reference_document_id = as.numeric(NA)
     }
   
-      
+    message("...pushing to Studies table")
+    # Get Studies table fields
+    tbl_fields = db_query_cvt("SELECT * FROM cvt.studies limit 1") %>% 
+      names() %>%
+      .[!. %in% col_exclude]
+    # names(doc_sheet_list$Studies)[!names(doc_sheet_list$Studies) %in% tbl_fields]
+    browser()
+    db_push_to_CvT(df=doc_sheet_list$Studies %>%
+                     dplyr::select(dplyr::any_of(tbl_fields)),
+                   tblName="studies")
+    
+    # Get Studies ID values (Assumes the query returns the rows in the same order they were uploaded...)
+    match_entry = db_query_cvt(paste0("SELECT id as fk_studies_id FROM cvt.studies ORDER BY id DESC LIMIT ", 
+                                      nrow(doc_sheet_list$Studies))) %>%
+      dplyr::arrange(fk_studies_id)
+    
+    doc_sheet_list$Studies = cbind(doc_sheet_list$Studies, match_entry)
+    
+    #####################################################################################
+    #### Push Subjects Sheet to CvT (no fk to add)
+    #####################################################################################
+    message("...pushing to Subjects table")
+    # Get Subjects table fields
+    tbl_fields = db_query_cvt("SELECT * FROM cvt.subjects limit 1") %>% 
+      names() %>%
+      .[!. %in% col_exclude]
+    # names(doc_sheet_list$Subjects)[!names(doc_sheet_list$Subjects) %in% tbl_fields]
+    browser()
+    db_push_to_CvT(df=doc_sheet_list$Subjects %>%
+                     dplyr::select(dplyr::any_of(tbl_fields)),
+                   tblName="subjects")
+    
+    # Get Subjects ID Values (Assumes the query returns the rows in the same order they were uploaded...)
+    match_entry = db_query_cvt(paste0("SELECT id as fk_subjects_id FROM cvt.subjects ORDER BY id DESC LIMIT ", 
+                                      nrow(doc_sheet_list$Subjects))) %>%
+      dplyr::arrange(fk_subjects_id)
+    
+    doc_sheet_list$Subjects = cbind(doc_sheet_list$Subjects, match_entry)
+    
+    ##############################################################################
+    #### Push Series Sheet to CvT (matching to fk_study_id and fk_subject_id)
+    ##############################################################################
+    doc_sheet_list$Series = doc_sheet_list$Series %>%
+      left_join(doc_sheet_list$Studies %>% #Left join so it only joins what records match
+                  select(fk_study_id=id, new_fk_study_id=fk_studies_id) %>%
+                  mutate(fk_study_id = as.numeric(fk_study_id)),
+                by="fk_study_id") %>%
+      left_join(doc_sheet_list$Subjects %>% #Left join so it only joins what records match
+                  select(fk_subject_id=id, new_fk_subject_id=fk_subjects_id) %>%
+                  mutate(fk_subject_id = as.numeric(fk_subject_id)),
+                by="fk_subject_id") %>%
+      mutate(fk_study_id = new_fk_study_id,
+             fk_subject_id = new_fk_subject_id) %>%
+      select(-new_fk_subject_id, -new_fk_study_id)
+    
+    message("...pushing to Series table")
+    # Get Series table fields
+    tbl_fields = db_query_cvt("SELECT * FROM cvt.series limit 1") %>% 
+      names() %>%
+      .[!. %in% col_exclude]
+    # names(doc_sheet_list$Series)[!names(doc_sheet_list$Series) %in% tbl_fields]
+    browser()
+    db_push_to_CvT(df=doc_sheet_list$Series %>%
+                     dplyr::select(dplyr::any_of(tbl_fields)),
+                   tblName="series")
+    
+    # Get Series ID Values (Assumes the query returns the rows in the same order they were uploaded...)
+    match_entry = db_query_cvt(paste0("SELECT id as new_fk_series_id FROM cvt.series ORDER BY id DESC LIMIT ", 
+                                      nrow(doc_sheet_list$Series))) %>%
+      dplyr::arrange(new_fk_series_id)
+    
+    doc_sheet_list$Series = cbind(doc_sheet_list$Series, match_entry)
+    
+    ##############################################################################
+    #### Push Conc_Time_Values Sheet to CvT (matching to fk_series_id
+    ##############################################################################
+    doc_sheet_list$Conc_Time_Values = doc_sheet_list$Conc_Time_Values %>%
+      dplyr::left_join(doc_sheet_list$Series %>% 
+                         dplyr::select(fk_series_id=id, new_fk_series_id), by=c("fk_series_id")) %>%
+      dplyr::mutate(fk_series_id = new_fk_series_id) %>%
+      dplyr::select(-new_fk_series_id)
+    
+    message("...pushing to Conc_Time_Values table")
+    # Get Conc_Time_Values table fields
+    tbl_fields = db_query_cvt("SELECT * FROM cvt.conc_time_values limit 1") %>% 
+      names() %>%
+      .[!. %in% col_exclude]
+    # names(doc_sheet_list$Conc_Time_Values)[!names(doc_sheet_list$Conc_Time_Values) %in% tbl_fields]
+    browser()
+    db_push_to_CvT(df=doc_sheet_list$Conc_Time_Values %>%
+                     dplyr::select(dplyr::any_of(tbl_fields)),
+                   tblName="conc_time_values")
+    
+    # Write export file  
+    writexl::write_xlsx(doc_sheet_list, path=paste0("output/", 
+                                                    basename(to_load$filename[i]) %>% gsub(".xlsx", "", .), 
+                                                    "_loaded_", format(Sys.time(), "%Y%m%d"), 
+                                                    ".xlsx"))
     
   }
 }
