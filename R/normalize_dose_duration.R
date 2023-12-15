@@ -17,7 +17,7 @@
 #' @export 
 #' @importFrom dplyr mutate bind_rows arrange select
 normalize_dose_duration <- function(raw, f){
-  message("...normalizing dose...")
+  message("...normalizing dose duration...")
   #message("Normalize_dose is still in development...")
   # tmp = lapply(fileList, function(f){
   #   s_list = load_sheet_group(fileName = f, template_path = template_path)

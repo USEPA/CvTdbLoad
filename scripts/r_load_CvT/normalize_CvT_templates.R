@@ -8,8 +8,7 @@
 # # Load packages
 # require(DBI); require(dplyr); require(magrittr); require(tidyr); require(readxl); library(httk)
 # # Load R Scripts
-# file_source = list.files("scripts/initial processing", pattern="*.R", full.names = TRUE)
-# invisible(sapply(file_source[!grepl("get_unique_chemicals|_dict|log_", file_source)],source,.GlobalEnv))
+# devtools::load_all()
 
 ################################################################################
 ###Main Script Section
@@ -97,6 +96,7 @@ normalize_CvT_templates <- function(file_location = "clowder",
     # }
     ######insert loop over fileList logic########
     message("Normalizing file (", i, "/", nrow(fileList),"): ", f, "...", Sys.time())
+    
     #Load Documents Sheet
     if(file_location == "local"){
       doc_sheet_list = load_sheet_group(fileName = f, template_path = template_path)
@@ -152,13 +152,15 @@ normalize_CvT_templates <- function(file_location = "clowder",
     
     #Normalize species
     doc_sheet_list$Subjects$species = normalize_species(x=doc_sheet_list$Subjects$species)
-    #Normalized administration route (use dictionary to map)
+    
+    #Normalize administration route (use dictionary to map)
     doc_sheet_list$Studies = doc_sheet_list$Studies %>%
       dplyr::rename(administration_route_original = administration_route) %>%
       mutate(administration_route_original = tolower(administration_route_original)) %>%
       left_join(readxl::read_xlsx("input\\dictionaries\\administration_route_dict.xlsx") %>%
                   dplyr::rename(fk_administration_route = id),
                 by="administration_route_original")
+    
     #Check Species
     species_check = db_query_cvt(paste0("SELECT DISTINCT species FROM cvt.subjects"))
     if(any(!doc_sheet_list$Subjects$species %in% species_check$species)){
@@ -173,6 +175,7 @@ normalize_CvT_templates <- function(file_location = "clowder",
       log_CvT_doc_load(f, m="missing_sheets")
       next
     }
+    
     #Check if more than 1 document --> deprecated since we allow reference_documents now
     # if(nrow(doc_sheet_list$Documents) > 1){
     #   message("...File contains more than 1 document...skipping...")
@@ -187,6 +190,7 @@ normalize_CvT_templates <- function(file_location = "clowder",
                                            casrn=test_substance_casrn), 
                                   f_name=curated_chemicals)
     doc_sheet_list$Studies = cbind(doc_sheet_list$Studies, tmp)
+    
     #Match curated chemicals - rename columns to generic names 
     tmp = chemical_curation_match_curated_chemicals(df=doc_sheet_list$Series %>%
                                     select(name=analyte_name, 
@@ -197,8 +201,10 @@ normalize_CvT_templates <- function(file_location = "clowder",
     
     #Call to the orchestration function for data normalization (with error logging)
     doc_sheet_list = normalize_CvT_data(df=doc_sheet_list, f=f)
+    
     #Check if normalized data has all required fields (and no NA missing values in required fields)
     check_required_fields(df=doc_sheet_list, f=f)
+    
     #Rename columns
     doc_sheet_list$Studies = doc_sheet_list$Studies %>%
       dplyr::rename(test_substance_name_original = test_substance_name,
@@ -212,6 +218,7 @@ normalize_CvT_templates <- function(file_location = "clowder",
                     analyte_casrn_original = analyte_casrn,
                     time_units_original = time_units,
                     conc_units_original=conc_units)
+    
     #Cache normalized template
     save_normalized_template(df=doc_sheet_list, f=f)
     
