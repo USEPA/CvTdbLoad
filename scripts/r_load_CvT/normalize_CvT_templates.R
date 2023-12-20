@@ -6,7 +6,7 @@
 # purrr_0.3.4; assertthat_0.2.1
 
 # # Load packages
-# require(DBI); require(dplyr); require(magrittr); require(tidyr); require(readxl); library(httk)
+# require(DBI); require(dplyr); require(magrittr); require(tidyr); require(readxl); require(validate); library(httk)
 # # Load R Scripts
 # devtools::load_all()
 
@@ -203,7 +203,8 @@ normalize_CvT_templates <- function(file_location = "clowder",
     doc_sheet_list = normalize_CvT_data(df=doc_sheet_list, f=f)
     
     #Check if normalized data has all required fields (and no NA missing values in required fields)
-    check_required_fields(df=doc_sheet_list, f=f)
+    #check_required_fields(df=doc_sheet_list, f=f)
+    check_required_fields_new(df=doc_sheet_list, f=f)
     
     #Rename columns
     doc_sheet_list$Studies = doc_sheet_list$Studies %>%
