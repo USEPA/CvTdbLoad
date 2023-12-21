@@ -4,13 +4,13 @@
 #'@param df Input template document's sheet for mapping
 #'@param dsID Clowder dataset ID to pull from.
 #'@param apiKey API key to access Clowder repo
-clowder_match_docs <- function(df=NULL, dsID=NULL, apiKey=NULL){
+clowder_match_docs <- function(df=NULL, dsID=NULL, baseurl=baseurl, apiKey=NULL){
   if(is.null(apiKey)) stop("Error: missing required Clowder apiKey")
   if(is.null(dsID)) stop("Error: missing required Clowder dataset ID")
   
   if(!"pdf_filepath" %in% names(df)){ df$pdf_filepath = NA }
   # Attempt to match to PMID
-  c_docs = get_clowder_docList_2(dsID=dsID, apiKey=apiKey)
+  c_docs = get_clowder_docList_2(dsID=dsID, baseurl=baseurl, apiKey=apiKey)
   pmid_match = df %>%
     filter(!is.na(pmid)) %>%
     mutate(pdf_filepath = paste0("PMID", pmid, ".pdf")) %>%
@@ -47,11 +47,10 @@ clowder_match_docs <- function(df=NULL, dsID=NULL, apiKey=NULL){
 #'@param apiKey The API key required for a user to access the Clowder dataset
 #'@return Returns a dataframe with file details of: filename and ClowderID.
 #'@import dplyr
-clowder_get_docList_2 <- function(dsID=NULL, apiKey=NULL){
+get_clowder_docList_2 <- function(dsID=NULL, baseurl = "https://clowder.edap-cluster.com", apiKey=NULL){
   Sys.sleep(0.25) #Wait between requetss
-  baseurl = "https://clowder.edap-cluster.com/api"
   #Get dataset IDs of interest
-  httr::GET(paste0("https://clowder.edap-cluster.com/api/datasets/",
+  httr::GET(paste0(baseurl, "/api/datasets/",
                                    dsID,"/files?key=",
                                    apiKey)) %>% httr::content() %>%
     tibble(clowder_file_id = purrr::map_chr(.,"id"), filename = purrr::map_chr(.,"filename")) %>%

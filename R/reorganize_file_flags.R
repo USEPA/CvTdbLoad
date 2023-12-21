@@ -15,8 +15,11 @@
 #' @export 
 #' @importFrom readxl read_xlsx
 reorganize_file_flags <- function(){
-  log = readxl::read_xlsx("output\\template_normalization_log.xlsx")
   flag_map = readxl::read_xlsx("input\\dictionaries\\flag_map.xlsx")
+  log = readxl::read_xlsx("output\\template_normalization_log.xlsx") %>%
+    dplyr::mutate(dplyr::across(dplyr::any_of(flag_map$`Field Name`[!flag_map$`Flag Type` %in% c("Record Identifier")]),
+                                ~as.numeric(.)))
+  
   for(i in seq_len(nrow(log))){
     # if(i <= 7){#Quick skip/restart logic
     #   next
@@ -40,8 +43,8 @@ reorganize_file_flags <- function(){
           # Check if file was flagged with any corresponding flag for a category
           if(any(
             log[log$filename == f, 
-                    names(log)[names(log) %in% flag_map$`Field Name`[flag_map$`Flag Type` == flag]]  
-                     ]
+                names(log)[names(log) %in% flag_map$`Field Name`[flag_map$`Flag Type` == flag]]  
+                ]
             )
             ){
             message("Moving file to: ", f_path)
