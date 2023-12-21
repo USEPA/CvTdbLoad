@@ -204,7 +204,7 @@ normalize_CvT_templates <- function(file_location = "clowder",
     
     #Check if normalized data has all required fields (and no NA missing values in required fields)
     #check_required_fields(df=doc_sheet_list, f=f)
-    check_required_fields_new(df=doc_sheet_list, f=f)
+    check_required_fields_validator(df=doc_sheet_list, f=f)
     
     #Rename columns
     doc_sheet_list$Studies = doc_sheet_list$Studies %>%
