@@ -7,22 +7,22 @@
 audit.update.fields <- function(s_tbl, field_list, db_schema){
   # Update rec_create_dt to always update timestamp
   if("rec_create_dt" %in% field_list){
-    query_cvt(paste0("ALTER TABLE ",db_schema,".", s_tbl," ALTER COLUMN rec_create_dt TYPE timestamp;"))
-    query_cvt(paste0("ALTER TABLE ",db_schema,".", s_tbl," ALTER COLUMN rec_create_dt SET DEFAULT now();"))
+    db_query_cvt(paste0("ALTER TABLE ",db_schema,".", s_tbl," ALTER COLUMN rec_create_dt TYPE timestamp;"))
+    db_query_cvt(paste0("ALTER TABLE ",db_schema,".", s_tbl," ALTER COLUMN rec_create_dt SET DEFAULT now();"))
   } else {
     # Add rec_create_dt if not present
-    query_cvt(query = paste0("ALTER TABLE ",db_schema, ".", s_tbl,
+    db_query_cvt(query = paste0("ALTER TABLE ",db_schema, ".", s_tbl,
                     " ADD COLUMN rec_create_dt timestamp default now();"))
   }
   
   # Drop rec_update_dt
   if("rec_update_dt" %in% field_list){
-    query_cvt(query = paste0("ALTER TABLE ",db_schema, ".", s_tbl," DROP COLUMN rec_update_dt;"))
+    db_query_cvt(query = paste0("ALTER TABLE ",db_schema, ".", s_tbl," DROP COLUMN rec_update_dt;"))
   }
   
   # Drop updated_by
   if("updated_by" %in% field_list){
-    query_cvt(query = paste0("ALTER TABLE ",db_schema, ".", s_tbl," DROP COLUMN updated_by;"))
+    db_query_cvt(query = paste0("ALTER TABLE ",db_schema, ".", s_tbl," DROP COLUMN updated_by;"))
     
   }
   
@@ -45,7 +45,7 @@ audit.update.fields <- function(s_tbl, field_list, db_schema){
                                        " ADD qc_notes text DEFAULT NULL;"),
                      { NULL }
       )
-      query_cvt(query=query)
+      db_query_cvt(query=query)
     }
   }
 }
