@@ -25,5 +25,5 @@ Next, update the file_path in the file named 'duplicate_flagging.py' to the path
 To run the script, use the following command:
 
 ```bash
-python upload.py
+python duplicate_flagging.py
 ```
