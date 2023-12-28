@@ -2,3 +2,15 @@ rules:
 - expr: '!is.na(id)'
   meta:
     message: NA_in_required_field_id
+- expr: '!is.na(species)'
+  meta:
+    message: NA_in_required_field_species
+- expr: exists_any(if (!is.na(age)) !is.na(age_units))
+  meta:
+    message: missing_age_units
+- expr: exists_any(if (!is.na(height)) !is.na(height_units))
+  meta:
+    message: missing_height_units
+- expr: exists_any(if (!is.na(weight)) !is.na(weight_units))
+  meta:
+    message: missing_weight_units
