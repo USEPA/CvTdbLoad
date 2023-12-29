@@ -21,45 +21,6 @@ norm_extrapolate <- function(x, f, extrap_type){
   #weight Group that needs extrapolation based on similar species/subtype
   x$extrapolate = x$raw %>% dplyr::filter(is.na(!!as.symbol(extrap_type)))
   x$raw = x$raw %>% dplyr::filter(!tempID %in% x$extrapolate$tempID)
-  
-  #Extrapolate weights
-  if(nrow(x$extrapolate)){
-    if(extrap_type == "weight"){
-      message("...extrapolating ", extrap_type)
-      #Extrapolate
-      #Average of species and subtype match or just species
-      map_spec_sub = db_query_cvt("SELECT DISTINCT species, subtype, weight_kg FROM cvt.subjects") %>%
-        dplyr::mutate(dplyr::across(c(species, subtype), ~tolower(trimws(.)))) %>%
-        dplyr::group_by(species, subtype) %>%
-        dplyr::summarise(avg_weight_kg = mean(weight_kg, na.rm=TRUE))
-      map_spec = db_query_cvt("SELECT DISTINCT species, subtype, weight_kg FROM cvt.subjects") %>%
-        dplyr::mutate(dplyr::across(c(species, subtype), ~tolower(trimws(.)))) %>%
-        dplyr::group_by(species) %>%
-        dplyr::summarise(avg_weight_kg = mean(weight_kg, na.rm=TRUE))
-      #20
-      x$extrapolate = x$extrapolate %>% dplyr::mutate(dplyr::across(c(species, subtype), ~tolower(trimws(.))))
-      x$extrap_spec_sub = x$extrapolate %>%
-        dplyr::select(-weight_kg) %>%
-        dplyr::left_join(map_spec_sub, by=c("species", "subtype")) %>%
-        dplyr::filter(!is.na(avg_weight_kg)) %>%
-        dplyr::distinct() %>%
-        dplyr::mutate(weight_estimated = 1) %>%
-        dplyr::rename(weight_kg = avg_weight_kg)
-      x$extrapolate = x$extrapolate %>% dplyr::filter(!tempID %in% x$extrap_spec_sub$tempID)
-      x$extrap_spec = x$extrapolate %>%
-        dplyr::select(-weight_kg) %>%
-        dplyr::left_join(map_spec, by=c("species")) %>%
-        dplyr::filter(!is.na(avg_weight_kg)) %>%
-        dplyr::distinct() %>%
-        dplyr::mutate(weight_estimated = 1) %>%
-        dplyr::rename(weight_kg = avg_weight_kg)
-      x$extrapolate = x$extrapolate %>% dplyr::filter(!tempID %in% x$extrap_spec$tempID)
-      #Always end up with a weight of some kind, then weight_bool it
-      if(nrow(x$extrapolate)){
-        message(paste0("...Unhandled extrapolation cases for: ", extrap_type))
-        log_CvT_doc_load(f=f, m=paste0(extrap_type,"_extrapolation_attempt_failed"))
-      }
-    }
-  }
+
   return(x)
 }

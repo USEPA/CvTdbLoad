@@ -38,8 +38,6 @@ normalize_weight <- function(raw, f){
   #out$raw = extract_weight_units(x=out$raw)
   out$raw = extract_units(x=out$raw, units_col="weight_units", 
                           conv_col="weight_kg", unit_type="weight")
-  #Extrapolate  weights
-  out = norm_extrapolate(x=out, f=f, extrap_type = "weight")
   #Missing units
   out = check_missing_units(x=out, f=f, units_col="weight_units")
   out$missing_units$weight_units = NA #Replacing missing units with NA after flagging
