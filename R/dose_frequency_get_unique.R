@@ -10,7 +10,7 @@ dose_frequency_get_unique <- function(fileList, template_path){
     dplyr::mutate(dose_frequency_original = trimws(tolower(dose_frequency_original))) %>%
     unique() %>%
     #Attempt match
-    dplyr::left_join(dose_frequency_get_dict(), by="dose_frequency_original") %>%
+    #dplyr::left_join(dose_frequency_get_dict(), by="dose_frequency_original") %>%
     dplyr::filter(is.na(conc_medium_normalized))
   
   #Output to file for curation
