@@ -18,14 +18,21 @@
 check_required_fields_validator <- function(df, f){
   # Loop through each sheet
   for (sheet in names(df)) {
+    message(sheet)
     # Pull rules from YAML files
     rules <- validate::validator(.file=paste0("input/rules/", sheet,".yaml"))
     
     # Special case check for fk_reference_document_id
-    if (sheet == "Series" && nrow(df[["Documents"]]) > 1) {
-      rule <- validate::validator(!is.na(fk_reference_document_id))
-      validate::meta(rule, "message") <- "NA_in_required_field_fk_reference_document_id"
-      rules <- c(rules, rule)
+    if (sheet == "Studies" && any(df$Documents$document_type == 2)) {
+      ref_doc_ids = unique(df$Documents$id[df$Documents$document_type == 2])
+      # All reference document entries must have corresponding ID used in any
+      # of the Studies sheet fk_reference_document_id (must be at least 1, could be all)
+      rule <- validate::validator(
+        validate::exists_any(!ref_doc_ids %in% unique(fk_reference_document_id))
+        )
+      validate::meta(rule, "message") <- "unused_fk_reference_document_id"
+      # https://www.rdocumentation.org/packages/validate/versions/1.1.3/topics/+,validator,validator-method
+      rules <- rules + rule
     }
     
     # Obtain a dataframe of failing validation checks
