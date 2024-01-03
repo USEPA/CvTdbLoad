@@ -19,24 +19,18 @@ check_required_fields_validator <- function(df, f){
   # Loop through each sheet
   for (sheet in names(df)) {
     message(sheet)
-    # Pull rules from YAML files
-    rules <- validate::validator(.file=paste0("input/rules/", sheet,".yaml"))
     
-    # Special case check for fk_reference_document_id
-    if (sheet == "Studies" && any(df$Documents$document_type == 2)) {
-      ref_doc_ids = unique(df$Documents$id[df$Documents$document_type == 2])
-      # All reference document entries must have corresponding ID used in any
-      # of the Studies sheet fk_reference_document_id (must be at least 1, could be all)
-      rule <- validate::validator(
-        validate::exists_any(!ref_doc_ids %in% unique(fk_reference_document_id))
-        )
-      validate::meta(rule, "message") <- "unused_fk_reference_document_id"
-      # https://www.rdocumentation.org/packages/validate/versions/1.1.3/topics/+,validator,validator-method
-      rules <- rules + rule
+    # Get reference document id's if they exist, else
+    # set them to -1 for validation check
+    ref_ids = df$Studies$fk_reference_document_id
+    if (all(is.na(ref_ids))){
+      ref_ids <- c("-1")
     }
     
+    # Pull rules from YAML files
+    rules <- validate::validator(.file=paste0("input/rules/", sheet,".yaml"))
     # Obtain a dataframe of failing validation checks
-    out <- validate::confront(df[[sheet]], rules)
+    out <- validate::confront(df[[sheet]], rules, ref=list(ref_ids=ref_ids))
     fails = validate::summary(out) %>% 
       dplyr::filter(fails > 0)
     

@@ -5,7 +5,10 @@ rules:
 - expr: '!is.na(document_type)'
   meta:
     message: NA_in_required_field_document_type
-- expr: 'exists_any(!is.na(pmid) || !is.na(other_study_identifier))'
+- expr: 'if(document_type == 2) id %in% ref_ids'
+  meta:
+    message: unused_fk_reference_document_id
+- expr: '!is.na(pmid) | !is.na(other_study_identifier)'
   meta:
     message: missing_document_identifier
 - expr: '!is.na(extracted)'
