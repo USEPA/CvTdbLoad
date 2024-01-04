@@ -16,20 +16,16 @@
 #' @export 
 #' @importFrom
 check_required_fields_validator <- function(df, f){
+  # Get reference document id's from studies, used for document id check
+  ref_ids = df$Studies$fk_reference_document_id
+  ref_ids = ref_ids[!is.na(ref_ids)]
+  
   # Loop through each sheet
   for (sheet in names(df)) {
     message(sheet)
     
-    # Get reference document id's if they exist, else
-    # set them to -1 for validation check
-    ref_ids = df$Studies$fk_reference_document_id
-    if (all(is.na(ref_ids))){
-      ref_ids <- c("-1")
-    }
-    
-    # Pull rules from YAML files
+    # Pull rules from the respective YAML, and store failing validation checks
     rules <- validate::validator(.file=paste0("input/rules/", sheet,".yaml"))
-    # Obtain a dataframe of failing validation checks
     out <- validate::confront(df[[sheet]], rules, ref=list(ref_ids=ref_ids))
     fails = validate::summary(out) %>% 
       dplyr::filter(fails > 0)
