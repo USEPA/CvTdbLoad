@@ -1,11 +1,33 @@
-update_jira_clowder_info <- function(jira_project, in_file, auth_token, reset_attachments=FALSE, dsID, baseurl, userID, apiKey){
+#' download_jira_update_clowder_info
+#' @param jira_project Jira project identifier
+#' @param in_file Optional param for the file path to previously pulled Jira information
+#' @param auth_token Jira API token
+#' @param reset_attachments Boolean whether to re-download files, or just update Clowder metadata
+#' @param dsID Clowder dataset ID
+#' @param baseurl Clowder URL
+#' @param userID Clowder user ID
+#' @param apiKey Clowder API key
+#' @param labels_filter Vector list of Jira ticket labels to filter to
+download_jira_update_clowder_info <- function(jira_project, 
+                                              in_file = NULL, 
+                                              auth_token, reset_attachments=FALSE, dsID, baseurl, userID, apiKey,
+                                              labels_filter = NULL){
   # Pull initial Jira information
   jira_info = pull_jira_info(jira_project=jira_project,
                              in_file=in_file,
                              auth_token=auth_token)
+  # Filter labels if provided
+  if(!is.null(labels_filter)){
+    jira_info$in_data = jira_info$in_data %>%
+      dplyr::filter(Labels %in% labels_filter)
+    jira_info$ticket_attachment_metadata = jira_info$ticket_attachment_metadata %>%
+      dplyr::filter(Labels %in% labels_filter)
+    jira_info$out_summary = jira_info$out_summary %>%
+      dplyr::filter(Labels %in% labels_filter)
+  }
   # Download attachments as needed
   # Pull all
-  if(reset_attachments){
+  if(!reset_attachments){
     jira_download_templates(in_data = jira_info$in_data)
     metadata = jira_info$ticket_attachment_metadata
   } else {
@@ -53,9 +75,10 @@ update_jira_clowder_info <- function(jira_project, in_file, auth_token, reset_at
     }
   }
   
-  upload_file_metadata(metadata=metadata, 
-                       dsID=dsID, 
-                       userID=userID, 
-                       baseurl=baseurl, 
+  # Update Clowder Jira file metadata
+  upload_file_metadata(metadata=metadata,
+                       dsID=dsID,
+                       userID=userID,
+                       baseurl=baseurl,
                        apiKey=apiKey)
 }

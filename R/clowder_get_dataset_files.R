@@ -11,7 +11,14 @@ clowder_get_dataset_files <- function(dsID, baseurl, apiKey){
     encode = "json"
   ) %>%
     httr::content()
-  # Format data
+  
+  # No files found, return empty dataframe
+  if(!length(c_files_list)){
+    message("No Clowder Dataset files found...returning...")
+    return(data.frame())
+  }
+  
+  # Format returned file data
   c_files_list = lapply(c_files_list, function(f){
     f %>%
       data.frame() %>%
