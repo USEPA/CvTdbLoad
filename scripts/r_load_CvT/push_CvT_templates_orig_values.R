@@ -21,21 +21,30 @@ if(nrow(to_load)){
   # Loop through Clowder files to load
   for(i in seq_along(nrow(to_load))){
     message("Pushing file (", i, "/", nrow(to_load),"): ", toString(to_load[i,c("jira_ticket", "filename")]), "...", Sys.time())
+    # Boolean of whether to only load document sheet
+    load_doc_sheet_only = FALSE
+    # Filename
+    f = to_load$filename[i]
+    #Create/clear log entry for filename
+    log_CvT_doc_load(f, m=NULL, reset=TRUE)
     # Pull temp file to process
     doc_sheet_list = load_file_from_api(url = paste0(baseurl,"/api/files/",to_load$clowder_id[i],"/blob"),
                                         headers = c(`X-API-Key` = apiKey),
                                         mode = "wb",
                                         file_type = "xlsx")
     
-    # TODO Check for template with only Documents sheet
-    
-    # Check for extracted field values
-    # Only update/create documents sheet entry (set boolean to stop)
-    
+    # Check for template with only Documents sheet
+    if(length(doc_sheet_list) == 1 & all(names(doc_sheet_list) == "Documents")){
+      load_doc_sheet_only = TRUE
+    }
+    # Check for extracted field values - only 1-3 are loading data
+    if(any(!doc_sheet_list$Documents$extracted %in% 1:3)){
+      load_doc_sheet_only = TRUE
+    }
     
     # TODO Required field validation check
     check_required_fields_validator(df=doc_sheet_list, 
-                                    f = to_load$filename[i])
+                                    f = f)
     
     # Rename "original" fields
     doc_sheet_list = set_original_fields(sheet_list=doc_sheet_list, schema = schema)
