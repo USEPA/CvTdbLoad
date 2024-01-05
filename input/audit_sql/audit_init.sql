@@ -5,7 +5,7 @@ create TABLE IF NOT EXISTS cvt.cvt_audit
             primary key,
     fk_table_id   integer                    not null,
     fk_table_name text                       not null,
-    record        json                       not null,
+    record        text                       not null,
     qc_status     varchar(45) default 'FAIL' not null,
     qc_flags      text        default NULL,
     qc_notes      text        default NULL,

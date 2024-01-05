@@ -1,6 +1,7 @@
 from dotenv import load_dotenv
 import os
 from progressbar import progressbar
+from pypdf import PdfMerger
 import random
 from scidownl import scihub_download
 import time
@@ -12,13 +13,26 @@ from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.remote import errorhandler
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
-
+from selenium.webdriver.common.actions.wheel_input import ScrollOrigin
 import pandas as pd
+from selenium.webdriver import ActionChains
 
 import warnings
 
 # Environment variables
 load_dotenv(".env")
+
+# Load environmental variables
+email = os.getenv("email")
+password = os.getenv("password")
+in_dir = os.getenv("in_dir")
+out_dir = os.getenv("out_dir")
+
+# Base url
+login_url = "https://www.pharmapendium.com/welcome"
+
+# Number of rows to skip before reaching the column_names row
+skiprows = 0
 
 
 def wait_for_element(driver, xpath, delay=10):
@@ -49,7 +63,7 @@ def wait_for_element(driver, xpath, delay=10):
     return myElem
 
 
-def download_wait(filepath, timeout=120):
+def download_wait(filepath, timeout=240):
     """
     Wait for downloads to finish with a specified timeout.
 
@@ -97,6 +111,7 @@ def get_driver():
     Options.add_argument("--headless")
     service = Service()
 
+    # driver = webdriver.Chrome(service=service, options=Options)
     driver = webdriver.Chrome(service=service, options=Options)
 
     return driver
@@ -149,7 +164,7 @@ def login_to_pharmapendium(driver, url):
         acc_cookies.click()
 
 
-def download_pdfs_pharma(driver, urls, out_dir, chemical_name=None):
+def download_pdfs_pharma(driver, urls, out_dir, merge_subsets=False):
     """
     Download a list of pharmapendium PDFs from a URL dictionary using Selenium.
 
@@ -158,10 +173,12 @@ def download_pdfs_pharma(driver, urls, out_dir, chemical_name=None):
         urls (dict): A dictionary of PharmaPendium URL's initialized with empty values.
         out_dir (url): The path to the directory for downloaded PDFs.
         chemical_name (str, optional): Chemical Name to append to associated PDFs. Defaults to None.
+        merge_subsets (bool, optional): Whether or not to merge full documents together when subset documents are found.
 
     Returns:
         dict: A dictionary with the original URLs, and updated values representing the downloaded filenames.
     """
+
     for url in progressbar(urls):
         file_hash = None
 
@@ -170,53 +187,168 @@ def download_pdfs_pharma(driver, urls, out_dir, chemical_name=None):
         except:
             continue
 
+        # Get the chemical name from the url
+        chemical_name = url.split("/")[-2].title()
+
+        # Extract study information from the header
+        header = wait_for_element(
+            driver, "/html/body/div[1]/div/section/div[1]/div[3]/div/div/div/h1"
+        )
+        split_header = header.text.split(" ")
+        doc_type = split_header[0] + " " + split_header[1]
+        study_number = split_header[2]
+
+        # Boolean to check if the study is a subset of a larger document
+        is_subset = "Part" in header.text
+
+        save_file_name = (
+            str(chemical_name + "_" + doc_type + ".pdf")
+            .replace(r"%20", "_")
+            .replace(" ", "_")
+            .replace(r"/", "_")
+        )
+
         # Download PharmaPendium PDFs
         if "pharmapendium" in url:
-            try:
-                iframe = wait_for_element(driver, "//iframe[@title='PDF Viewer']")
-                driver.switch_to.frame(iframe)
-
-                tools_button = wait_for_element(driver, '//button[@title="Tools"]')
-                if tools_button:
-                    tools_button.click()
-
-                # download_button = wait_for_element(driver, '//button[@title="Save"]')
-                download_button = wait_for_element(driver, '//*[@id="download"]')
-                if download_button:
-                    driver.execute_script("arguments[0].click();", download_button)
-
-                # the filename is saved as either 'document.pdf' or 'somehash.pdf'
-                file_hash = url.split("/")[-1] + ".pdf"
-                file_name = chemical_name + "_" + file_hash
-
-                # Wait for the file to download
-                dwl_wait = download_wait(os.path.join(out_dir, file_hash), 10)
-
-                # Rename the document based on whether it was saved as document.pdf or hexstring.pdf
-                if os.path.isfile(os.path.join(out_dir, "document.pdf")):
-                    os.rename(
-                        os.path.join(out_dir, "document.pdf"),
-                        os.path.join(out_dir, file_name),
+            if merge_subsets and is_subset:
+                try:
+                    doc_button = wait_for_element(
+                        driver, f"//button[@title='{doc_type}']", delay=10
                     )
+                    parent = wait_for_element(doc_button, "../../..")
+                    document_container = parent.find_element(By.TAG_NAME, "ul")
+                    document_list = document_container.find_elements(By.TAG_NAME, "li")
 
-                    # Wait for file to be renamed
-                    while not os.path.exists(os.path.join(out_dir, file_name)):
-                        time.sleep(1)
-                elif os.path.isfile(os.path.join(out_dir, file_hash)):
-                    os.rename(
-                        os.path.join(out_dir, file_hash),
-                        os.path.join(out_dir, file_name),
-                    )
+                    ActionChains(driver).scroll_from_origin(
+                        ScrollOrigin.from_element(document_container, 0, -50), 0, -2000
+                    ).perform()
 
-                    # Wait for file to be renamed
-                    while not os.path.exists(os.path.join(out_dir, file_name)):
-                        time.sleep(1)
+                    file_list = []
+                    for document in document_list:
+                        if ("Part" in document.text) and (
+                            study_number in document.text
+                        ):
+                            print(
+                                f"Downloading new document {document.text} {study_number =}"
+                            )
 
-                if dwl_wait is not None:
-                    urls[url] = file_name
-            except:
-                print(f"Error downloading pdf from {url}")
-                continue
+                            try:
+                                document.click()
+                            except:
+                                ActionChains(driver).scroll_from_origin(
+                                    ScrollOrigin.from_element(
+                                        document_container, 0, -50
+                                    ),
+                                    0,
+                                    200,
+                                ).perform()
+                                document.click()
+
+                            iframe = wait_for_element(
+                                driver, "//iframe[@title='PDF Viewer']"
+                            )
+                            driver.switch_to.frame(iframe)
+
+                            tools_button = wait_for_element(
+                                driver, '//button[@title="Tools"]'
+                            )
+                            if tools_button:
+                                tools_button.click()
+
+                            download_button = wait_for_element(
+                                driver, '//*[@id="download"]'
+                            )
+                            if download_button:
+                                driver.execute_script(
+                                    "arguments[0].click();", download_button
+                                )
+
+                            file_name = driver.current_url.split("/")[-1] + ".pdf"
+
+                            # Wait for the file to download
+                            dwl_wait = download_wait(
+                                os.path.join(out_dir, file_name), 180
+                            )
+
+                            if dwl_wait is not None:
+                                urls[url] = save_file_name
+
+                            if os.path.isfile(os.path.join(out_dir, "document.pdf")):
+                                os.rename(
+                                    os.path.join(out_dir, "document.pdf"),
+                                    os.path.join(out_dir, file_name),
+                                )
+
+                                # Wait for file to be renamed
+                                while not os.path.exists(
+                                    os.path.join(out_dir, file_name)
+                                ):
+                                    time.sleep(1)
+
+                            file_list.append(file_name)
+
+                            # Switch back to default window
+                            driver.switch_to.default_content()
+
+                            time.sleep(2)
+
+                    # Merge the PDFs
+                    merger = PdfMerger()
+                    for pdf in file_list:
+                        merger.append(os.path.join(out_dir, pdf))
+
+                    merger.write(os.path.join(out_dir, save_file_name))
+                    merger.close()
+
+                    for pdf in file_list:
+                        os.remove(os.path.join(out_dir, pdf))
+                except:
+                    continue
+            else:
+                try:
+                    iframe = wait_for_element(driver, "//iframe[@title='PDF Viewer']")
+                    driver.switch_to.frame(iframe)
+
+                    tools_button = wait_for_element(driver, '//button[@title="Tools"]')
+                    if tools_button:
+                        tools_button.click()
+
+                    download_button = wait_for_element(driver, '//*[@id="download"]')
+                    if download_button:
+                        driver.execute_script("arguments[0].click();", download_button)
+
+                    # the filename is saved as either 'document.pdf' or 'somehash.pdf'
+                    file_hash = url.split("/")[-1] + ".pdf"
+
+                    # Wait for the file to download
+                    dwl_wait = download_wait(os.path.join(out_dir, file_hash), 30)
+
+                    # Rename the document based on whether it was saved as document.pdf or hexstring.pdf
+                    if os.path.isfile(os.path.join(out_dir, "document.pdf")):
+                        os.rename(
+                            os.path.join(out_dir, "document.pdf"),
+                            os.path.join(out_dir, save_file_name),
+                        )
+
+                        # Wait for file to be renamed
+                        while not os.path.exists(os.path.join(out_dir, save_file_name)):
+                            time.sleep(1)
+                    elif os.path.isfile(os.path.join(out_dir, file_hash)):
+                        os.rename(
+                            os.path.join(out_dir, file_hash),
+                            os.path.join(out_dir, save_file_name),
+                        )
+
+                        # Wait for file to be renamed
+                        while not os.path.exists(os.path.join(out_dir, save_file_name)):
+                            time.sleep(1)
+                    else:
+                        print("Some other file type encountered?")
+
+                    if dwl_wait is not None:
+                        urls[url] = save_file_name
+                except:
+                    continue
 
         # Download doi PDFs
         elif "doi" in url:
@@ -229,14 +361,14 @@ def download_pdfs_pharma(driver, urls, out_dir, chemical_name=None):
     return urls
 
 
-def download_pdfs_doi(urls, out_dir, chemical_name=None):
+def download_pdfs_doi(urls, out_dir, drug_urls=None):
     """
     Download a list of DOI PDFs from a URL dictionary using API.
 
     Args:
         urls (dict): A dictionary of PharmaPendium URL's initialized with empty values.
-        out_dir (url): The path to the directory for downloaded PDFs.
-        chemical_name (str, optional): Chemical Name to append to associated PDFs. Defaults to None.
+        out_dir (str): The path to the directory for downloaded PDFs.
+        drug_urls (dict): Chemical names to append to associated PDFs
 
     Returns:
         dict: A dictionary with the original URLs, and updated values representing the downloaded filenames.
@@ -246,8 +378,8 @@ def download_pdfs_doi(urls, out_dir, chemical_name=None):
     for i, doi in enumerate(dois):
         # Generate a random hex string of length 30
         file_hash = "%030x" % random.randrange(16**30) + ".pdf"
+        chemical_name = drug_urls[doi]
         file_name = chemical_name + "_" + file_hash
-        print(file_name)
         out = os.path.join(out_dir, file_name)
         scihub_download(doi, paper_type="doi", out=out)
         if os.path.isfile(out):
@@ -268,7 +400,7 @@ def add_filenames_to_df(df, urls):
     Returns:
         pandas.DataFrame: A PharmaPendium dataframe with added file names.
     """
-    df["filename"] = df["Source Link"].apply(
+    df["filename"] = df["source link"].apply(
         lambda x: next((urls[url] for url in urls if url in x), None)
     )
 
@@ -276,18 +408,6 @@ def add_filenames_to_df(df, urls):
 
 
 if __name__ == "__main__":
-    # Load environmental variables
-    email = os.getenv("email")
-    password = os.getenv("password")
-    in_dir = os.getenv("in_dir")
-    out_dir = os.getenv("out_dir")
-
-    # Base url
-    login_url = "https://www.pharmapendium.com/welcome"
-
-    # Number of rows to skip before reaching the column_names row
-    skiprows = 5
-
     # Create selenium driver and login to pharmapendium for pdf scraping
     driver = get_driver()
     login_to_pharmapendium(driver, login_url)
@@ -306,29 +426,29 @@ if __name__ == "__main__":
         # Read in the excel file
         with warnings.catch_warnings(record=True):
             warnings.simplefilter("always")
-            df = pd.read_excel(
-                in_dir + filename, skiprows=skiprows, index_col=0, engine="openpyxl"
-            )
+            df = pd.read_excel(in_dir + filename, skiprows=skiprows, engine="openpyxl")
 
         # Get the unique source links
-        df = df[
-            df["Concomitants"].astype(str).str.lower().isin(["fed", "fasted", "nan"])
-        ]
-        df["Source Link"] = df["Source Link"].astype(str)
+        df["source link"] = df["source link"].astype(str)
         unique_documents = {
-            url.split("?", 1)[0]: None for url in df["Source Link"].unique()
+            url.split("?", 1)[0]: None for url in df["source link"].unique()
         }
-        chemical_name = df.head(1).Drug[0]
+        drug_urls = {
+            row["source link"]: str(drug).replace(" ", "_")
+            for drug, row in df.iterrows()
+        }
 
         # Download all unique files, if possible, and create a new excel with filename column
-        urls = download_pdfs_pharma(driver, unique_documents, out_dir, chemical_name)
+        urls = download_pdfs_pharma(
+            driver, unique_documents, out_dir, download_full=True
+        )
         df = add_filenames_to_df(df, urls)
-        urls = download_pdfs_doi(urls, out_dir, chemical_name)
+        urls = download_pdfs_doi(urls, out_dir, drug_urls)
         df = add_filenames_to_df(df, urls)
         df.to_excel(str(out_dir + filename).replace(".xlsx", "_new.xlsx"))
 
         # Create file for missing pharmapendium files and doi files
-        missing_pdf_names = df[df["filename"].isnull()]["Source Link"]
+        missing_pdf_names = df[df["filename"].isnull()]["source link"]
         missing_pdfs.update(missing_pdf_names)
 
     print("Creating missing_pdfs.txt..")
