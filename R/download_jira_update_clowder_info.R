@@ -61,15 +61,23 @@ download_jira_update_clowder_info <- function(jira_project,
     
     # Iterate through files not on Clowder to download
     for(filename in bulk_download$filename){
+      if(length(which(bulk_download$filename == filename)) > 1){
+        message("...Duplicate filename found: ", filename)
+        bulk_download %>% dplyr::filter(filename == !!filename) %>% View()
+        browser()
+        next
+      }
       message("Working on ticket ", which(bulk_download$filename == filename), " of ", nrow(bulk_download))
       # Set destination file name
       destfile <- paste0(bulk_download$destdir[bulk_download$filename == filename], "/", 
                          filename)
       # Download if does not exist
       if(!file.exists(destfile)){
+        # Wait between requests
+        Sys.sleep(0.25)
         utils::download.file(url = bulk_download$jira_link[bulk_download$filename == filename],
                              destfile = destfile,
-                             headers = c(`X-API-Key` = apiKey),
+                             headers = c(Authorization = paste0("Bearer ", auth_token)),
                              mode = "wb")  
       }
     }

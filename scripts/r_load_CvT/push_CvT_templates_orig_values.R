@@ -10,7 +10,7 @@ apiKey = Sys.getenv("apiKey")
 baseurl = Sys.getenv("baseurl")
 dsID = Sys.getenv("file_dsID")
 doc_dsID = Sys.getenv("doc_dsID")
-cvt_dataset = "PFAS_PIP"
+cvt_dataset = "PCB"
 schema = "cvt"
 
 to_load = pull_clowder_files_to_load(dsID, baseurl, apiKey, curation_set_tag=cvt_dataset)
@@ -26,6 +26,16 @@ if(nrow(to_load)){
                                         headers = c(`X-API-Key` = apiKey),
                                         mode = "wb",
                                         file_type = "xlsx")
+    
+    # TODO Check for template with only Documents sheet
+    
+    # Check for extracted field values
+    # Only update/create documents sheet entry (set boolean to stop)
+    
+    
+    # TODO Required field validation check
+    check_required_fields_validator(df=doc_sheet_list, 
+                                    f = to_load$filename[i])
     
     # Rename "original" fields
     doc_sheet_list = set_original_fields(sheet_list=doc_sheet_list, schema = schema)
