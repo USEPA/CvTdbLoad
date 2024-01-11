@@ -1,4 +1,10 @@
-jira_download_templates <- function(in_data){
+jira_download_templates <- function(in_data, auth_token){
+  # Format headers
+  if(!is.null(auth_token)){
+    headers <- c(Authorization = paste0("Bearer ", auth_token))
+  } else {
+    headers <- NULL
+  }
   ################################################################################
   ### Bulk Download
   ################################################################################

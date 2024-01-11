@@ -10,7 +10,12 @@
 #' @param labels_filter Vector list of Jira ticket labels to filter to
 download_jira_update_clowder_info <- function(jira_project, 
                                               in_file = NULL, 
-                                              auth_token, reset_attachments=FALSE, dsID, baseurl, userID, apiKey,
+                                              auth_token, 
+                                              reset_attachments=FALSE, 
+                                              dsID, 
+                                              baseurl, 
+                                              userID, 
+                                              apiKey,
                                               labels_filter = NULL){
   # Pull initial Jira information
   jira_info = pull_jira_info(jira_project=jira_project,
@@ -28,7 +33,7 @@ download_jira_update_clowder_info <- function(jira_project,
   # Download attachments as needed
   # Pull all
   if(!reset_attachments){
-    jira_download_templates(in_data = jira_info$in_data)
+    jira_download_templates(in_data = jira_info$in_data, auth_token = auth_token)
     metadata = jira_info$ticket_attachment_metadata
   } else {
     # Only pull those not already on Clowder
