@@ -1,3 +1,4 @@
+import os
 from os.path import join
 import pandas as pd
 
@@ -12,6 +13,15 @@ def process_files(original_file, revised_file):
 
     # Ensure our dataframes are the same length
     revised_df_full = revised_df_full.iloc[: len(original_df_full)]
+
+    # Get the indices of non-empty qc_reviewer_lanid in revised_df_full
+    non_empty_indices = revised_df_full[
+        revised_df_full["qc_reviewer_lanid"].notnull()
+    ].index
+
+    # Update revised_df_full and original_df_full with the rows matching the non-empty indices
+    original_df_full = original_df_full.loc[non_empty_indices]
+    revised_df_full = revised_df_full.loc[non_empty_indices]
 
     # Remove the duplicated rows
     non_duplicated_indices = revised_df_full.index[~revised_df_full.duplicate]
@@ -39,18 +49,34 @@ def process_files(original_file, revised_file):
     row_count = len(original_df)
     original_rows = len(original_df_full)
     duplicated_rows = original_rows - row_count
+    reviewed_rows = revised_df.qc_reviewer_lanid.count()
+
     duplicated_rows_percentage = round((duplicated_rows / original_rows) * 100, 2)
     non_duplicated_rows_percentage = round(row_count / original_rows * 100, 2)
+    reviewed_rows_percentage = round(reviewed_rows / row_count * 100, 2)
 
     # Create a dictionary with the data
     data = {
-        "Number": [original_rows, duplicated_rows, row_count],
-        "Percent": ["", duplicated_rows_percentage, non_duplicated_rows_percentage],
+        "Count": [original_rows, duplicated_rows, row_count, reviewed_rows, ""],
+        "Percentage": [
+            "",
+            duplicated_rows_percentage,
+            non_duplicated_rows_percentage,
+            reviewed_rows_percentage,
+            "",
+        ],
     }
 
     # Create a DataFrame
     row_count_df = pd.DataFrame(
-        data, index=["Original Rows", "Duplicated Rows", "Non-Duplicated Rows"]
+        data,
+        index=[
+            "Original Rows",
+            "Duplicated Rows",
+            "Non-Duplicated Rows",
+            "Reviewed Rows",
+            "Adjusted Rows",
+        ],
     )
 
     # Compare the original dataframe to the revised dataframe using the original columns
@@ -62,8 +88,22 @@ def process_files(original_file, revised_file):
     changed_data = compared_df.loc[:, pd.IndexSlice[:, "self"]].dropna(how="all")
     new_data = compared_df.loc[:, pd.IndexSlice[:, "other"]].dropna(how="all")
 
+    # Add to row count df
+    row_count_df.at["Adjusted Rows", "Count"] = len(changed_data)
+    row_count_df.at["Adjusted Rows", "Percentage"] = round(
+        len(changed_data) / row_count * 100, 2
+    )
+
     # Create a new dataframe to store the percentages
-    percentage_df = pd.DataFrame(columns=["Column", "Changes", "Additions"])
+    percentage_df = pd.DataFrame(
+        columns=[
+            "Column",
+            "Changes_Count",
+            "Changes_Percentage",
+            "Additions_Count",
+            "Additions_Percentage",
+        ]
+    )
 
     # Calculate the total number of rows
     total_rows = len(original_df)
@@ -82,8 +122,10 @@ def process_files(original_file, revised_file):
         new_df = pd.DataFrame(
             {
                 "Column": [column],
-                "Changes": [round(percentage_changes, 2)],
-                "Additions": [round(percentage_new_additions, 2)],
+                "Changes_Percentage": [round(percentage_changes, 2)],
+                "Changes_Count": [changes],
+                "Additions_Percentage": [round(percentage_new_additions, 2)],
+                "Additions_Count": [new_additions],
             }
         )
 
@@ -92,30 +134,31 @@ def process_files(original_file, revised_file):
 
     percentage_df.set_index("Column", inplace=True)
 
-    added_values = total_rows - revised_df[added_columns].isnull().sum()
+    additions_count = total_rows - revised_df[added_columns].isnull().sum()
+    additions_percentage = round((100 * additions_count) / total_rows, 2)
 
-    new_column_df = pd.DataFrame(
-        columns=["Percentage_Added"], data=round((100 * added_values) / total_rows, 2)
-    )
+    new_column_df = pd.DataFrame(columns=["Additions_Count", "Additions_Percentage"])
+    new_column_df["Additions_Percentage"] = additions_percentage
+    new_column_df["Additions_Count"] = additions_count
+
     new_column_df.index.name = "Column"
-    # new_column_df.Percentage_Added = new_column_df.Percentage_Added.astype(str) + "%"
 
     return row_count_df, percentage_df, new_column_df
 
 
 if __name__ == "__main__":
     input_path = "inputs"
-    files = [
-        (
-            "Rabeprazole_Na_Pharmacokinetic_Concentration_Data.xlsx",
-            "65132474e4b0d99f5a8b71f9_CvT_QC_bkesic.xlsx",
-            "Rabeprazole",
-        ),
-        (
-            "Tolcapone_Pharmacokinetic_Concentration_Data.xlsx",
-            "65132474e4b0d99f5a8b71fe_CvT_QC_rcasey01.xlsx",
-            "Tolcapone",
-        ),
+
+    input_files = os.listdir(input_path)
+    original_files = [
+        input_file
+        for input_file in input_files
+        if "Pharmacokinetic_Concentration" in input_file
+    ]
+    revised_files = [
+        input_file
+        for input_file in input_files
+        if "Pharmacokinetic_Concentration" not in input_file
     ]
 
     with pd.ExcelWriter("comparison_results.xlsx", engine="xlsxwriter") as writer:
@@ -125,15 +168,19 @@ if __name__ == "__main__":
         total_new_column_df = pd.DataFrame()
 
         # Write the combined and normalized dataframes to Excel
-        total_row_count_df.to_excel(writer, sheet_name="complete_row_counts")
-        total_percentage_df.to_excel(
-            writer, sheet_name="complete_original_data_changes"
-        )
-        total_new_column_df.to_excel(writer, sheet_name="complete_new_data_changes")
+        total_row_count_df.to_excel(writer, sheet_name="row_counts")
+        total_percentage_df.to_excel(writer, sheet_name="original_data")
+        total_new_column_df.to_excel(writer, sheet_name="new_data")
 
         # Create the individual sheets
         print("Gathering data from files..")
-        for original_file, revised_file, file_identifier in files:
+        for original_file in original_files:
+            file_identifier = original_file.split("_")[0]
+            revised_file = next(
+                revised_file
+                for revised_file in revised_files
+                if file_identifier in revised_file
+            )
             row_count_df, percentage_df, new_column_df = process_files(
                 original_file, revised_file
             )
@@ -149,37 +196,62 @@ if __name__ == "__main__":
 
             row_count_df.to_excel(writer, sheet_name=f"{file_identifier}_row_counts")
             percentage_df.to_excel(
-                writer, sheet_name=f"{file_identifier}_original_changes"
+                writer, sheet_name=f"{file_identifier}_original_data"
             )
-            new_column_df.to_excel(writer, sheet_name=f"{file_identifier}_new_changes")
+            new_column_df.to_excel(writer, sheet_name=f"{file_identifier}_new_data")
 
         # Normalize the combined sheets
-        file_length = len(files)
-        total_row_count_df["Number"] = (
-            total_row_count_df["Number"].astype(int).div(file_length)
-        )
-        total_row_count_df["Percent"] = (
-            total_row_count_df["Percent"]
+        file_length = len(original_files)
+
+        total_row_count_df["Percentage"] = (
+            total_row_count_df["Percentage"]
             .replace({"": 0})
             .astype(float)
             .div(file_length)
+            .round(1)
         )
-        total_percentage_df["Changes"] = (
-            total_percentage_df["Changes"].astype(float).div(file_length)
+        total_percentage_df["Changes_Percentage"] = (
+            total_percentage_df["Changes_Percentage"]
+            .astype(float)
+            .div(file_length)
+            .round(1)
         )
-        total_percentage_df["Additions"] = (
-            total_percentage_df["Additions"].astype(float).div(file_length)
+        total_percentage_df["Additions_Percentage"] = (
+            total_percentage_df["Additions_Percentage"]
+            .astype(float)
+            .div(file_length)
+            .round(1)
         )
-        total_new_column_df["Percentage_Added"] = total_new_column_df[
-            "Percentage_Added"
-        ].div(file_length)
+        total_new_column_df["Additions_Percentage"] = (
+            total_new_column_df["Additions_Percentage"].div(file_length).round(1)
+        )
+
+        # Sort Columns
+        total_percentage_df.sort_values(
+            by=["Changes_Percentage", "Additions_Percentage"],
+            ascending=[False, False],
+            inplace=True,
+        )
+        total_new_column_df.sort_values(
+            by=["Additions_Percentage"], ascending=[False], inplace=True
+        )
+
+        # Clean Columns
+        total_row_count_df.Percentage = total_row_count_df.Percentage.astype(str) + "%"
+        total_percentage_df.Changes_Percentage = (
+            total_percentage_df.Changes_Percentage.astype(str) + "%"
+        )
+        total_percentage_df.Additions_Percentage = (
+            total_percentage_df.Additions_Percentage.astype(str) + "%"
+        )
+        total_new_column_df.Additions_Percentage = (
+            total_new_column_df.Additions_Percentage.astype(str) + "%"
+        )
 
         # Write the combined and normalized dataframes to Excel
-        total_row_count_df.to_excel(writer, sheet_name="complete_row_counts")
-        total_percentage_df.to_excel(
-            writer, sheet_name="complete_original_data_changes"
-        )
-        total_new_column_df.to_excel(writer, sheet_name="complete_new_data_changes")
+        total_row_count_df.to_excel(writer, sheet_name="row_counts")
+        total_percentage_df.to_excel(writer, sheet_name="original_data")
+        total_new_column_df.to_excel(writer, sheet_name="new_data")
 
         # Update the column widths in Excel
         for sheetname in writer.sheets:
@@ -188,9 +260,3 @@ if __name__ == "__main__":
 
             if "new" in sheetname:
                 worksheet.set_column(1, 1, 20)
-
-    print(total_row_count_df)
-    print()
-    print(total_percentage_df)
-    print()
-    print(total_new_column_df)
