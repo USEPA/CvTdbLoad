@@ -19,6 +19,10 @@
 #' @importFrom RPostgreSQL dbWriteTable dbClearResult dbDisconnect
 #' @importFrom DBI dbSendStatement
 db_push_to_CvT <- function(df=NULL, tblName=NULL){
+  
+  stop("Deprecated function in favor of db_push_tbl_to_db...")
+  return()
+  
   if(is.null(df)) stop("Must provide a dataframe to push to database")
   if(is.null(tblName)) stop("Must provide database table name to write to")
   #Remove ID column because it'll be auto assigned in the push
@@ -31,7 +35,10 @@ db_push_to_CvT <- function(df=NULL, tblName=NULL){
   df = df[ , colSums(is.na(df)) < nrow(df)]
   tryCatch({
     con = db_connect_to_CvT()
-    RPostgreSQL::dbWriteTable(con, value = df, name=c("cvt", "temp_tbl"), overwrite=TRUE, row.names=FALSE)  
+    # DBI Issues with schema references
+    # https://github.com/r-dbi/odbc/issues/140
+    DBI::dbExecute(con, "SET search_path = cvt")
+    RPostgreSQL::dbWriteTable(con, value = df, name="temp_tbl", overwrite=TRUE, row.names=FALSE)  
     
     DBI::dbSendStatement(con, paste0("INSERT INTO cvt.", tblName, " (", paste0(names(df), collapse=','),
                                 ") SELECT ", paste0(names(df), collapse=','), " FROM cvt.temp_tbl")) %T>% 

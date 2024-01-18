@@ -4,7 +4,7 @@
 # Created Date: 2023-12-14
 
 # Exclude versioning fields
-col_exclude = c("created_by", "rec_create_dt", "qc_status", "qc_flags", "qc_notes", "version")
+col_exclude = c("id", "created_by", "rec_create_dt", "qc_status", "qc_flags", "qc_notes", "version")
 
 apiKey = Sys.getenv("apiKey")
 baseurl = Sys.getenv("baseurl")
@@ -66,8 +66,12 @@ if(nrow(to_load)){
     doc_sheet_list = set_original_fields(sheet_list=doc_sheet_list, schema = schema)
     # Update database dictionaries and get dictionary foreign keys    
     doc_sheet_list = get_dict_update_ids(sheet_list=doc_sheet_list, schema = schema)
-
-    # Push chemical entries to chemicals table, add clean name/casrn
+    
+    # Rename foreign key fields as needed
+    doc_sheet_list$Studies = doc_sheet_list$Studies %>%
+      dplyr::rename(fk_dosed_chemical_id=fk_chemicals_id)
+    doc_sheet_list$Series = doc_sheet_list$Series %>%
+      dplyr::rename(fk_analyzed_chemical_id=fk_chemicals_id)
     
     ###########################################################################
     ### Parse the where clause to search by pmid, other_study_identifier, or doi
@@ -98,6 +102,7 @@ if(nrow(to_load)){
                                                   dsID=doc_dsID,
                                                   baseurl=baseurl,
                                                   apiKey=apiKey)
+    
     message("...pushing to Documents table")
     # Get documents table fields
     tbl_fields = db_query_cvt("SELECT * FROM cvt.documents limit 1") %>% 
@@ -105,9 +110,11 @@ if(nrow(to_load)){
       .[!. %in% col_exclude]
     # names(doc_sheet_list$Documents)[!names(doc_sheet_list$Documents) %in% tbl_fields]
     browser()
-    db_push_to_CvT(df=doc_sheet_list$Documents %>%
-                     dplyr::select(dplyr::any_of(tbl_fields)),
-                   tblName="documents")
+    db_push_tbl_to_db(dat=doc_sheet_list$Documents %>%
+                        dplyr::select(dplyr::any_of(tbl_fields)),
+                      tblName="documents",
+                      overwrite=FALSE, 
+                      append=TRUE)
     
     # Match back new document records
     doc_sheet_list$Documents = match_cvt_doc_to_db_doc(df = doc_sheet_list$Documents %>%
@@ -153,9 +160,11 @@ if(nrow(to_load)){
       .[!. %in% col_exclude]
     # names(doc_sheet_list$Studies)[!names(doc_sheet_list$Studies) %in% tbl_fields]
     browser()
-    db_push_to_CvT(df=doc_sheet_list$Studies %>%
-                     dplyr::select(dplyr::any_of(tbl_fields)),
-                   tblName="studies")
+    db_push_tbl_to_db(dat=doc_sheet_list$Studies %>%
+                        dplyr::select(dplyr::any_of(tbl_fields)),
+                      tblName="studies",
+                      overwrite=FALSE, 
+                      append=TRUE)
     
     # Get Studies ID values (Assumes the query returns the rows in the same order they were uploaded...)
     match_entry = db_query_cvt(paste0("SELECT id as fk_studies_id FROM cvt.studies ORDER BY id DESC LIMIT ", 
@@ -174,9 +183,11 @@ if(nrow(to_load)){
       .[!. %in% col_exclude]
     # names(doc_sheet_list$Subjects)[!names(doc_sheet_list$Subjects) %in% tbl_fields]
     browser()
-    db_push_to_CvT(df=doc_sheet_list$Subjects %>%
-                     dplyr::select(dplyr::any_of(tbl_fields)),
-                   tblName="subjects")
+    db_push_tbl_to_db(dat=doc_sheet_list$Subjects %>%
+                        dplyr::select(dplyr::any_of(tbl_fields)),
+                      tblName="subjects",
+                      overwrite=FALSE, 
+                      append=TRUE)
     
     # Get Subjects ID Values (Assumes the query returns the rows in the same order they were uploaded...)
     match_entry = db_query_cvt(paste0("SELECT id as fk_subjects_id FROM cvt.subjects ORDER BY id DESC LIMIT ", 
@@ -208,9 +219,11 @@ if(nrow(to_load)){
       .[!. %in% col_exclude]
     # names(doc_sheet_list$Series)[!names(doc_sheet_list$Series) %in% tbl_fields]
     browser()
-    db_push_to_CvT(df=doc_sheet_list$Series %>%
-                     dplyr::select(dplyr::any_of(tbl_fields)),
-                   tblName="series")
+    db_push_tbl_to_db(dat=doc_sheet_list$Series %>%
+                        dplyr::select(dplyr::any_of(tbl_fields)),
+                      tblName="series",
+                      overwrite=FALSE, 
+                      append=TRUE)
     
     # Get Series ID Values (Assumes the query returns the rows in the same order they were uploaded...)
     match_entry = db_query_cvt(paste0("SELECT id as new_fk_series_id FROM cvt.series ORDER BY id DESC LIMIT ", 
@@ -235,12 +248,17 @@ if(nrow(to_load)){
       .[!. %in% col_exclude]
     # names(doc_sheet_list$Conc_Time_Values)[!names(doc_sheet_list$Conc_Time_Values) %in% tbl_fields]
     browser()
-    db_push_to_CvT(df=doc_sheet_list$Conc_Time_Values %>%
-                     dplyr::select(dplyr::any_of(tbl_fields)),
-                   tblName="conc_time_values")
+    db_push_tbl_to_db(dat=doc_sheet_list$Conc_Time_Values %>%
+                        dplyr::select(dplyr::any_of(tbl_fields)),
+                      tblName="conc_time_values",
+                      overwrite=FALSE, 
+                      append=TRUE)
+    
+    output_dir = file.path("output", "Document Loading", cvt_dataset)
+    if(!dir.exists(output_dir)) dir.create(output_dir, recursive = TRUE)
     
     # Write export file  
-    writexl::write_xlsx(doc_sheet_list, path=paste0("output/", 
+    writexl::write_xlsx(doc_sheet_list, path=paste0(output_dir,"/", 
                                                     basename(to_load$filename[i]) %>% gsub(".xlsx", "", .), 
                                                     "_loaded_", format(Sys.time(), "%Y%m%d"), 
                                                     ".xlsx"))

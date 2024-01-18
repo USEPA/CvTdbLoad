@@ -17,15 +17,23 @@
 #' @export 
 #' @importFrom dplyr filter mutate left_join arrange
 clowder_match_docs <- function(df=NULL, dsID=NULL, baseurl=NULL, apiKey=NULL){
+  message("Matching clowder documents to template identifiers...")
   if(is.null(apiKey)) stop("Error: missing required Clowder apiKey")
   if(is.null(dsID)) stop("Error: missing required Clowder dataset ID")
   if(is.null(baseurl)) stop("Error: missing required Clowder URL")
   
-  if(!"pdf_filepath" %in% names(df)){ df$pdf_filepath = NA }
+  if(!"pdf_filepath" %in% names(df)){ df$pdf_filepath = as.character(NA) }
   # Attempt to match to PMID
   # c_docs = get_clowder_docList_2(dsID=dsID, baseurl=baseurl, apiKey=apiKey)
   c_docs = clowder_get_dataset_files(dsID=dsID, baseurl=baseurl, apiKey=apiKey) %>%
-    dplyr::rename(clowder_file_id = clowder_id)
+    dplyr::select(-folders.name) %>%
+    dplyr::distinct() %>%
+    dplyr::rename(clowder_file_id = clowder_id) %>%
+    dplyr::group_by(filename) %>%
+    # Collapse duplicates
+    dplyr::mutate(clowder_file_id = paste0(clowder_file_id, collapse = "; ")) %>%
+    dplyr::distinct()
+    
   pmid_match = df %>%
     dplyr::filter(!is.na(pmid)) %>%
     dplyr::mutate(pdf_filepath = paste0("PMID", pmid, ".pdf")) %>%
@@ -48,7 +56,8 @@ clowder_match_docs <- function(df=NULL, dsID=NULL, baseurl=NULL, apiKey=NULL){
   
   df = df %>%
     dplyr::filter(!id %in% other_match$id) %>%
-    dplyr::mutate(clowder_file_id = NA)
+    dplyr::mutate(clowder_file_id = as.character(NA),
+                  folders.name = as.character(NA))
   
   # Recombine and return
   rbind(df, pmid_match, other_match) %>%
