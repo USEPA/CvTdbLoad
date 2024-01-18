@@ -10,4 +10,4 @@ rules:
     message: NA_in_required_field_conc
 - expr: 'exists_any(if (!is.na(conc_lower_bound) || !is.na(conc_upper_bound) || !is.na(conc_std)) !is.na(conc_bound_type))'
   meta:
-    message: missing_conc_bound_type
+    message: missing_conc_bound_type_pair

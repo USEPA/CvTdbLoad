@@ -12,6 +12,7 @@ dsID = Sys.getenv("file_dsID")
 doc_dsID = Sys.getenv("doc_dsID")
 cvt_dataset = "PCB"
 schema = "cvt"
+log_path = "output/load_required_fields_log.xlsx"
 
 to_load = pull_clowder_files_to_load(dsID, baseurl, apiKey, curation_set_tag=cvt_dataset)
 
@@ -25,8 +26,9 @@ if(nrow(to_load)){
     load_doc_sheet_only = FALSE
     # Filename
     f = to_load$filename[i]
-    #Create/clear log entry for filename
-    log_CvT_doc_load(f, m=NULL, reset=TRUE)
+    # Create/clear log entry for filename
+    log_CvT_doc_load(f, m=NULL, reset=TRUE, 
+                     log_path = log_path)
     # Pull temp file to process
     doc_sheet_list = load_file_from_api(url = paste0(baseurl,"/api/files/",to_load$clowder_id[i],"/blob"),
                                         headers = c(`X-API-Key` = apiKey),
@@ -43,8 +45,22 @@ if(nrow(to_load)){
     }
     
     # TODO Required field validation check
-    check_required_fields_validator(df=doc_sheet_list, 
-                                    f = f)
+    check_required_fields_validator(df = doc_sheet_list, 
+                                    f = f,
+                                    log_path = log_path)
+    
+    req_fields_check = readxl::read_xlsx(log_path) %>%
+      dplyr::filter(filename == f) %>%
+      # Select log columns with value of 1
+      # https://stackoverflow.com/questions/63743572/select-columns-based-on-column-value-range-with-dplyr
+      dplyr::select(where(~any(. == 1)))
+    # Warn user of requirements issues with file
+    if(length(req_fields_check)){
+      message("File missing required fields: ")
+      cat(paste0("- ", names(req_fields_check)), sep="\n")
+      browser()
+      next
+    }
     
     # Rename "original" fields
     doc_sheet_list = set_original_fields(sheet_list=doc_sheet_list, schema = schema)

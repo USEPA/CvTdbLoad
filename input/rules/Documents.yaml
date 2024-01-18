@@ -10,7 +10,7 @@ rules:
     message: unused_fk_reference_document_id
 - expr: '!is.na(pmid) | !is.na(other_study_identifier)'
   meta:
-    message: missing_document_identifier
+    message: missing_required_document_identifier
 - expr: '!is.na(extracted)'
   meta:
     message: NA_in_required_field_extracted
