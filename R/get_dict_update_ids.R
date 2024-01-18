@@ -42,8 +42,8 @@ get_dict_update_ids <- function(sheet_list, schema){
       }
       # Check if sheet contains dictionary column
       if(any(names(sheet) %in% names(dict))){
-        # Get dictionary column of interest
-        dict_col = names(sheet)[names(sheet) %in% names(dict)]
+        # Get dictionary column of interest (_original field)
+        dict_col = names(sheet)[names(sheet) %in% names(dict)[grepl("_original$", names(dict))]]
         # Handle chemicals dictionary differently
         if(dict_tbl == "chemicals"){
           # Create index column from dictionary fields
@@ -67,6 +67,11 @@ get_dict_update_ids <- function(sheet_list, schema){
 
         # Check for new entries
         if(nrow(new)){
+          # Add ID (issues with database auto increment)
+          max_id = db_query_cvt(paste0("SELECT MAX(id) FROM ", schema, ".", dict_tbl))[,1]
+          if(is.na(max_id)) max_id = 0
+          # Sequence of ID values
+          new$id = (max_id+1):(nrow(new)+max_id)
           # Push new entries to database
           db_push_tbl_to_db(dat=new,# %>% dplyr::select(-id),
                             tblName=dict_tbl,

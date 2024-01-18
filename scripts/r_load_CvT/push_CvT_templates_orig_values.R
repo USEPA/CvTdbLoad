@@ -44,7 +44,7 @@ if(nrow(to_load)){
       load_doc_sheet_only = TRUE
     }
     
-    # TODO Required field validation check
+    # Required field validation check
     check_required_fields_validator(df = doc_sheet_list, 
                                     f = f,
                                     log_path = log_path)
