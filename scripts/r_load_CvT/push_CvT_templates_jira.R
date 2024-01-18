@@ -2,48 +2,6 @@
 # Created by: Jonathan Taylor Wall
 # Created Date: 2023-11-28
 
-#Function to match input document metadata to CvTdb document records by pmid, other_study_identifier, doi, url hierarchy
-match_to_cvt_docs <- function(df=NULL){
-  check_list = c("pmid", "other_study_identifier", "doi", "url")
-  #Find potential duplicate values per ID level (irrespective of the hierarchy)
-  where_clause = lapply(check_list, function(x){
-    tmp = df %>%
-      dplyr::select(!!sym(x)) %>%
-      dplyr::filter(!is.na(!!sym(x))) %>% 
-      dplyr::distinct() %>%
-      unlist() %>% 
-      unname() %>% unique() %>% paste0(collapse="', '")
-  }) %T>% { names(.) <- check_list }
-  #Pull all document data
-  #input = db_query_cvt("SELECT * FROM cvt.documents")
-  #Loop through the hierarchy to verify potenital duplicates
-  doc_list = list()
-  for(level in check_list){#Check each level, then filter out matched and to those missing a level entry
-    if(!stringr::str_length(where_clause[[level]])){
-      #No level filter found, skip
-      next
-    }
-    tmp = db_query_cvt(paste0("SELECT id as fk_document_id, ", level," FROM cvt.documents where ", 
-                              level, " in ('", where_clause[[level]],"')"))
-    doc_list[[level]] = df %>%
-      dplyr::filter(!is.na(!!sym(level))) %>%
-      dplyr::left_join(tmp, by=level)
-    df = df %>% #Filter out those with matches found
-      dplyr::filter(!id %in% doc_list[[level]]$id)
-  }
-  
-  doc_list = doc_list %>%
-    dplyr::bind_rows() %>% 
-    dplyr::arrange(id)
-  
-  # Those without matches get fk_document_id = NA
-  df$fk_document_id = NA 
-  # Recombine and return to user
-  rbind(doc_list, df) %>% 
-    dplyr::arrange(id) %>%
-    return()
-}
-
 ################################################################################
 # Boolean enforce chemical mapping
 map_chemicals = FALSE
@@ -113,7 +71,7 @@ for(i in seq_along(nrow(c_files_list))){
   if(any(duplicated(doc_sheet_list$Documents$pmid))) stop("Duplicate PMID valies found in template...")
   if(any(duplicated(doc_sheet_list$Documents$other_study_identifier))) stop("Duplicate other_study_identifier values found in template...")
   # Match to document records in CvTdb, if available
-  doc_sheet_list$Documents = match_to_cvt_docs(df = doc_sheet_list$Documents)
+  doc_sheet_list$Documents = match_cvt_doc_to_db_doc(df = doc_sheet_list$Documents)
   
   # Skip processing if any document entries already present in the database
   if(any(!is.na(doc_sheet_list$Documents$fk_document_id))){
@@ -141,7 +99,7 @@ for(i in seq_along(nrow(c_files_list))){
               tblName="documents")
   
   # Match back new document records
-  doc_sheet_list$Documents = match_to_cvt_docs(df = doc_sheet_list$Documents %>%
+  doc_sheet_list$Documents = match_cvt_doc_to_db_doc(df = doc_sheet_list$Documents %>%
                                                  dplyr::select(-fk_document_id))
   
   # Check if any did not match to previously pushed document entry

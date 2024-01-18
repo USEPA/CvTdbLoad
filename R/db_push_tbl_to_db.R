@@ -25,6 +25,9 @@ db_push_tbl_to_db <- function(dat=NULL, tblName=NULL, fieldTypes=NULL, overwrite
   if(is.null(tblName)) stop("...Error: User must provide a name for the database table")
   
   con = db_connect_to_CvT()
+  # DBI Issues with schema references
+  # https://github.com/r-dbi/odbc/issues/140
+  DBI::dbExecute(con, "SET search_path = cvt")
   
   out <- tryCatch({
     message("...Trying to write, '", tblName, "' to CvTdb")
@@ -32,8 +35,12 @@ db_push_tbl_to_db <- function(dat=NULL, tblName=NULL, fieldTypes=NULL, overwrite
                  field.types=fieldTypes, row.names=FALSE, append=append)
     if(!is.null(customSQL)) { RPostgreSQL::dbSendQuery(con, customSQL) } #Send custom SQL statement
   },
-  error=function(cond) { message("...Error message: ", cond); return(NA) },
-  warning=function(cond) { message("...Warning message: ", cond); return(NULL) },
+  error=function(cond) { 
+    message("...Error message for ",tblName,": ", cond); return(NA)
+    },
+  warning=function(cond) { 
+    message("...Warning message for ",tblName,": ", cond); return(NULL)
+    },
   finally={ RPostgreSQL::dbDisconnect(con)
   })
 }

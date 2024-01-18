@@ -1,12 +1,39 @@
-update_jira_clowder_info <- function(jira_project, in_file, auth_token, reset_attachments=FALSE, dsID, baseurl, userID, apiKey){
+#' download_jira_update_clowder_info
+#' @param jira_project Jira project identifier
+#' @param in_file Optional param for the file path to previously pulled Jira information
+#' @param auth_token Jira API token
+#' @param reset_attachments Boolean whether to re-download files, or just update Clowder metadata
+#' @param dsID Clowder dataset ID
+#' @param baseurl Clowder URL
+#' @param userID Clowder user ID
+#' @param apiKey Clowder API key
+#' @param labels_filter Vector list of Jira ticket labels to filter to
+download_jira_update_clowder_info <- function(jira_project, 
+                                              in_file = NULL, 
+                                              auth_token, 
+                                              reset_attachments=FALSE, 
+                                              dsID, 
+                                              baseurl, 
+                                              userID, 
+                                              apiKey,
+                                              labels_filter = NULL){
   # Pull initial Jira information
   jira_info = pull_jira_info(jira_project=jira_project,
                              in_file=in_file,
                              auth_token=auth_token)
+  # Filter labels if provided
+  if(!is.null(labels_filter)){
+    jira_info$in_data = jira_info$in_data %>%
+      dplyr::filter(Labels %in% labels_filter)
+    jira_info$ticket_attachment_metadata = jira_info$ticket_attachment_metadata %>%
+      dplyr::filter(Labels %in% labels_filter)
+    jira_info$out_summary = jira_info$out_summary %>%
+      dplyr::filter(Labels %in% labels_filter)
+  }
   # Download attachments as needed
   # Pull all
-  if(reset_attachments){
-    jira_download_templates(in_data = jira_info$in_data)
+  if(!reset_attachments){
+    jira_download_templates(in_data = jira_info$in_data, auth_token = auth_token)
     metadata = jira_info$ticket_attachment_metadata
   } else {
     # Only pull those not already on Clowder
@@ -39,23 +66,32 @@ update_jira_clowder_info <- function(jira_project, in_file, auth_token, reset_at
     
     # Iterate through files not on Clowder to download
     for(filename in bulk_download$filename){
+      if(length(which(bulk_download$filename == filename)) > 1){
+        message("...Duplicate filename found: ", filename)
+        bulk_download %>% dplyr::filter(filename == !!filename) %>% View()
+        browser()
+        next
+      }
       message("Working on ticket ", which(bulk_download$filename == filename), " of ", nrow(bulk_download))
       # Set destination file name
       destfile <- paste0(bulk_download$destdir[bulk_download$filename == filename], "/", 
                          filename)
       # Download if does not exist
       if(!file.exists(destfile)){
+        # Wait between requests
+        Sys.sleep(0.25)
         utils::download.file(url = bulk_download$jira_link[bulk_download$filename == filename],
                              destfile = destfile,
-                             headers = c(`X-API-Key` = apiKey),
+                             headers = c(Authorization = paste0("Bearer ", auth_token)),
                              mode = "wb")  
       }
     }
   }
   
-  upload_file_metadata(metadata=metadata, 
-                       dsID=dsID, 
-                       userID=userID, 
-                       baseurl=baseurl, 
+  # Update Clowder Jira file metadata
+  upload_file_metadata(metadata=metadata,
+                       dsID=dsID,
+                       userID=userID,
+                       baseurl=baseurl,
                        apiKey=apiKey)
 }

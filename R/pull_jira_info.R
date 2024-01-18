@@ -24,7 +24,7 @@
 #' @importFrom dplyr select contains mutate everything filter distinct left_join group_by summarise n
 #' @importFrom tidyr unite
 #' @importFrom stringr str_squish
-pull_jira_info <- function(jira_project, in_file = NULL, auth_token = NULL){
+pull_jira_info <- function(jira_project, in_file = NULL, auth_token = NULL, status_filter = "Done"){
   
   # Format headers
   if(!is.null(auth_token)){
@@ -78,7 +78,7 @@ pull_jira_info <- function(jira_project, in_file = NULL, auth_token = NULL){
                      by=c("Epic Link"="Issue key")) %>%
     dplyr::filter(`Epic Name` == "Document Curation",
                   `Issue Type` != "Epic",
-                  Status =="Done"
+                  Status %in% c(status_filter)
     ) %>%
     dplyr::select(-`Issue Type`) %>%
     # Clean labels for better subfolder grouping

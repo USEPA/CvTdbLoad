@@ -4,6 +4,7 @@
 #' @param m Log field name, Default: NULL
 #' @param reset Boolean to reset a row's flags, Default: FALSE
 #' @param val Custom field value. Default: NULL
+#' @param log_path File path where to save the log file. Default "output/template_normalization_log.xlsx"
 #' @return OUTPUT_DESCRIPTION
 #' @details DETAILS
 #' @examples 
@@ -21,9 +22,13 @@
 #' @importFrom readxl read_xlsx
 #' @importFrom stats setNames
 #' @importFrom writexl write_xlsx
-log_CvT_doc_load <- function(f, m=NULL, reset=FALSE, val=NULL){
-  if(file.exists("output\\template_normalization_log.xlsx")){
-    log = readxl::read_xlsx("output\\template_normalization_log.xlsx")
+log_CvT_doc_load <- function(f, 
+                             m=NULL, 
+                             reset=FALSE, 
+                             val=NULL,
+                             log_path = "output/template_normalization_log.xlsx"){
+  if(file.exists(log_path)){
+    log = readxl::read_xlsx(log_path)
     log$timestamp = as.character(log$timestamp)  
   } else {
     log = data.frame(filename=f, timestamp=as.character(Sys.time()))
@@ -62,5 +67,5 @@ log_CvT_doc_load <- function(f, m=NULL, reset=FALSE, val=NULL){
     tmp$timestamp <- as.character(Sys.time())
     log = rbind(log, tmp)
   }
-  writexl::write_xlsx(log, "output\\template_normalization_log.xlsx")
+  writexl::write_xlsx(log, log_path)
 }

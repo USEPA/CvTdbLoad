@@ -19,28 +19,28 @@ rules:
     message: NA_in_required_field_dose_frequency
 - expr: 'exists_any(if (!dose_frequency %in% c("single dose", 1)) !is.na(administration_term))'
   meta:
-    message: missing_administration_term
+    message: missing_administration_term_pair
 - expr: 'exists_any(if (!is.na(administration_term)) !is.na(administration_term_units))'
   meta:
-    message: missing_administration_term_units
+    message: missing_administration_term_units_pair
 - expr: 'exists_any(if (!is.na(dose_duration)) !is.na(dose_duration_units))'
   meta:
-    message: missing_dose_duration_units
+    message: missing_dose_duration_units_pair
 - expr: 'exists_any(if (!is.na(dose_volume)) !is.na(dose_volume_units))'
   meta:
-    message: missing_dose_volume_units
+    message: missing_dose_volume_units_pair
 - expr: 'exists_any(if (!is.na(dermal_applied_area)) !is.na(dermal_applied_area_units))'
   meta:
-    message: missing_dermal_applied_area_units
+    message: missing_dermal_applied_area_units_pair
 - expr: 'exists_any(if (!is.na(aerosol_particle_diameter)) !is.na(aerosol_particle_diameter_units))'
   meta:
-    message: missing_aerosol_particle_diameter_units
+    message: missing_aerosol_particle_diameter_units_pair
 - expr: 'exists_any(if (!is.na(aerosol_particle_density)) !is.na(aerosol_particle_density_units))'
   meta:
-    message: missing_aerosol_particle_density_units
+    message: missing_aerosol_particle_density_units_pair
 - expr: 'exists_any(if (!is.na(flow_rate)) !is.na(flow_rate_units))'
   meta:
-    message: missing_flow_rate_units
+    message: missing_flow_rate_units_pair
 - expr: 'exists_any(if (!is.na(chamber_size)) !is.na(chamber_size_units))'
   meta:
-    message: missing_aerosol_particle_density_units
+    message: missing_aerosol_particle_density_units_pair
