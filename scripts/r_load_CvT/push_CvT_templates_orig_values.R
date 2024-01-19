@@ -29,6 +29,7 @@ tmp_load_cvt <- function(){
       message("Pushing file (", i, "/", nrow(to_load),"): ", toString(to_load[i,c("jira_ticket", "filename")]), "...", Sys.time())
       # Boolean of whether to only load document sheet
       load_doc_sheet_only = FALSE
+      update_doc_in_db = FALSE
       # Filename
       f = to_load$filename[i]
       # Create/clear log entry for filename
@@ -66,7 +67,7 @@ tmp_load_cvt <- function(){
         # browser()
         next
       }
-      
+      # stop("Found passing file to load!")
       # Rename "original" fields
       doc_sheet_list = set_original_fields(sheet_list=doc_sheet_list, schema = schema)
       # Update database dictionaries and get dictionary foreign keys    
@@ -90,10 +91,21 @@ tmp_load_cvt <- function(){
       # Skip processing if any document entries already present in the database
       # Ignore reference documents already matched from database
       if(any(!is.na(doc_sheet_list$Documents$fk_document_id[doc_sheet_list$Documentsdocument_type != 2]))){
-        message("...Document entry already in CvTdb. Need to plan how to handle.")
-        next
+        message("...Document entry already in CvTdb...")
+        # Check if any study data is associated with document
+        doc_studies = db_query_cvt(paste0("SELECT * FROM cvt.studies where fk_extraction_document_id = ", 
+                                          doc_sheet_list$Documents$fk_document_id[doc_sheet_list$Documents$document_type == 1]))
+        # Log case of duplicate document with studies
+        if(nrow(doc_studies)){
+          message("Skipping duplicate document already in database with associated studies...")
+          log_CvT_doc_load(f=f, 
+                           m="duplicate_doc_in_db_with_studies", 
+                           log_path=log_path)
+          next
+        }
+        # Set boolean to update doc db information
+        update_doc_in_db = TRUE
       }
-      
       ###########################################################################
       ### Push Documents Sheet to CvT
       ###########################################################################
@@ -108,25 +120,55 @@ tmp_load_cvt <- function(){
                                                     dsID=doc_dsID,
                                                     baseurl=baseurl,
                                                     apiKey=apiKey)
-      
-      message("...pushing to Documents table")
-      # Get documents table fields
-      tbl_fields = db_query_cvt("SELECT * FROM cvt.documents limit 1") %>% 
-        names() %>%
-        .[!. %in% col_exclude]
-      # names(doc_sheet_list$Documents)[!names(doc_sheet_list$Documents) %in% tbl_fields]
-      browser()
-      db_push_tbl_to_db(dat=doc_sheet_list$Documents %>%
-                          # Filter out reference documents that are already in CvTDB
-                          dplyr::filter(!(document_type == 2 & !is.na(fk_document_id))) %>%
-                          dplyr::select(dplyr::any_of(tbl_fields)),
-                        tblName="documents",
-                        overwrite=FALSE, 
-                        append=TRUE)
-      
-      # Match back new document records
-      doc_sheet_list$Documents = match_cvt_doc_to_db_doc(df = doc_sheet_list$Documents %>%
-                                                           dplyr::select(-fk_document_id))
+      # If document already present, but without associations, remove old record and append new
+      if(update_doc_in_db){
+        # Get documents table fields
+        tbl_fields = db_query_cvt("SELECT * FROM cvt.documents limit 1") %>% 
+          names()
+        doc_in_db = db_query_cvt(paste0("SELECT * FROM cvt.documents where id = ",
+                                        doc_sheet_list$Documents$fk_document_id[doc_sheet_list$Documents$document_type == 1]))
+        temp_doc = doc_sheet_list$Documents %>%
+          # Filter out NA fields (to be filled by database document fields)
+          .[ , colSums(is.na(.)) < nrow(.)] %>%
+          dplyr::select(-id, -fk_document_id)
+        
+        # Combine fields from template with fields from document entry
+        doc_in_db = doc_in_db %>%
+          dplyr::select(any_of(
+            names(doc_in_db)[!names(doc_in_db) %in% names(temp_doc)]
+          )) %>%
+          cbind(., temp_doc) %>%
+          # Remove versioning, handled by database audit triggers
+          dplyr::select(-rec_create_dt, -version, -created_by) %>%
+          # Order columns by database table order
+          dplyr::select(any_of(tbl_fields))
+        
+        # Update database entry for document
+        db_update_tbl(df=doc_in_db,
+                      tblName = "documents")
+        
+        # Match back new document records
+        doc_sheet_list$Documents = doc_in_db
+        
+      } else {
+        message("...pushing to Documents table")
+        # Get documents table fields
+        tbl_fields = db_query_cvt("SELECT * FROM cvt.documents limit 1") %>% 
+          names() %>%
+          .[!. %in% col_exclude]
+        # names(doc_sheet_list$Documents)[!names(doc_sheet_list$Documents) %in% tbl_fields]
+        browser()
+        db_push_tbl_to_db(dat=doc_sheet_list$Documents %>%
+                            # Filter out reference documents that are already in CvTDB
+                            dplyr::filter(!(document_type == 2 & !is.na(fk_document_id))) %>%
+                            dplyr::select(dplyr::any_of(tbl_fields)),
+                          tblName="documents",
+                          overwrite=FALSE, 
+                          append=TRUE)  
+        # Match back new document records
+        doc_sheet_list$Documents = match_cvt_doc_to_db_doc(df = doc_sheet_list$Documents %>%
+                                                             dplyr::select(-fk_document_id))
+      }
       
       # Check if any did not match to previously pushed document entry
       if(any(is.na(doc_sheet_list$Documents$fk_document_id))){

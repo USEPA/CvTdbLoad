@@ -8,12 +8,14 @@ load_file_from_api <- function(url, headers, file_type, mode = "w"){
     if(file_type == "csv"){
       readr::read_csv(temp_in, 
                       col_types = readr::cols()) %>%
+        dplyr::mutate(dplyr::across(where(is.character), stringr::str_squish)) %>%
         return()
     } else if(file_type == "xlsx"){
       sheet_ls = readxl::excel_sheets(temp_in)
       lapply(sheet_ls, function(s_name){
         readxl::read_xlsx(temp_in,
-                          sheet=s_name)  
+                          sheet=s_name) %>%
+          dplyr::mutate(dplyr::across(where(is.character), stringr::str_squish))
       }) %T>% {
         names(.) <- sheet_ls
       }

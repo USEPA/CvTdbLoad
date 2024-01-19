@@ -22,7 +22,10 @@ match_cvt_doc_to_db_doc <- function(df=NULL){
     }
     tmp = db_query_cvt(paste0("SELECT id as fk_document_id, ", level," FROM cvt.documents where ", 
                               level, " in ('", where_clause[[level]],"')")) %>%
-      dplyr::mutate(across(everything(), ~as.character(.)))
+      dplyr::mutate(across(any_of(level), ~as.character(.)))
+    # Set level as character too
+    df = df %>%
+      dplyr::mutate(across(any_of(level), ~as.character(.)))
     
     doc_list[[level]] = df %>%
       dplyr::mutate(dplyr::across(where(is.character), stringr::str_squish)) %>%
