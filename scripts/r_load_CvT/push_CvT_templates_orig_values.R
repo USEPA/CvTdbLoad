@@ -90,7 +90,7 @@ tmp_load_cvt <- function(){
       
       # Skip processing if any document entries already present in the database
       # Ignore reference documents already matched from database
-      if(any(!is.na(doc_sheet_list$Documents$fk_document_id[doc_sheet_list$Documentsdocument_type != 2]))){
+      if(any(!is.na(doc_sheet_list$Documents$fk_document_id[doc_sheet_list$Documents$document_type != 2]))){
         message("...Document entry already in CvTdb...")
         # Check if any study data is associated with document
         doc_studies = db_query_cvt(paste0("SELECT * FROM cvt.studies where fk_extraction_document_id = ", 
@@ -141,14 +141,16 @@ tmp_load_cvt <- function(){
           # Remove versioning, handled by database audit triggers
           dplyr::select(-rec_create_dt, -version, -created_by) %>%
           # Order columns by database table order
-          dplyr::select(any_of(tbl_fields))
+          dplyr::select(any_of(tbl_fields), document_type)
         
         # Update database entry for document
-        db_update_tbl(df=doc_in_db,
+        db_update_tbl(df=doc_in_db %>%
+                        dplyr::select(-document_type),
                       tblName = "documents")
         
         # Match back new document records
-        doc_sheet_list$Documents = doc_in_db
+        doc_sheet_list$Documents = doc_in_db %>%
+          dplyr::mutate(fk_document_id = id)
         
       } else {
         message("...pushing to Documents table")
@@ -158,13 +160,17 @@ tmp_load_cvt <- function(){
           .[!. %in% col_exclude]
         # names(doc_sheet_list$Documents)[!names(doc_sheet_list$Documents) %in% tbl_fields]
         browser()
-        db_push_tbl_to_db(dat=doc_sheet_list$Documents %>%
-                            # Filter out reference documents that are already in CvTDB
-                            dplyr::filter(!(document_type == 2 & !is.na(fk_document_id))) %>%
-                            dplyr::select(dplyr::any_of(tbl_fields)),
-                          tblName="documents",
-                          overwrite=FALSE, 
-                          append=TRUE)  
+        db_push_rs = db_push_tbl_to_db(dat=doc_sheet_list$Documents %>%
+                                         # Filter out reference documents that are already in CvTDB
+                                         dplyr::filter(!(document_type == 2 & !is.na(fk_document_id))) %>%
+                                         dplyr::select(dplyr::any_of(tbl_fields)),
+                                       tblName="documents",
+                                       overwrite=FALSE, 
+                                       append=TRUE) 
+        if(is.null(db_push_rs) || is.na(db_push_rs)){
+          message("Issue pushing documents table.")
+          browser()
+        }
         # Match back new document records
         doc_sheet_list$Documents = match_cvt_doc_to_db_doc(df = doc_sheet_list$Documents %>%
                                                              dplyr::select(-fk_document_id))
@@ -210,11 +216,15 @@ tmp_load_cvt <- function(){
         .[!. %in% col_exclude]
       # names(doc_sheet_list$Studies)[!names(doc_sheet_list$Studies) %in% tbl_fields]
       browser()
-      db_push_tbl_to_db(dat=doc_sheet_list$Studies %>%
-                          dplyr::select(dplyr::any_of(tbl_fields)),
-                        tblName="studies",
-                        overwrite=FALSE, 
-                        append=TRUE)
+      db_push_rs = db_push_tbl_to_db(dat=doc_sheet_list$Studies %>%
+                                       dplyr::select(dplyr::any_of(tbl_fields)),
+                                     tblName="studies",
+                                     overwrite=FALSE, 
+                                     append=TRUE)
+      if(is.null(db_push_rs) || is.na(db_push_rs)){
+        message("Issue pushing studies table.")
+        browser()
+      }
       
       # Get Studies ID values (Assumes the query returns the rows in the same order they were uploaded...)
       match_entry = db_query_cvt(paste0("SELECT id as fk_studies_id FROM cvt.studies ORDER BY id DESC LIMIT ", 
@@ -233,11 +243,15 @@ tmp_load_cvt <- function(){
         .[!. %in% col_exclude]
       # names(doc_sheet_list$Subjects)[!names(doc_sheet_list$Subjects) %in% tbl_fields]
       browser()
-      db_push_tbl_to_db(dat=doc_sheet_list$Subjects %>%
+      db_push_rs = db_push_tbl_to_db(dat=doc_sheet_list$Subjects %>%
                           dplyr::select(dplyr::any_of(tbl_fields)),
                         tblName="subjects",
                         overwrite=FALSE, 
                         append=TRUE)
+      if(is.null(db_push_rs) || is.na(db_push_rs)){
+        message("Issue pushing subjects table.")
+        browser()
+      }
       
       # Get Subjects ID Values (Assumes the query returns the rows in the same order they were uploaded...)
       match_entry = db_query_cvt(paste0("SELECT id as fk_subjects_id FROM cvt.subjects ORDER BY id DESC LIMIT ", 
@@ -271,11 +285,16 @@ tmp_load_cvt <- function(){
         .[!. %in% col_exclude]
       # names(doc_sheet_list$Series)[!names(doc_sheet_list$Series) %in% tbl_fields]
       browser()
-      db_push_tbl_to_db(dat=doc_sheet_list$Series %>%
+      db_push_rs = db_push_tbl_to_db(dat=doc_sheet_list$Series %>%
                           dplyr::select(dplyr::any_of(tbl_fields)),
                         tblName="series",
                         overwrite=FALSE, 
                         append=TRUE)
+      
+      if(is.null(db_push_rs) || is.na(db_push_rs)){
+        message("Issue pushing series table.")
+        browser()
+      }
       
       # Get Series ID Values (Assumes the query returns the rows in the same order they were uploaded...)
       match_entry = db_query_cvt(paste0("SELECT id as new_fk_series_id FROM cvt.series ORDER BY id DESC LIMIT ", 
@@ -301,12 +320,17 @@ tmp_load_cvt <- function(){
         .[!. %in% col_exclude]
       # names(doc_sheet_list$Conc_Time_Values)[!names(doc_sheet_list$Conc_Time_Values) %in% tbl_fields]
       browser()
-      db_push_tbl_to_db(dat=doc_sheet_list$Conc_Time_Values %>%
+      db_push_rs = db_push_tbl_to_db(dat=doc_sheet_list$Conc_Time_Values %>%
                           dplyr::select(dplyr::any_of(tbl_fields)),
                         tblName="conc_time_values",
                         overwrite=FALSE, 
                         append=TRUE)
+      if(is.null(db_push_rs) || is.na(db_push_rs)){
+        message("Issue pushing conc_time_values table.")
+        browser()
+      }
       
+      # Export loaded template log
       output_dir = file.path("output", "Document Loading", cvt_dataset)
       if(!dir.exists(output_dir)) dir.create(output_dir, recursive = TRUE)
       
