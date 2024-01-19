@@ -321,15 +321,16 @@ tmp_load_cvt <- function(){
       # names(doc_sheet_list$Conc_Time_Values)[!names(doc_sheet_list$Conc_Time_Values) %in% tbl_fields]
       browser()
       db_push_rs = db_push_tbl_to_db(dat=doc_sheet_list$Conc_Time_Values %>%
-                          dplyr::select(dplyr::any_of(tbl_fields)),
-                        tblName="conc_time_values",
-                        overwrite=FALSE, 
-                        append=TRUE)
+                                       dplyr::select(dplyr::any_of(tbl_fields)),
+                                     tblName="conc_time_values",
+                                     overwrite=FALSE, 
+                                     append=TRUE)
       if(is.null(db_push_rs) || is.na(db_push_rs)){
         message("Issue pushing conc_time_values table.")
         browser()
       }
-      
+      message("Exporting log")
+      browser()
       # Export loaded template log
       output_dir = file.path("output", "Document Loading", cvt_dataset)
       if(!dir.exists(output_dir)) dir.create(output_dir, recursive = TRUE)
