@@ -1,0 +1,40 @@
+rules:
+- expr: '!is.na(id)'
+  meta:
+    message: NA_in_required_field_id
+- expr: '!is.na(analyte_name)'
+  meta:
+    message: NA_in_required_field_analyte_name
+- expr: '!is.na(figure_name)'
+  meta:
+    message: NA_in_required_field_figure_name
+- expr: '!is.na(figure_type)'
+  meta:
+    message: NA_in_required_field_figure_type
+- expr: 'exists_any(if (!is_unique(figure_name)) !is.na(figure_series_identifier))'
+  meta:
+    message: NA_in_required_field_figure_series_identifier
+- expr: '!is.na(time_units)'
+  meta:
+    message: NA_in_required_field_time_units
+- expr: '!is.na(conc_units)'
+  meta:
+    message: NA_in_required_field_conc_units
+- expr: 'exists_any(if (!is.na(loq)) !is.na(loq_units))'
+  meta:
+    message: missing_loq_units_pair
+- expr: 'exists_any(if (!is.na(lod)) !is.na(lod_units))'
+  meta:
+    message: missing_lod_units_pair
+- expr: '!is.na(fk_study_id)'
+  meta:
+    message: NA_in_required_field_fk_study_id
+- expr: '!is.na(fk_subject_id)'
+  meta:
+    message: NA_in_required_field_fk_subject_id
+- expr: '!is.na(n_subjects_in_series)'
+  meta:
+    message: NA_in_required_field_n_subjects_in_series
+- expr: '!is.na(conc_medium)'
+  meta:
+    message: NA_in_required_field_conc_medium

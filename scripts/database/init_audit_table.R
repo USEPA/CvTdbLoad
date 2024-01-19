@@ -60,7 +60,7 @@ init.audit.table <- function(db_schema){
       gsub("JSON_OBJECT\\(\\)", paste0("JSON_OBJECT(ARRAY[",
                                        paste0("'", field_list, "', OLD.", field_list,
                                               collapse=", "),
-                                       "])"),
+                                       "]::TEXT[])"),
            .) %>%
       paste0(#"DELIMITER // \n",
         ., "\nEND;")#// DELIMITER;")

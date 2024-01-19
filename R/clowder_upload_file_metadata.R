@@ -3,7 +3,14 @@ upload_file_metadata <- function(metadata, dsID, userID, baseurl, apiKey){
   ### Push metadata
   ################################################################################
   
-  c_files_list <- clowder_get_dataset_files(dsID, baseurl, apiKey) %>%
+  c_files_list <- clowder_get_dataset_files(dsID, baseurl, apiKey)
+  
+  # No Clowder files to update
+  if(!nrow(c_files_list)){
+    return()
+  }
+    
+  c_files_list = c_files_list %>%
     tidyr::unite(join_key, `folders.name`, filename, sep="_cvtjoin_")
   
   # Map metadata to Clowder Doc

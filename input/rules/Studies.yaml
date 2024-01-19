@@ -1,0 +1,46 @@
+rules:
+- expr: '!is.na(id)'
+  meta:
+    message: NA_in_required_field_id
+- expr: '!is.na(test_substance_name)'
+  meta:
+    message: NA_in_required_field_test_substance_name
+- expr: '!is.na(dose_level)'
+  meta:
+    message: NA_in_required_field_dose_level
+- expr: '!is.na(dose_level_units)'
+  meta:
+    message: NA_in_required_field_dose_level_units
+- expr: '!is.na(administration_route)'
+  meta:
+    message: NA_in_required_field_administration_route
+- expr: '!is.na(dose_frequency)'
+  meta:
+    message: NA_in_required_field_dose_frequency
+- expr: 'exists_any(if (!dose_frequency %in% c("single dose", 1)) !is.na(administration_term))'
+  meta:
+    message: missing_administration_term_pair
+- expr: 'exists_any(if (!is.na(administration_term)) !is.na(administration_term_units))'
+  meta:
+    message: missing_administration_term_units_pair
+- expr: 'exists_any(if (!is.na(dose_duration)) !is.na(dose_duration_units))'
+  meta:
+    message: missing_dose_duration_units_pair
+- expr: 'exists_any(if (!is.na(dose_volume)) !is.na(dose_volume_units))'
+  meta:
+    message: missing_dose_volume_units_pair
+- expr: 'exists_any(if (!is.na(dermal_applied_area)) !is.na(dermal_applied_area_units))'
+  meta:
+    message: missing_dermal_applied_area_units_pair
+- expr: 'exists_any(if (!is.na(aerosol_particle_diameter)) !is.na(aerosol_particle_diameter_units))'
+  meta:
+    message: missing_aerosol_particle_diameter_units_pair
+- expr: 'exists_any(if (!is.na(aerosol_particle_density)) !is.na(aerosol_particle_density_units))'
+  meta:
+    message: missing_aerosol_particle_density_units_pair
+- expr: 'exists_any(if (!is.na(flow_rate)) !is.na(flow_rate_units))'
+  meta:
+    message: missing_flow_rate_units_pair
+- expr: 'exists_any(if (!is.na(chamber_size)) !is.na(chamber_size_units))'
+  meta:
+    message: missing_aerosol_particle_density_units_pair

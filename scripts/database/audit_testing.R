@@ -18,7 +18,7 @@ audit = db_query_cvt("SELECT * FROM cvt.cvt_audit")
 curr = db_query_cvt("SELECT * FROM cvt.documents where id = 25049")
 
 # Make update to Documents table
-db_query_cvt("UPDATE cvt.documents SET year = 2018 WHERE id in (25049)")
+db_query_cvt("UPDATE cvt.documents SET qc_notes = 'audit_test' WHERE id in (25049)")
 
 # Pull new table record
 new = db_query_cvt("SELECT * FROM cvt.documents where id = 25049")
