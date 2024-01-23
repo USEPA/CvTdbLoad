@@ -60,7 +60,7 @@ normalize_CvT_data <- function(df, f){
                          dplyr::select(id, species, conc_medium, analyte_name, analyte_name_secondary, analyte_casrn,
                                 conc_original=conc, conc_units_original=conc_units,
                                 conc_sd_original=conc_sd, conc_lower_bound_original=conc_lower_bound,
-                                conc_upper_bound_original=conc_upper_bound), 
+                                conc_upper_bound_original=conc_upper_bound, dsstox_substance_id=dsstox_substance_id), 
                              f=f) %>%
     dplyr::select(-conc_medium, -analyte_name, -analyte_name_secondary, -analyte_casrn, -conc_units_original)
   df$Conc_Time_Values = df$Conc_Time_Values %>%
