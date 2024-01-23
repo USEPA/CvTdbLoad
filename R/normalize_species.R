@@ -11,7 +11,7 @@
 #' }
 #' @rdname normalize_species
 #' @export 
-normalize_species <- function(x){
+normalize_species <- function(x, log_path){
   message("...normalizing species...")
   #Convert species
   x = tolower(x)
@@ -26,6 +26,12 @@ normalize_species <- function(x){
               `guinea pig` = list("guinea pig", "guinea pigs"),
               frog = list("frog", "frogs")
   )
+  
+  if(any(!x %in% unlist(conv))){
+    log_CvT_doc_load(f=f, 
+                     m="species_not_normalized", 
+                     log_path=log_path)
+  }
   
   x = lapply(x, function(s){
     for(c in names(conv)){

@@ -11,7 +11,8 @@
 #' @param id A named list of document ID information to filter by
 #' @param template_path File path to latest template
 #' @param template_map Template field name map
-cvtdb_to_template <- function(id=NULL, template_path=NULL, template_map=NULL){
+#' @param include_foreign_keys Boolean whether to return template with database foreign keys. Default is FALSE.
+cvtdb_to_template <- function(id=NULL, template_path=NULL, template_map=NULL, include_foreign_keys=FALSE){
   # Check parameters
   if(is.null(template_path)) stop("Must provide a 'template_path' so data may be formatted into it.")
   if(is.null(template_map)) stop("Must provide a 'template_map' so data field names may be mapped as needed.")
@@ -36,7 +37,10 @@ cvtdb_to_template <- function(id=NULL, template_path=NULL, template_map=NULL){
   # template_map = "input/qa_template_map.xlsx"
   map = readxl::read_xlsx(template_map)
   # Process pulled data into template format and return
-  convert_cvt_to_template(in_dat = cvt_data, template = cvt_template, map = map) %>%
+  convert_cvt_to_template(in_dat = cvt_data, 
+                          template = cvt_template, 
+                          map = map, 
+                          include_foreign_keys = include_foreign_keys) %>%
     return()
 }
 
@@ -75,9 +79,28 @@ get_cvt_by_doc_id <- function(id){
     return()
 }
 
-convert_cvt_to_template <- function(in_dat=NULL, template=NULL, map=NULL){
+convert_cvt_to_template <- function(in_dat=NULL, template=NULL, map=NULL, include_foreign_keys=NULL){
   # Map field names to template
   in_dat = lapply(names(in_dat), function(s){
+    # If include foreign_keys, add them to the template and map
+    if(include_foreign_keys){
+      # Add to template
+      fk_list = names(in_dat[[s]])[grepl("^fk_", names(in_dat[[s]]))] 
+      fk_list = fk_list[!fk_list %in% names(template[[s]])]
+      template[[s]] = template[[s]] %>%
+        cbind(
+          data.frame(matrix(ncol=length(fk_list),nrow=0, dimnames=list(NULL, fk_list)))
+        )
+      # Add to map
+      fk_list = names(in_dat[[s]])[grepl("^fk_", names(in_dat[[s]]))] 
+      fk_list = fk_list[!fk_list %in% map$from]
+      map = map %>%
+        dplyr::bind_rows(
+          data.frame(from=fk_list, to=fk_list) %>%
+            dplyr::mutate(sheet=s)
+        )
+        
+    }
     message("Working on sheet: ", s)
     tmp = in_dat[[s]] %T>% {
       # Have to map CvT database names back to the template (usually a _original stem)

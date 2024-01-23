@@ -17,7 +17,7 @@
 #' @export 
 #' @importFrom dplyr mutate filter across bind_rows arrange
 #' @importFrom httk get_physchem_param
-normalize_conc <- function(raw, f){
+normalize_conc <- function(raw, f, log_path){
   message("...normalizing conc...")
   # tmp = lapply(fileList, function(f){
   #   s_list = load_sheet_group(fileName = f, template_path = template_path)
@@ -62,35 +62,35 @@ normalize_conc <- function(raw, f){
                                conc_lower_bound=conc_lower_bound_original,
                                conc_upper_bound=conc_upper_bound_original)
   #Missing concentration values
-  out = check_missing(x=out, miss_col = "conc_original", f=f, flag=TRUE)
+  out = check_missing(x=out, miss_col = "conc_original", f=f, flag=TRUE, log_path=log_path)
   
   #Get ND and NQ concentrations
   out$ND = out$raw %>% dplyr::filter(conc_original %in% c("ND", "NQ"))
   out$raw = out$raw %>% dplyr::filter(!tempID %in% unique(out$ND$tempID))
   #Missing units
-  out = check_missing_units(x=out, f=f, units_col="conc_units_original")
+  out = check_missing_units(x=out, f=f, units_col="conc_units_original", log_path=log_path)
   #Normalize units
   out$raw$conc_units_original = normalize_conc_units(out$raw$conc_units_original)
   #Percentage units flag
   out$percentage = out$raw %>% dplyr::filter(grepl("%|percent*", conc_units_original))
   out$raw = out$raw %>% dplyr::filter(!tempID %in% out$percentage$tempID)
   if(nrow(out$percentage)){
-    log_CvT_doc_load(f=f, m="conc_conversion_needed_percentage")
+    log_CvT_doc_load(f=f, m="conc_conversion_needed_percentage", log_path=log_path)
   }
   #Radioactive units flag
   out$radioactive = out$raw %>% dplyr::filter(grepl("MBq|bq/", conc_units_original))
   out$raw = out$raw %>% dplyr::filter(!tempID %in% out$radioactive$tempID)
   if(nrow(out$radioactive)){
-    log_CvT_doc_load(f=f, m="conc_conversion_needed_radioactive")
+    log_CvT_doc_load(f=f, m="conc_conversion_needed_radioactive", log_path=log_path)
   }
   #Rate units flag
   out$rate_units = out$raw %>% dplyr::filter(grepl("/hour|/day|/minute|/second|/hr|/min|/s|/h|*h/", conc_units_original))
   out$raw = out$raw %>% dplyr::filter(!tempID %in% out$rate_units$tempID)
   if(nrow(out$rate_units)){
-    log_CvT_doc_load(f=f, m="conc_conversion_needed_rate")
+    log_CvT_doc_load(f=f, m="conc_conversion_needed_rate", log_path=log_path)
   }
   #Non-numerics
-  out = check_non_numeric(x=out, f=f, col="conc_original")
+  out = check_non_numeric(x=out, f=f, col="conc_original", log_path=log_path)
   #Prep for conversion
   out$convert_ready = out$raw %>% dplyr::mutate(conc = as.numeric(conc_original))
   out$raw = NULL
@@ -146,7 +146,7 @@ normalize_conc <- function(raw, f){
     #Check for negative values
     if(any(tmp$conc < 0, na.rm=TRUE) | any(tmp$conc_lower_bound < 0, na.rm=TRUE) | 
        any(tmp$conc_upper_bound < 0, na.rm=TRUE) | any(tmp$conc_sd < 0, na.rm=TRUE)){
-      log_CvT_doc_load(f=f, m="negative_conc_values")
+      log_CvT_doc_load(f=f, m="negative_conc_values", log_path=log_path)
     }
     #Convert all back to character to maintain non_numeric columns that weren't converted
     return(tmp %>% dplyr::mutate(dplyr::across(c(conc, conc_sd, conc_lower_bound, conc_upper_bound), suppressWarnings(as.character))))

@@ -2,6 +2,7 @@
 #' @description FUNCTION_DESCRIPTION
 #' @param raw PARAM_DESCRIPTION
 #' @param f PARAM_DESCRIPTION
+#' @param log_path File path where to save the log file.
 #' @return OUTPUT_DESCRIPTION
 #' @details DETAILS
 #' @examples 
@@ -15,7 +16,7 @@
 #' @rdname normalize_time
 #' @export 
 #' @importFrom dplyr mutate bind_rows arrange
-normalize_time <- function(raw, f){
+normalize_time <- function(raw, f, log_path){
   message("...normalizing conc time...")
   # tmp = lapply(fileList, function(f){
   #   s_list = load_sheet_group(fileName = f, template_path = template_path)
@@ -36,14 +37,14 @@ normalize_time <- function(raw, f){
   out$raw = normalization_prep(x=raw, newcols=c())
   out$raw = out$raw %>% dplyr::mutate(time_hr=as.numeric(NA))
   #Missing time values
-  out = check_missing(x=out, miss_col = "time_original", f=f, flag=TRUE)
+  out = check_missing(x=out, miss_col = "time_original", f=f, flag=TRUE, log_path=log_path)
   
   #Missing units
-  out = check_missing_units(x=out, f=f, units_col="time_units_original")
+  out = check_missing_units(x=out, f=f, units_col="time_units_original", log_path=log_path)
   #Normalize units
   out$raw$time_units_original = normalize_time_units(out$raw$time_units_original)
   #Non-numerics
-  out = check_non_numeric(x=out, f=f, col="time_original")
+  out = check_non_numeric(x=out, f=f, col="time_original", log_path=log_path)
   #Prep for conversion
   out$convert_ready = out$raw %>% dplyr::mutate(time_hr = as.numeric(time_original))
   out$raw = NULL

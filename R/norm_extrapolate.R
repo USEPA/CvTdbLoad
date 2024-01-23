@@ -3,6 +3,7 @@
 #' @param x Input list of datasets being normalized
 #' @param f Filename for flagging purposes
 #' @param extrap_type The type of extrapolation being performed (weight is the only accepted form at this time). #'
+#' @param log_path File path where to save the log file.
 #' @return Modified version of the input `x` parameter
 #' @title FUNCTION_TITLE
 #' @details DETAILS
@@ -17,7 +18,7 @@
 #' @rdname norm_extrapolate
 #' @export 
 #' @importFrom dplyr filter mutate across group_by summarise select left_join distinct rename
-norm_extrapolate <- function(x, f, extrap_type){
+norm_extrapolate <- function(x, f, extrap_type, log_path){
   #weight Group that needs extrapolation based on similar species/subtype
   x$extrapolate = x$raw %>% dplyr::filter(is.na(!!as.symbol(extrap_type)))
   x$raw = x$raw %>% dplyr::filter(!tempID %in% x$extrapolate$tempID)
@@ -57,7 +58,8 @@ norm_extrapolate <- function(x, f, extrap_type){
       #Always end up with a weight of some kind, then weight_bool it
       if(nrow(x$extrapolate)){
         message(paste0("...Unhandled extrapolation cases for: ", extrap_type))
-        log_CvT_doc_load(f=f, m=paste0(extrap_type,"_extrapolation_attempt_failed"))
+        log_CvT_doc_load(f=f, m=paste0(extrap_type,"_extrapolation_attempt_failed"),
+                         log_path=log_path)
       }
     }
   }
