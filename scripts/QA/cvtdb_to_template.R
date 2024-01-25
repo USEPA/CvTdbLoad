@@ -35,13 +35,42 @@ cvtdb_to_template <- function(id=NULL, template_path=NULL, template_map=NULL, in
   cvt_template = get_cvt_template(template_path)
   # Template field map
   # template_map = "input/qa_template_map.xlsx"
-  map = readxl::read_xlsx(template_map)
+  map = readxl::read_xlsx(template_map) %>%
+    # Update map based on database - add missing map entries
+    update_field_map()
+  
   # Process pulled data into template format and return
   convert_cvt_to_template(in_dat = cvt_data, 
                           template = cvt_template, 
                           map = map, 
                           include_foreign_keys = include_foreign_keys) %>%
     return()
+}
+
+#' @description Function to update field map with missing database fields by table
+update_field_map <- function(in_map = NULL){
+  
+  db_col_list = db_query_cvt(paste0("SELECT table_name AS sheet, column_name AS from ",
+                                    "FROM information_schema.columns ",
+                                    "WHERE table_schema = 'cvt' ",
+                                    "AND table_name in ('",
+                                    paste0(unique(in_map$sheet), collapse="', '"),
+                                    "')"))
+  
+  for(s in unique(in_map$sheet)){
+    missing_f = db_col_list %>%
+      dplyr::filter(sheet == s,
+                    !from %in% in_map$from[in_map$sheet == s]) %>%
+      dplyr::mutate(to = from)
+    
+    if(nrow(missing_f)){
+      in_map = in_map %>%
+        dplyr::bind_rows(missing_f)  
+    }
+  }
+  
+  return(in_map)
+  
 }
 
 get_cvt_by_doc_id <- function(id){

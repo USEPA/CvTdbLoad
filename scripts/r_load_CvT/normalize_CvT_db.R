@@ -28,10 +28,7 @@ normalize_CvT_db <- function(){
     f = fileList$id[i]
     message("Normalizing file (", i, "/", nrow(fileList),"): ", f, "...", Sys.time())
     
-    doc_sheet_list = cvtdb_to_template(id=list(id=f),
-                                       template_path="input/CvT_data_template_articles.xlsx", 
-                                       template_map="input/qa_template_map.xlsx",
-                                       include_foreign_keys=TRUE)
+    doc_sheet_list = get_cvt_by_doc_id(id=list(id=f))
     
     # Create/clear log entry for filename
     log_CvT_doc_load(f=f, 
@@ -40,14 +37,32 @@ normalize_CvT_db <- function(){
                      log_path=log_path)
     
     # Pull administration_route_normalized needed for dose normalization
-    admin_route_list = db_query_cvt(paste0("SELECT id as fk_administration_route_id, administration_route_normalized FROM cvt.administration_route_dict WHERE ",
-                                           "id in (", 
-                                           toString(unique(doc_sheet_list$Studies$fk_administration_route_id)), 
-                                           ")"))
-    
+    admin_route_list = db_query_cvt(paste0(
+      "SELECT id as fk_administration_route_id, administration_route_original, administration_route_normalized ",
+      "FROM cvt.administration_route_dict WHERE ",
+      "id in (", 
+      toString(unique(doc_sheet_list$Studies$fk_administration_route_id)), 
+      ")")
+    )
+    # Fill in administration original and normalized
     doc_sheet_list$Studies = doc_sheet_list$Studies %>%
+      dplyr::select(-administration_route_original, -administration_route_normalized) %>%
       dplyr::left_join(admin_route_list,
                        by="fk_administration_route_id")
+    
+    # Pull conc_medium_normalized needed for conc normalization
+    conc_medium_list = db_query_cvt(paste0(
+      "SELECT id as fk_conc_medium_id, conc_medium_original, conc_medium_normalized ",
+      "FROM cvt.conc_medium_dict WHERE ",
+      "id in (", 
+      toString(unique(doc_sheet_list$Series$fk_conc_medium_id)), 
+      ")")
+    )
+    # Fill in administration original and normalized
+    doc_sheet_list$Series = doc_sheet_list$Series %>%
+      dplyr::select(-conc_medium_original, -conc_medium_normalized) %>%
+      dplyr::left_join(conc_medium_list,
+                       by="fk_conc_medium_id")
     
     # Normalize species
     doc_sheet_list$Subjects$species = normalize_species(x=doc_sheet_list$Subjects$species,
@@ -58,31 +73,39 @@ normalize_CvT_db <- function(){
                                         f=f,
                                         log_path=log_path)
     
-    # Rename columns
-    doc_sheet_list$Studies = doc_sheet_list$Studies %>%
-      dplyr::rename(test_substance_name_original = test_substance_name,
-                    test_substance_name_secondary_original = test_substance_name_secondary,
-                    test_substance_casrn_original = test_substance_casrn,
-                    dose_level_original = dose_level,
-                    dose_level_units_original = dose_level_units)
-    doc_sheet_list$Series = doc_sheet_list$Series %>%
-      dplyr::rename(analyte_name_original = analyte_name,
-                    analyte_name_secondary_original = analyte_name_secondary,
-                    analyte_casrn_original = analyte_casrn,
-                    time_units_original = time_units,
-                    conc_units_original=conc_units)
     
     # Append qc_flags from logged flags
-    qc_flags = readxl::read_xlsx(log_path) %>%
+    flag_map = readxl::read_xlsx("input/dictionaries/flag_map.xlsx")
+    
+    norm_qc_flags = readxl::read_xlsx(log_path) %>%
       dplyr::filter(filename == f) %>%
       dplyr::mutate(across(everything(), ~as.character(.))) %>%
       tidyr::pivot_longer(cols=-c(filename, timestamp),
                           names_to = "flag") %>%
       dplyr::filter(value == 1) %>%
-      dplyr::pull(flag) %>%
-      toString()
+      dplyr::select(flag) %>%
+      dplyr::left_join(flag_map,
+                       by=c("flag"="Field Name"))
     
-    doc_sheet_list$Documents$qc_flags = qc_flags
+    
+    
+    if(any(is.na(norm_qc_flags$sheet))){
+      stop("Need to curate qc_flags: ", toString(norm_qc_flags$flag[is.na(norm_qc_flags$sheet)]))
+    }
+    
+    # Append qc_flags per sheet
+    for(s in unique(norm_qc_flags$sheet)){
+      
+      # doc_sheet_list[[s]]$qc_flags = NA
+      new_flags = toString(norm_qc_flags$flag[norm_qc_flags$sheet == s])
+      # Add flags, ensure unique flag list
+      doc_sheet_list[[s]] = doc_sheet_list[[s]] %>%
+        dplyr::mutate(qc_flags_new = new_flags) %>%
+        tidyr::unite(col="qc_flags", qc_flags, qc_flags_new, sep = ", ", na.rm = TRUE) %>%
+        dplyr::rowwise() %>%
+        dplyr::mutate(qc_flags = toString(unique(unlist(strsplit(qc_flags,",\\s+"))))) %>%
+        dplyr::ungroup()
+    }
     
     # Push update
     for(s in names(doc_sheet_list)){
@@ -94,9 +117,7 @@ normalize_CvT_db <- function(){
       
       data_in_db = doc_sheet_list[[s]] %>%
         # Order columns by database table order
-        dplyr::select(any_of(tbl_fields)) %>%
-        dplyr::select(-starts_with("fk_")) %>%
-        dplyr::select(-ends_with("_original"))
+        dplyr::select(any_of(tbl_fields))
       
       # Update database entry for document
       db_update_tbl(df=data_in_db,
@@ -104,7 +125,5 @@ normalize_CvT_db <- function(){
                     #   dplyr::mutate(dplyr::across(dplyr::everything(), ~as.character(.))),
                     tblName = s)
     }
-    
-    
   }
 }
