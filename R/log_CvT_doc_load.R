@@ -47,9 +47,9 @@ log_CvT_doc_load <- function(f,
     if(!is.null(m)){
       #Set new flag
       if(!is.null(val)){
-        log[log$filename == f, m] <- val
+        log[log$filename == f, m] <- toString(val)
       } else {
-        log[log$filename == f, m] <- "1"
+        log[log$filename == f, m] <- "-1"
       }
       log[log$filename == f, "timestamp"] <- as.character(Sys.time())  
     }
@@ -59,9 +59,9 @@ log_CvT_doc_load <- function(f,
     tmp$filename = f
     if(!is.null(m)){
       if(!is.null(val)){
-        tmp[m] = val
+        tmp[m] = toString(val)
       } else {
-        tmp[m] = "1"
+        tmp[m] = "-1"
       }
     }
     tmp$timestamp <- as.character(Sys.time())

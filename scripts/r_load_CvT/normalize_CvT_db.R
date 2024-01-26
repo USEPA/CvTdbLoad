@@ -17,9 +17,9 @@ normalize_CvT_db <- function(){
   
   # Query templates to normalize
   if(!is.null(cvt_dataset)){
-    query = paste0("SELECT id FROM cvt.documents WHERE curation_set_tag = '", cvt_dataset,"'")
+    query = paste0("SELECT id FROM cvt.documents WHERE curation_set_tag = '", cvt_dataset,"' order by id")
   } else {
-    query = "SELECT id FROM cvt.documents"
+    query = "SELECT id FROM cvt.documents order by id"
   }
   
   fileList = db_query_cvt(query)
@@ -65,7 +65,7 @@ normalize_CvT_db <- function(){
                        by="fk_conc_medium_id")
     
     # Normalize species
-    doc_sheet_list$Subjects$species = normalize_species(x=doc_sheet_list$Subjects$species,
+    doc_sheet_list$Subjects = normalize_species(x=doc_sheet_list$Subjects,
                                                         log_path=log_path)
     
     # Call to the orchestration function for data normalization (with error logging)
@@ -81,11 +81,14 @@ normalize_CvT_db <- function(){
       dplyr::filter(filename == f) %>%
       dplyr::mutate(across(everything(), ~as.character(.))) %>%
       tidyr::pivot_longer(cols=-c(filename, timestamp),
-                          names_to = "flag") %>%
-      dplyr::filter(value == 1) %>%
-      dplyr::select(flag) %>%
+                          names_to = "qc_flags_new") %>%
+      dplyr::filter(value != 0) %>%
+      dplyr::select(qc_flags_new, index=value) %>%
       dplyr::left_join(flag_map,
-                       by=c("flag"="Field Name"))
+                       by=c("qc_flags_new"="Field Name")) %>%
+      tidyr::separate_rows(index, sep=",") %>%
+      dplyr::mutate(index = as.numeric(index)) %>%
+      dplyr::filter(!is.na(index))
     
     
     
@@ -95,12 +98,13 @@ normalize_CvT_db <- function(){
     
     # Append qc_flags per sheet
     for(s in unique(norm_qc_flags$sheet)){
-      
       # doc_sheet_list[[s]]$qc_flags = NA
-      new_flags = toString(norm_qc_flags$flag[norm_qc_flags$sheet == s])
-      # Add flags, ensure unique flag list
+      
+      # Add flags by logged record ID, ensure unique flag list
       doc_sheet_list[[s]] = doc_sheet_list[[s]] %>%
-        dplyr::mutate(qc_flags_new = new_flags) %>%
+        dplyr::left_join(norm_qc_flags %>%
+                           dplyr::select(qc_flags_new, index),
+                         by=c("id"='index')) %>%
         tidyr::unite(col="qc_flags", qc_flags, qc_flags_new, sep = ", ", na.rm = TRUE) %>%
         dplyr::rowwise() %>%
         dplyr::mutate(qc_flags = toString(unique(unlist(strsplit(qc_flags,",\\s+"))))) %>%
