@@ -108,6 +108,8 @@ normalize_CvT_db <- function(){
         dplyr::rowwise() %>%
         dplyr::mutate(qc_flags = toString(unique(unlist(strsplit(qc_flags,",\\s+"))))) %>%
         dplyr::ungroup()
+      # Convert empty flags back to NA
+      doc_sheet_list[[s]]$qc_flags[doc_sheet_list[[s]]$qc_flags %in% c("")] <- NA
     }
     
     # Push update
@@ -128,5 +130,7 @@ normalize_CvT_db <- function(){
                     #   dplyr::mutate(dplyr::across(dplyr::everything(), ~as.character(.))),
                     tblName = s)
     }
+    message("Continue?")
+    browser()
   }
 }
