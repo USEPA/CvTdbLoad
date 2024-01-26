@@ -154,6 +154,8 @@ normalize_dose <- function(raw, f, log_path){
                                           overwrite_units = FALSE,
                                           MW=MW)
   }
+  # Convert Failed
+  out = check_convert_failed(x=out, f=f, col="dose_level_normalized", log_path=log_path)
   #Remove empty list elements
   out = out[sapply(out, nrow) > 0]
   #Convert to NA for all lists that were not normalized

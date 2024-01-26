@@ -17,7 +17,11 @@ normalize_CvT_db <- function(){
   
   # Query templates to normalize
   if(!is.null(cvt_dataset)){
-    query = paste0("SELECT id FROM cvt.documents WHERE curation_set_tag = '", cvt_dataset,"' order by id")
+    query = paste0("SELECT id FROM cvt.documents WHERE curation_set_tag = '", 
+                   # Temporary filtering to those not already normalized
+                   cvt_dataset,
+                   "' AND version = 1",
+                   " ORDER BY id")
   } else {
     query = "SELECT id FROM cvt.documents order by id"
   }

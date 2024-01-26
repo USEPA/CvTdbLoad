@@ -129,6 +129,10 @@ normalize_conc <- function(raw, f, log_path){
                                             MW=MW)
     }
   }
+  
+  # Convert Failed
+  out = check_convert_failed(x=out, f=f, col="conc", log_path=log_path)
+  
   #Remove empty list elements
   out = out[sapply(out, nrow) > 0]
   #Convert to NA for all lists that were not normalized
