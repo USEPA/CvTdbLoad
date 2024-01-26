@@ -7,8 +7,9 @@ match_cvt_doc_to_db_doc <- function(df=NULL){
       dplyr::select(!!sym(x)) %>%
       dplyr::filter(!is.na(!!sym(x))) %>% 
       dplyr::distinct() %>%
-      unlist() %>% 
-      unname() %>% unique() %>% paste0(collapse="', '")
+      dplyr::pull() %>%
+      stringr::str_squish() %>%
+      unique() %>% paste0(collapse="', '")
   }) %T>% { names(.) <- check_list }
   #Pull all document data
   #input = db_query_cvt("SELECT * FROM cvt.documents")
@@ -20,8 +21,14 @@ match_cvt_doc_to_db_doc <- function(df=NULL){
       next
     }
     tmp = db_query_cvt(paste0("SELECT id as fk_document_id, ", level," FROM cvt.documents where ", 
-                              level, " in ('", where_clause[[level]],"')"))
+                              level, " in ('", where_clause[[level]],"')")) %>%
+      dplyr::mutate(across(any_of(level), ~as.character(.)))
+    # Set level as character too
+    df = df %>%
+      dplyr::mutate(across(any_of(level), ~as.character(.)))
+    
     doc_list[[level]] = df %>%
+      dplyr::mutate(dplyr::across(where(is.character), stringr::str_squish)) %>%
       dplyr::filter(!is.na(!!sym(level))) %>%
       dplyr::left_join(tmp, by=level)
     df = df %>% #Filter out those with matches found

@@ -43,4 +43,5 @@ db_push_tbl_to_db <- function(dat=NULL, tblName=NULL, fieldTypes=NULL, overwrite
     },
   finally={ RPostgreSQL::dbDisconnect(con)
   })
+  return(0)
 }

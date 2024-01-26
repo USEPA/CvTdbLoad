@@ -1,6 +1,7 @@
 #' @description A helper function to normalize subject weight (associated with dose normalization).
 #' @param raw A dataframe of weight information to normalize
 #' @param f The file name of the template being processed. Used for error logging. #'
+#' @param log_path File path where to save the log file.
 #' @return Normalized version of the input `raw` parameter.
 #' @title FUNCTION_TITLE
 #' @details DETAILS
@@ -15,7 +16,7 @@
 #' @rdname normalize_weight
 #' @export 
 #' @importFrom dplyr mutate filter bind_rows arrange select
-normalize_weight <- function(raw, f){
+normalize_weight <- function(raw, f, log_path){
   message("...normalizing weight...")
   #weight_estimated --> 0 = No estimation (just conversion); 1 = extrapolated; 2 = range mean
   # tmp = lapply(fileList, function(f){
@@ -39,16 +40,19 @@ normalize_weight <- function(raw, f){
   out$raw = extract_units(x=out$raw, units_col="weight_units", 
                           conv_col="weight_kg", unit_type="weight")
   #Extrapolate  weights
-  out = norm_extrapolate(x=out, f=f, extrap_type = "weight")
+  out = norm_extrapolate(x=out, f=f, extrap_type = "weight", log_path=log_path)
   #Missing units
-  out = check_missing_units(x=out, f=f, units_col="weight_units")
-  out$missing_units$weight_units = NA #Replacing missing units with NA after flagging
+  out = check_missing_units(x=out, f=f, units_col="weight_units", log_path=log_path)
+  if(nrow(out$missing_units)){
+    out$missing_units$weight_units = NA #Replacing missing units with NA after flagging  
+  }
+  
   #List of weights
-  out = check_subject_list(x=out, f=f, col="weight_kg")
+  out = check_subject_list(x=out, f=f, col="weight_kg", log_path=log_path)
   # +/- Group
-  out = check_unit_ci(x=out, f=f, col="weight_kg", estimated="weight_estimated")
+  out = check_unit_ci(x=out, f=f, col="weight_kg", estimated="weight_estimated", log_path=log_path)
   #Weight range
-  out = check_unit_range(x=out, f=f, col="weight_kg", estimated="weight_estimated")
+  out = check_unit_range(x=out, f=f, col="weight_kg", estimated="weight_estimated", log_path=log_path)
   #Ready for conversion
   out$conversion = out$raw %>% 
     dplyr::mutate(weight_kg = suppressWarnings(as.numeric(weight_kg))) %>%
@@ -58,7 +62,7 @@ normalize_weight <- function(raw, f){
   
   if(nrow(out$raw)){
     message("...Unhandled cases for weight: ", paste0(out$raw$weight_kg %>% unique(), collapse = "; "))
-    log_CvT_doc_load(f=f, m="unhandled_weight_normalize_case")
+    log_CvT_doc_load(f=f, m="unhandled_weight_normalize_case",log_path=log_path)
   }
   #out$unhandled_cases = out$raw
   #Convert kg, g, mg, lbs, etc.
@@ -70,21 +74,28 @@ normalize_weight <- function(raw, f){
                                           units="weight_units", desired="kg",
                                           overwrite_units = FALSE)
   }
+  
+  # Remove empty list elements
+  out = out[sapply(out, nrow) > 0]
+  
   #Convert to NA for all lists that were not normalized
   out = lapply(names(out), function(n){
     if(n %in% c("extrapolate", "extrap_spec_sub", "extrap_spec", "convert_ready", "unit_range")){
       return(out[[n]])
     } else{
       convert_cols_to_NA(out[[n]], col_list=c("weight_kg")) %>%
-        return()
+        return()  
     }
   })
-  #Convert weight_kg to numeric for unconverted lists
+  
+  # Convert weight_kg to numeric for unconverted lists
   out = lapply(out, function(x){ 
     x = x %>% dplyr::mutate(weight_kg = suppressWarnings(as.numeric(weight_kg)))
   })
-  #Remove empty list elements
+  
+  # Remove empty list elements
   out = out[sapply(out, nrow) > 0]
+  
   out = out %>%
     dplyr::bind_rows() %>% dplyr::arrange(tempID) %>% dplyr::select(-tempID)
   out$weight_units[out$weight_units == "missing_units"] = NA #Replace missing_units with NA after flagging
