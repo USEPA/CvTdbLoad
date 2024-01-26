@@ -96,7 +96,12 @@ normalize_CvT_db <- function(){
       dplyr::distinct()
     
     if(any(is.na(norm_qc_flags$sheet))){
-      stop("Need to curate qc_flags: ", toString(norm_qc_flags$flag[is.na(norm_qc_flags$sheet)]))
+      stop("Need to curate qc_flags: ", toString(
+        unique(
+          norm_qc_flags$qc_flags_new[is.na(norm_qc_flags$sheet)]
+          )
+        )
+      )
     }
     
     # Append qc_flags per sheet

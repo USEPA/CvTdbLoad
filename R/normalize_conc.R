@@ -146,12 +146,16 @@ normalize_conc <- function(raw, f, log_path){
     }
   })
   
+  # Convert all back to character to maintain non_numeric columns that weren't converted
+  out = lapply(out, function(n){
+    n %>%
+      dplyr::mutate(dplyr::across(c(conc, conc_sd, conc_lower_bound, conc_upper_bound), 
+                                  suppressWarnings(as.character)))  
+  })
+  
   # Recombine 
   out = out %>%
-    dplyr::bind_rows() %>%
-    # Convert all back to character to maintain non_numeric columns that weren't converted
-    dplyr::mutate(dplyr::across(c(conc, conc_sd, conc_lower_bound, conc_upper_bound), 
-                                suppressWarnings(as.character)))
+    dplyr::bind_rows()
   
   for(col in c("conc", "conc_sd", "conc_lower_bound", "conc_upper_bound")){
     if(any(out[[col]] < 0, na.rm=TRUE)){
