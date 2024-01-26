@@ -34,7 +34,7 @@ normalize_species <- function(x, log_path){
                      val = x$id[!x$species %in% unlist(conv)])
   }
   
-  x = lapply(x, function(s){
+  x$species = lapply(x$species, function(s){
     for(c in names(conv)){
       if(!s %in% conv[[c]]){
         next

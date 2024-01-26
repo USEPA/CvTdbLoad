@@ -42,12 +42,12 @@ normalize_height <- function(raw, f, log_path){
   #out$raw = extract_height_units(x=out$raw)
   out$raw = extract_units(x=out$raw, units_col="height_units", 
                           conv_col="height_cm", unit_type="height")
-  #Extrapolate heights - no longer doing this
-  #out = norm_extrapolate(x=out, f=f, extrap_type="height")
-  #Missing height
+  # Extrapolate heights - no longer doing this
+  # out = norm_extrapolate(x=out, f=f, extrap_type="height")
+  # Missing height
   out = check_missing(x=out, miss_col = "height", f=f, flag=FALSE, log_path=log_path)
   #Missing units
-  out = check_missing_units(x=out, f=f, units_col="height_units", log_path=log_path)
+  out = check_missing_units(x=out, f=f, units_col="height_units", log_path=log_path, flag=FALSE)
   if(nrow(out$missing_units)){
     out$missing_units$height_units = NA #Replacing missing units to NA after flagging  
   }
@@ -67,7 +67,7 @@ normalize_height <- function(raw, f, log_path){
   
   if(nrow(out$raw)){
     message("...Unhandled cases for height: ", paste0(out$raw$height_cm %>% unique(), collapse = "; "))
-    log_CvT_doc_load(f=f, m="unhandled_height_normalize_case", log_path=log_path)
+    log_CvT_doc_load(f=f, m="unhandled_height_normalize_case", log_path=log_path, val=out$raw$id)
   }
   #out$unhandled_cases = out$raw
   #Convert m, cm, mm, in, ft, etc.

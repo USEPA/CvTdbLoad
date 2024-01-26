@@ -24,7 +24,7 @@ check_non_numeric <- function(x, f, col, log_path){
     dplyr::select(-non_numeric_check)
   if(nrow(x$non_numeric)){
     message("...Non-numeric ", col," value found...need to handle...")
-    log_CvT_doc_load(f=f, m=paste0("unhandled_cvt_",col,"_non_numeric"), log_path=log_path)
+    log_CvT_doc_load(f=f, m=paste0("unhandled_cvt_",col,"_non_numeric"), log_path=log_path, val=x$non_numeric$id)
   }
   x$raw = x$raw %>% dplyr::filter(!tempID %in% x$non_numeric$tempID)
   return(x)

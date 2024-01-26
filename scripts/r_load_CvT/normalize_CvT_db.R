@@ -88,9 +88,8 @@ normalize_CvT_db <- function(){
                        by=c("qc_flags_new"="Field Name")) %>%
       tidyr::separate_rows(index, sep=",") %>%
       dplyr::mutate(index = as.numeric(index)) %>%
-      dplyr::filter(!is.na(index))
-    
-    
+      dplyr::filter(!is.na(index)) %>%
+      dplyr::distinct()
     
     if(any(is.na(norm_qc_flags$sheet))){
       stop("Need to curate qc_flags: ", toString(norm_qc_flags$flag[is.na(norm_qc_flags$sheet)]))
@@ -115,7 +114,7 @@ normalize_CvT_db <- function(){
     for(s in names(doc_sheet_list)){
       message("...Pushing ", s," sheet updates...")
       # Get documents table fields
-      tbl_fields = db_query_cvt(paste0("SELECT * FROM cvt.",s," limit 1")) %>% 
+      tbl_fields = db_query_cvt(paste0("SELECT * FROM cvt.", s," limit 1")) %>% 
         names()
       # tbl_fields[!tbl_fields %in% names(doc_sheet_list[[s]])]
       

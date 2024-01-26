@@ -66,43 +66,43 @@ normalize_dose <- function(raw, f, log_path){
   out$percentage = out$raw %>% dplyr::filter(grepl("%|percent*", dose_level_units))
   out$raw = out$raw %>% dplyr::filter(!tempID %in% out$percentage$tempID)
   if(nrow(out$percentage)){
-    log_CvT_doc_load(f=f, m="dose_conversion_needed_percentage", log_path=log_path)
+    log_CvT_doc_load(f=f, m="dose_conversion_needed_percentage", log_path=log_path, val=out$percentage$id)
   }
   #Concentration units flag
   out$concentration = out$raw %>% dplyr::filter(grepl("/l|/ml|/L|/mL", dose_level_units))
   out$raw = out$raw %>% dplyr::filter(!tempID %in% out$concentration$tempID)
   if(nrow(out$concentration)){
-    log_CvT_doc_load(f=f, m="dose_conversion_needed_concentration", log_path=log_path)
+    log_CvT_doc_load(f=f, m="dose_conversion_needed_concentration", log_path=log_path, val=out$concentration$id)
   }
   #Radioactive units flag
   out$radioactive = out$raw %>% dplyr::filter(grepl("MBq|uCi", dose_level_units))
   out$raw = out$raw %>% dplyr::filter(!tempID %in% out$radioactive$tempID)
   if(nrow(out$radioactive)){
-    log_CvT_doc_load(f=f, m="dose_conversion_needed_radioactive", log_path=log_path)
+    log_CvT_doc_load(f=f, m="dose_conversion_needed_radioactive", log_path=log_path, val=out$radioactive$id)
   }
   #Rate units flag
   out$rate_units = out$raw %>% dplyr::filter(grepl("/hour|/day|/minute|/second|/hr|/min|/s", dose_level_units))
   out$raw = out$raw %>% dplyr::filter(!tempID %in% out$rate_units$tempID)
   if(nrow(out$rate_units)){
-    log_CvT_doc_load(f=f, m="dose_conversion_needed_rate", log_path=log_path)
+    log_CvT_doc_load(f=f, m="dose_conversion_needed_rate", log_path=log_path, val=out$rate_units$id)
   }
   #Gas/Liquid units flag
   out$gas_liquid = out$raw %>% dplyr::filter(grepl("gas|liquid", dose_level_units))
   out$raw = out$raw %>% dplyr::filter(!tempID %in% out$gas_liquid$tempID)
   if(nrow(out$gas_liquid)){
-    log_CvT_doc_load(f=f, m="dose_conversion_gas_liquid", log_path=log_path)
+    log_CvT_doc_load(f=f, m="dose_conversion_gas_liquid", log_path=log_path, val=out$gas_liquid$id)
   }
   #Surface area conversion needed
   out$surface_area_needed = out$raw %>% dplyr::filter(grepl("/cm2|/cm\\^|/m\\^", dose_level_units))
   out$raw = out$raw %>% dplyr::filter(!tempID %in% out$surface_area_needed$tempID)
   if(nrow(out$surface_area_needed)){
-    log_CvT_doc_load(f=f, m="dose_conversion_needed_surface_area", log_path=log_path)
+    log_CvT_doc_load(f=f, m="dose_conversion_needed_surface_area", log_path=log_path, val=out$surface_area_needed$id)
   }
   #ppm/ppb conversion needed
   out$parts_per = out$raw %>% dplyr::filter(grepl("ppm|ppb", dose_level_units))
   out$raw = out$raw %>% dplyr::filter(!tempID %in% out$parts_per$tempID)
   if(nrow(out$parts_per)){
-    log_CvT_doc_load(f=f, m="dose_conversion_needed_ppm_ppb", log_path=log_path)
+    log_CvT_doc_load(f=f, m="dose_conversion_needed_ppm_ppb", log_path=log_path, val=out$parts_per$id)
   }
   #List of doses
   out = check_subject_list(x=out, f=f, col="dose_level_normalized", log_path=log_path)
@@ -118,7 +118,7 @@ normalize_dose <- function(raw, f, log_path){
   #Check unhandled cases
   if(nrow(out$raw)){
     message("...Unhandled cases for dose: ", paste0(out$raw$dose_level_normalized %>% unique(), collapse = "; "))
-    log_CvT_doc_load(f=f, m="unhandled_dose_normalize_case", log_path=log_path)
+    log_CvT_doc_load(f=f, m="unhandled_dose_normalize_case", log_path=log_path, val=out$raw$id)
   }
   #Dose needs weight (doesn't have / units)
   out$need_per_weight = out$conversion %>% dplyr::filter(!grepl("/|per", dose_level_units))

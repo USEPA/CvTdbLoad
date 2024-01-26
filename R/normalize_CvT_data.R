@@ -42,7 +42,7 @@ normalize_CvT_data <- function(df, f, log_path){
   check_radiolabel(raw=df$Series %>%
                      dplyr::rename(any_of(c("analyte_name"="analyte_name_original", 
                                             "analyte_name_secondary"="analyte_name_secondary_original"))) %>%
-                     dplyr::select(analyte_name, analyte_name_secondary, fk_study_id, radiolabeled) %>%
+                     dplyr::select(id, analyte_name, analyte_name_secondary, fk_study_id, radiolabeled) %>%
                      dplyr::left_join(df$Studies %>% 
                                         dplyr::rename(any_of(c("test_substance_name"="test_substance_name_original"))) %>%
                                         dplyr::select(id, test_substance_name), 
@@ -70,7 +70,7 @@ normalize_CvT_data <- function(df, f, log_path){
                            "dose_level" = "dose_level_original",
                            "dose_level_units" = "dose_level_units_original"
                          ))) %>%
-                         dplyr::select(fk_study_id, species, subtype, weight_kg, height_cm,
+                         dplyr::select(id, fk_study_id, species, subtype, weight_kg, height_cm,
                                        test_substance_name, dose_level, dose_level_units, 
                                        dose_volume, administration_route_normalized),
                        f=f,
@@ -84,11 +84,12 @@ normalize_CvT_data <- function(df, f, log_path){
   
   #Normalize Conc Units
   tmp = normalize_conc(raw=df$Series %>%
+                         dplyr::rename(fk_series_id = id) %>%
                          dplyr::left_join(df$Subjects %>%
                                             dplyr::select(id, species), 
                                           by=c("fk_study_id"="id")) %>%
                          dplyr::left_join(df$Conc_Time_Values, 
-                                          by=c("id"="fk_series_id")) %>%
+                                          by="fk_series_id") %>%
                          # dplyr::rename(any_of(c(
                          #   "conc_original"="conc", "conc_units_original"="conc_units",
                          #   "conc_sd_original"="conc_sd", "conc_lower_bound_original"="conc_lower_bound",
@@ -101,13 +102,13 @@ normalize_CvT_data <- function(df, f, log_path){
                            "analyte_casrn_secondary"="analyte_casrn_original"
                            
                          ))) %>%
-                         dplyr::select(id, species, conc_medium, analyte_name, analyte_name_secondary, analyte_casrn,
+                         dplyr::select(id, fk_series_id, species, conc_medium, analyte_name, analyte_name_secondary, analyte_casrn,
                                        conc_original, conc_units_original,
                                        conc_sd_original, conc_lower_bound_original,
                                        conc_upper_bound_original), 
                        f=f,
                        log_path=log_path) %>%
-    dplyr::select(-conc_medium, -analyte_name, -analyte_name_secondary, -analyte_casrn, -conc_units_original)
+    dplyr::select(-id, -conc_medium, -analyte_name, -analyte_name_secondary, -analyte_casrn, -conc_units_original)
   
   df$Conc_Time_Values = df$Conc_Time_Values %>%
     dplyr::mutate(tempID = seq_len(nrow(df$Conc_Time_Values))) %>%
@@ -118,7 +119,7 @@ normalize_CvT_data <- function(df, f, log_path){
                          "conc_original", "conc_sd_original", 
                          "conc_lower_bound_original", "conc_upper_bound_original"
                        ))), 
-                     by=c("tempID", "fk_series_id"="id")) %>% 
+                     by=c("tempID", "fk_series_id")) %>% 
     dplyr::select(-tempID)
   
   # Deprecated with new load approach

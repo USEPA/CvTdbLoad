@@ -55,8 +55,8 @@ normalize_time <- function(raw, f, log_path){
                                           units="time_units_original", desired="hr",
                                           overwrite_units = FALSE)
   }
-  #Convert Failed
-  out = check_convert_failed(x=out, f=f, col="time_hr")
+  # Convert Failed
+  out = check_convert_failed(x=out, f=f, col="time_hr", log_path=log_path)
   #Remove empty list elements
   out = out[sapply(out, nrow) > 0]
   #Convert to NA for all lists that were not normalized

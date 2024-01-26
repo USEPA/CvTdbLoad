@@ -29,7 +29,7 @@ check_unit_ci <- function(x, f, col, estimated, log_path){
       dplyr::mutate(dplyr::across(.cols=tidyr::all_of(col), .fns = ~sub('±.*|\\+/-.*|\\+.*', '', !!as.symbol(col))))
     tryCatch({ x$ci %>% dplyr::mutate(dplyr::across(.cols=tidyr::all_of(col), .fns = ~as.numeric(gsub(",", "", !!as.symbol(col))))) },
              warning = function(cond){
-               log_CvT_doc_load(f=f, m=paste0(col, "_numeric_conversion_NA"), log_path=log_path)
+               log_CvT_doc_load(f=f, m=paste0(col, "_numeric_conversion_NA"), log_path=log_path, val = x$ci$id)
              })
     x$ci = x$ci %>% dplyr::mutate(dplyr::across(.cols=tidyr::all_of(col), .fns = ~as.numeric(gsub(",", "", !!as.symbol(col)))))
     if(length(estimated)){
