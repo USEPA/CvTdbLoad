@@ -79,7 +79,8 @@ normalize_CvT_db <- function(){
     
     
     # Append qc_flags from logged flags
-    flag_map = readxl::read_xlsx("input/dictionaries/flag_map.xlsx")
+    flag_map = readxl::read_xlsx("input/dictionaries/flag_map.xlsx") %>%
+      dplyr::select(-Definition, -`Flag Type`)
     
     norm_qc_flags = readxl::read_xlsx(log_path) %>%
       dplyr::filter(filename == f) %>%
@@ -103,6 +104,12 @@ normalize_CvT_db <- function(){
         )
       )
     }
+    
+    # Combine indexes with multiple QC flags
+    norm_qc_flags = norm_qc_flags %>%
+      dplyr::group_by(index) %>%
+      dplyr::mutate(qc_flags_new = paste0(qc_flags_new, collapse = ", ")) %>%
+      dplyr::distinct()
     
     # Append qc_flags per sheet
     for(s in unique(norm_qc_flags$sheet)){
