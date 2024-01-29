@@ -107,9 +107,10 @@ normalize_CvT_db <- function(){
     
     # Combine indexes with multiple QC flags
     norm_qc_flags = norm_qc_flags %>%
-      dplyr::group_by(index) %>%
+      dplyr::group_by(sheet, index) %>%
       dplyr::mutate(qc_flags_new = paste0(qc_flags_new, collapse = ", ")) %>%
-      dplyr::distinct()
+      dplyr::distinct() %>%
+      dplyr::ungroup()
     
     # Append qc_flags per sheet
     for(s in unique(norm_qc_flags$sheet)){

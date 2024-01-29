@@ -30,6 +30,8 @@ db_update_tbl <- function(df=NULL, tblName=NULL){
   # Filter out NA fields (which will automatically be NULL in the database)
   df = df[ , colSums(is.na(df)) < nrow(df)]
   tryCatch({
+    # Drop temp table if exists
+    db_query_cvt("DROP TABLE IF EXISTS cvt.z_updated_df")
     # Create temp table to store data for update
     db_query_cvt(paste0("CREATE TABLE cvt.z_updated_df (LIKE cvt.",tblName," INCLUDING ALL)"))
     
