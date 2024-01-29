@@ -57,9 +57,9 @@ tmp_load_cvt <- function(){
       
       req_fields_check = readxl::read_xlsx(log_path) %>%
         dplyr::filter(filename == f) %>%
-        # Select log columns with value of 1
+        # Select log columns with value of -1
         # https://stackoverflow.com/questions/63743572/select-columns-based-on-column-value-range-with-dplyr
-        dplyr::select(where(~any(. == 1)))
+        dplyr::select(where(~any(. == -1)))
       # Warn user of requirements issues with file
       if(length(req_fields_check)){
         message("File missing required fields: ")
@@ -298,6 +298,19 @@ tmp_load_cvt <- function(){
                fk_subject_id = new_fk_subject_id) %>%
         select(-new_fk_subject_id, -new_fk_study_id)
       
+      # Check if foreign key matching was successful
+      if(anyNA(doc_sheet_list$Series$fk_study_id)){
+        message("Unmapped Series fk_study_id")
+        browser()
+        stop("Unmapped Series fk_study_id")
+      }
+      
+      if(anyNA(doc_sheet_list$Series$fk_subject_id)){
+        message("Unmapped Series fk_subject_id")
+        browser()
+        stop("Unmapped Series fk_subject_id")
+      }
+      
       message("...pushing to Series table")
       # Get Series table fields
       tbl_fields = db_query_cvt("SELECT * FROM cvt.series limit 1") %>% 
@@ -332,6 +345,13 @@ tmp_load_cvt <- function(){
                            dplyr::select(fk_series_id=id, new_fk_series_id), by=c("fk_series_id")) %>%
         dplyr::mutate(fk_series_id = new_fk_series_id) %>%
         dplyr::select(-new_fk_series_id)
+      
+      # Check if foreign key matching was successful
+      if(anyNA(doc_sheet_list$Conc_Time_Values$fk_series_id)){
+        message("Unmapped Conc_Time_Values fk_series_id")
+        browser()
+        stop("Unmapped Conc_Time_Values fk_series_id")
+      }
       
       message("...pushing to Conc_Time_Values table")
       # Get Conc_Time_Values table fields
