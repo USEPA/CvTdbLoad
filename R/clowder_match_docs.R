@@ -60,7 +60,7 @@ clowder_match_docs <- function(df=NULL, dsID=NULL, baseurl=NULL, apiKey=NULL){
                   folders.name = as.character(NA))
   
   # Recombine and return
-  rbind(df, pmid_match, other_match) %>%
+  dplyr::bind_rows(df, pmid_match, other_match) %>%
     dplyr::arrange(id) %>%
     return()
 }

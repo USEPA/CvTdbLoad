@@ -90,7 +90,7 @@ tmp_load_cvt <- function(){
       
       # Skip processing if any document entries already present in the database
       # Ignore reference documents already matched from database
-      if(any(!is.na(doc_sheet_list$Documents$fk_document_id[doc_sheet_list$Documents$document_type != 2]))){
+      if(any(!is.na(doc_sheet_list$Documents$fk_document_id[doc_sheet_list$Documents$document_type == 1]))){
         message("...Document entry already in CvTdb...")
         # Check if any study data is associated with document
         doc_studies = db_query_cvt(paste0("SELECT * FROM cvt.studies where fk_extraction_document_id = ", 
@@ -182,13 +182,33 @@ tmp_load_cvt <- function(){
         browser()
       }
       
+      # Push Document Lineage Linkages
+      doc_lineage = doc_sheet_list$Documents %>%
+        dplyr::select(fk_doc_id = fk_document_id, 
+                      relationship_type = document_type)
+      # Add parent doc (document_type == 1)
+      doc_lineage$fk_parent_doc_id = doc_lineage$fk_doc_id[doc_lineage$relationship_type == 1]
+      doc_lineage = doc_lineage %>%
+        dplyr::filter(fk_parent_doc_id != fk_doc_id) %>%
+        dplyr::mutate(relationship_type = dplyr::case_when(
+          relationship_type == 2 ~ "Reference Document",
+          TRUE ~ as.character(relationship_type)
+        ))
+      
+      message("...pushing to Document Lineage table")
+      browser()
+      db_push_tbl_to_db(dat=doc_lineage,
+                        tblName="documents_lineage",
+                        overwrite=FALSE, 
+                        append=TRUE)
+      
       #####################################################################################
       #### Push Studies Sheet to CvT (after adding fk_extraction_document_id from idList)
       #####################################################################################
       doc_sheet_list$Studies$fk_extraction_document_id = doc_sheet_list$Documents$fk_document_id[doc_sheet_list$Documents$document_type == 1]
       
       # If multiple documents (reference docs)
-      if(nrow(doc_sheet_list$Documents[doc_sheet_list$Documents$document_type == 2,])){
+      if(nrow(doc_sheet_list$Documents[doc_sheet_list$Documents$document_type != 1,])){
         # stop("NEED TO FLESH OUT REF DOC ID MATCHING NAMES OUTPUT")
         #Join by id values matching to documents sheet of template
         # doc_sheet_list$Studies = doc_sheet_list$Studies %>%

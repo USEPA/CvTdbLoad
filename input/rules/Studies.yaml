@@ -2,7 +2,7 @@ rules:
 - expr: '!is.na(id)'
   meta:
     message: NA_in_required_field_id
-- expr: 'any(duplicated(id))'
+- expr: 'is_unique(id)'
   meta:
     message: id_field_not_unique
 - expr: '!is.na(test_substance_name)'
