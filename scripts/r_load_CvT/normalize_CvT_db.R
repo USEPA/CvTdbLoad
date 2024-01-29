@@ -150,4 +150,5 @@ normalize_CvT_db <- function(){
     message("Continue?")
     browser()
   }
+  message("Done...", Sys.time())
 }
