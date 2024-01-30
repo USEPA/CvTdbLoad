@@ -93,8 +93,11 @@ get_cvt_by_doc_id <- function(id){
                                     "SELECT fk_doc_id FROM cvt.documents_lineage WHERE fk_parent_doc_id IN (",
                                     toString(doc_data$id), ")", 
                                     ")"))
-  doc_data = doc_data %>%
-    dplyr::bind_rows(doc_lineage)
+  if(nrow(doc_lineage)){
+    doc_data = doc_data %>%
+      dplyr::bind_rows(doc_lineage)    
+  }
+
   cat("...getting study data...\n")
   study_data = db_query_cvt(paste0("SELECT * FROM cvt.studies a ",
                                    "LEFT JOIN cvt.administration_form_dict b ON a.fk_administration_form_id = b.id ",
