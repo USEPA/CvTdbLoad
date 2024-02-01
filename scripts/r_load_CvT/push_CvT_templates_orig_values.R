@@ -121,8 +121,11 @@ tmp_load_cvt <- function(){
         dplyr::mutate(jira_ticket = to_load$jira_ticket[i],
                       curation_set_tag = to_load$curation_set_tag[i],
                       clowder_template_id = to_load$clowder_id[i])
-      # TODO - Improve Clowder ID mapping logic (case where template has clowder_id field)
-      # Match to Clowder documents
+      # Add field if not present
+      if(!"clowder_file_id" %in% names(doc_sheet_list$Documents)){
+        doc_sheet_list$Documents$clowder_file_id = as.character(NA)
+      }
+      # Match to Clowder documents where clowder_file_id is NA
       if(any(is.na(doc_sheet_list$Documents$clowder_file_id))){
         doc_sheet_list$Documents = clowder_match_docs(df=doc_sheet_list$Documents,
                                                       dsID=doc_dsID,
