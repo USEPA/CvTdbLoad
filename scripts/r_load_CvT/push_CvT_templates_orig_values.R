@@ -14,6 +14,7 @@ tmp_load_cvt <- function(){
   cvt_dataset = "PCB"
   schema = "cvt"
   log_path = "output/load_required_fields_log.xlsx"
+  cvt_template = get_cvt_template("input/CvT_data_template_articles.xlsx")
   
   # Query already loaded Jira tickets
   loaded_jira_docs = db_query_cvt("SELECT jira_ticket FROM cvt.documents WHERE jira_ticket IS NOT NULL")
@@ -40,6 +41,15 @@ tmp_load_cvt <- function(){
                                           headers = c(`X-API-Key` = apiKey),
                                           mode = "wb",
                                           file_type = "xlsx")
+      
+      # Fill in missing template fields
+      doc_sheet_list = lapply(names(doc_sheet_list), function(s){
+        
+        doc_sheet_list[[s]][, names(cvt_template[[s]])[!names(cvt_template[[s]]) %in% names(doc_sheet_list[[s]])]] <- as.character(NA)
+        return(doc_sheet_list[[s]])
+      }) %T>% {
+        names(.) <- names(doc_sheet_list)
+      }
       
       # Remove rows with only NA values (empty rows)
       doc_sheet_list = lapply(names(doc_sheet_list), function(s){
