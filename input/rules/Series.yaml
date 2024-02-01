@@ -23,10 +23,10 @@ rules:
 - expr: '!is.na(conc_units)'
   meta:
     message: NA_in_required_field_conc_units
-- expr: 'exists_any(if (!is.na(loq)) !is.na(loq_units))'
+- expr: 'exists_any(if (!is.na(loq) & !loq %in% c("NR")) !is.na(loq_units))'
   meta:
     message: missing_loq_units_pair
-- expr: 'exists_any(if (!is.na(lod)) !is.na(lod_units))'
+- expr: 'exists_any(if (!is.na(lod) & !lod %in% c("NR")) !is.na(lod_units))'
   meta:
     message: missing_lod_units_pair
 - expr: '!is.na(fk_study_id)'

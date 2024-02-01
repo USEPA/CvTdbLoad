@@ -41,6 +41,13 @@ tmp_load_cvt <- function(){
                                           mode = "wb",
                                           file_type = "xlsx")
       
+      # Remove rows with only NA values (empty rows)
+      doc_sheet_list = lapply(names(doc_sheet_list), function(s){
+        doc_sheet_list[[s]] = doc_sheet_list[[s]][!apply(is.na(doc_sheet_list[[s]]), 1, all),]
+      }) %T>% {
+        names(.) <- names(doc_sheet_list)
+      }
+      
       # Check for template with only Documents sheet
       if(length(doc_sheet_list) == 1 & all(names(doc_sheet_list) == "Documents")){
         load_doc_sheet_only = TRUE
@@ -116,10 +123,13 @@ tmp_load_cvt <- function(){
                       clowder_template_id = to_load$clowder_id[i])
       # TODO - Improve Clowder ID mapping logic (case where template has clowder_id field)
       # Match to Clowder documents
-      doc_sheet_list$Documents = clowder_match_docs(df=doc_sheet_list$Documents,
-                                                    dsID=doc_dsID,
-                                                    baseurl=baseurl,
-                                                    apiKey=apiKey)
+      if(any(is.na(doc_sheet_list$Documents$clowder_file_id))){
+        doc_sheet_list$Documents = clowder_match_docs(df=doc_sheet_list$Documents,
+                                                      dsID=doc_dsID,
+                                                      baseurl=baseurl,
+                                                      apiKey=apiKey)  
+      }
+      
       # If document already present, but without associations, remove old record and append new
       if(update_doc_in_db){
         # Get documents table fields
