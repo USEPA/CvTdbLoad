@@ -21,9 +21,10 @@ normalize_CvT_db <- function(){
                    # Temporary filtering to those not already normalized
                    cvt_dataset,
                    "' AND version = 1",
+                   "AND id in (SELECT fk_extraction_document_id FROM cvt.studies) ",
                    " ORDER BY id")
   } else {
-    query = "SELECT id FROM cvt.documents order by id"
+    query = "SELECT id FROM cvt.documents WHERE id in (SELECT fk_extraction_document_id FROM cvt.studies) ORDER BY id"
   }
   
   fileList = db_query_cvt(query)
