@@ -20,9 +20,9 @@ normalize_CvT_db <- function(){
     query = paste0("SELECT id FROM cvt.documents WHERE curation_set_tag = '", 
                    # Temporary filtering to those not already normalized
                    cvt_dataset,
-                   "' AND version = 1",
+                   "' AND version = 1 ",
                    "AND id in (SELECT fk_extraction_document_id FROM cvt.studies) ",
-                   " ORDER BY id")
+                   "ORDER BY id")
   } else {
     query = "SELECT id FROM cvt.documents WHERE id in (SELECT fk_extraction_document_id FROM cvt.studies) ORDER BY id"
   }

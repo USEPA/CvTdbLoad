@@ -11,7 +11,7 @@ tmp_load_cvt <- function(){
   baseurl = Sys.getenv("baseurl")
   dsID = Sys.getenv("file_dsID")
   doc_dsID = Sys.getenv("doc_dsID")
-  cvt_dataset = "PCB"
+  cvt_dataset = "PFAS_PIP"
   schema = "cvt"
   log_path = "output/load_required_fields_log.xlsx"
   cvt_template = get_cvt_template("input/CvT_data_template_articles.xlsx")
@@ -41,6 +41,9 @@ tmp_load_cvt <- function(){
                                           headers = c(`X-API-Key` = apiKey),
                                           mode = "wb",
                                           file_type = "xlsx")
+      
+      # Select Template Sheets
+      doc_sheet_list = doc_sheet_list[names(cvt_template)]
       
       # Fill in missing template fields
       doc_sheet_list = lapply(names(doc_sheet_list), function(s){
@@ -215,6 +218,8 @@ tmp_load_cvt <- function(){
         dplyr::filter(fk_parent_doc_id != fk_doc_id) %>%
         dplyr::mutate(relationship_type = dplyr::case_when(
           relationship_type == 2 ~ "Reference Document",
+          relationship_type == 3 ~ "Supplemental Document",
+          relationship_type == 4 ~ "Study Methods Document",
           TRUE ~ as.character(relationship_type)
         ))
       
