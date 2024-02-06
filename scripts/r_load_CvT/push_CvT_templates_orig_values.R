@@ -11,7 +11,7 @@ tmp_load_cvt <- function(){
   baseurl = Sys.getenv("baseurl")
   dsID = Sys.getenv("file_dsID")
   doc_dsID = Sys.getenv("doc_dsID")
-  cvt_dataset = "PFAS_PIP"
+  cvt_dataset = "CVT_dermal"
   schema = "cvt"
   log_path = "output/load_required_fields_log.xlsx"
   cvt_template = get_cvt_template("input/CvT_data_template_articles.xlsx")
@@ -103,8 +103,8 @@ tmp_load_cvt <- function(){
       ### Parse the where clause to search by pmid, other_study_identifier, or doi
       ###########################################################################
       # Check for duplicate docs within the template
-      if(any(duplicated(doc_sheet_list$Documents$pmid))) stop("Duplicate PMID valies found in template...")
-      if(any(duplicated(doc_sheet_list$Documents$other_study_identifier))) stop("Duplicate other_study_identifier values found in template...")
+      if(any(duplicated(doc_sheet_list$Documents$pmid[!is.na(doc_sheet_list$Documents$pmid)]))) stop("Duplicate PMID values found in template...")
+      if(any(duplicated(doc_sheet_list$Documents$other_study_identifier[!is.na(doc_sheet_list$Documents$other_study_identifier)]))) stop("Duplicate other_study_identifier values found in template...")
       # Match to document records in CvTdb, if available
       doc_sheet_list$Documents = match_cvt_doc_to_db_doc(df = doc_sheet_list$Documents)
       
