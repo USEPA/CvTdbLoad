@@ -15,6 +15,10 @@ match_cvt_doc_to_db_doc <- function(df=NULL){
   #input = db_query_cvt("SELECT * FROM cvt.documents")
   #Loop through the hierarchy to verify potenital duplicates
   doc_list = list()
+  # Set levels as character
+  df = df %>%
+    dplyr::mutate(across(any_of(check_list), ~as.character(.)))
+  
   for(level in check_list){#Check each level, then filter out matched and to those missing a level entry
     if(!stringr::str_length(where_clause[[level]])){
       #No level filter found, skip
@@ -22,9 +26,6 @@ match_cvt_doc_to_db_doc <- function(df=NULL){
     }
     tmp = db_query_cvt(paste0("SELECT id as fk_document_id, ", level," FROM cvt.documents where ", 
                               level, " in ('", where_clause[[level]],"')")) %>%
-      dplyr::mutate(across(any_of(level), ~as.character(.)))
-    # Set level as character too
-    df = df %>%
       dplyr::mutate(across(any_of(level), ~as.character(.)))
     
     doc_list[[level]] = df %>%
