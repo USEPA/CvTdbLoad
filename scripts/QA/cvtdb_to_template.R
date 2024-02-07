@@ -81,12 +81,47 @@ get_cvt_by_doc_id <- function(id){
   }) %>% purrr::compact()
   
   cat("...getting document data...\n")
-  doc_data = db_query_cvt(paste0("SELECT * FROM cvt.documents WHERE ", paste0(doc_filter, collapse = " AND ")) %>% 
+  doc_data = db_query_cvt(paste0("SELECT * FROM cvt.documents WHERE ", 
+                                 paste0(doc_filter, 
+                                        collapse = " AND ")) %>% 
                          stringr::str_squish())
   # Check if any records matched the input identifiers
   if(!nrow(doc_data)) return(NULL)
+  cat("...getting document lineage data...\n")
+  doc_lineage = db_query_cvt(paste0("SELECT * FROM cvt.documents ",
+                                    "WHERE id IN (", 
+                                    "SELECT fk_doc_id FROM cvt.documents_lineage WHERE fk_parent_doc_id IN (",
+                                    toString(doc_data$id), ")", 
+                                    ")"))
+  if(nrow(doc_lineage)){
+    doc_data = doc_data %>%
+      dplyr::bind_rows(doc_lineage) %>%
+      dplyr::distinct()
+  }
+
   cat("...getting study data...\n")
-  study_data = db_query_cvt(paste0("SELECT * FROM cvt.studies WHERE fk_extraction_document_id in (", toString(doc_data$id), ")"))
+  study_data = db_query_cvt(paste0("SELECT a.*, ",
+                                   "b.administration_form_original, b.administration_form_normalized, ",
+                                   "c.administration_method_original, c.administration_method_normalized, ",
+                                   "d.administration_route_original, d.administration_route_normalized, ",
+                                   "e.dose_frequency_original, e.dose_frequency_normalized ",
+                                   "FROM cvt.studies a ",
+                                   "LEFT JOIN cvt.administration_form_dict b ON a.fk_administration_form_id = b.id ",
+                                   "LEFT JOIN cvt.administration_method_dict c ON a.fk_administration_method_id = c.id ",
+                                   "LEFT JOIN cvt.administration_route_dict d ON a.fk_administration_route_id = d.id ",
+                                   "LEFT JOIN cvt.dose_frequency_dict e ON a.fk_dose_frequency_id = e.id ",
+                                   "WHERE a.fk_extraction_document_id in (", 
+                                   toString(doc_data$id), 
+                                   ")"))
+  # Case where no study data is linked to extraction document
+  if(!nrow(study_data)){
+    list(Documents = doc_data,
+         Studies = NULL,
+         Subjects = NULL,
+         Series = NULL,
+         Conc_Time_Values = NULL) %>%
+      return()
+  }
   cat("...getting reference document data...\n")
   if(length(unique(study_data$fk_reference_document_id[!is.na(study_data$fk_reference_document_id)]))){
     ref_doc_data = db_query_cvt(paste0("SELECT * FROM cvt.documents WHERE id in (", toString(unique(study_data$fk_reference_document_id[!is.na(study_data$fk_reference_document_id)])), ")"))  
@@ -94,13 +129,21 @@ get_cvt_by_doc_id <- function(id){
     ref_doc_data = NULL
   }
   cat("...getting series data...\n")
-  series_data = db_query_cvt(paste0("SELECT * FROM cvt.series WHERE fk_study_id in (", toString(study_data$id), ")"))
+  series_data = db_query_cvt(paste0("SELECT a.*, ",
+                                    "b.conc_medium_original, b.conc_medium_normalized ",
+                                    "FROM cvt.series a ",
+                                    "LEFT JOIN cvt.conc_medium_dict b ON a.fk_conc_medium_id = b.id ",
+                                    "WHERE fk_study_id in (", 
+                                    toString(study_data$id), 
+                                    ")"))
   cat("...getting subject data...\n")
   subject_data = db_query_cvt(paste0("SELECT * FROM cvt.subjects WHERE id in (", toString(unique(series_data$fk_subject_id)), ")"))
   cat("...getting conc data...\n")
   conc_data = db_query_cvt(paste0("SELECT * FROM cvt.conc_time_values WHERE fk_series_id in (", toString(series_data$id), ")"))
   cat("...returning...\n")
-  list(Documents = rbind(doc_data, ref_doc_data),
+  list(Documents = doc_data %>%
+         dplyr::bind_rows(ref_doc_data) %>% 
+         dplyr::distinct(),
        Studies = study_data,
        Subjects = subject_data,
        Series = series_data,

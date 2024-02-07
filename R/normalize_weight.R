@@ -39,9 +39,11 @@ normalize_weight <- function(raw, f, log_path){
   #out$raw = extract_weight_units(x=out$raw)
   out$raw = extract_units(x=out$raw, units_col="weight_units", 
                           conv_col="weight_kg", unit_type="weight")
-  #Extrapolate  weights
-  out = norm_extrapolate(x=out, f=f, extrap_type = "weight", log_path=log_path)
-  #Missing units
+  #Extrapolate  weights - no longer doing this
+  # out = norm_extrapolate(x=out, f=f, extrap_type = "weight", log_path=log_path)
+  # Missing weight
+  out = check_missing(x=out, miss_col = "weight", f=f, log_path=log_path)
+  # Missing units
   out = check_missing_units(x=out, f=f, units_col="weight_units", log_path=log_path)
   if(nrow(out$missing_units)){
     out$missing_units$weight_units = NA #Replacing missing units with NA after flagging  
@@ -62,7 +64,7 @@ normalize_weight <- function(raw, f, log_path){
   
   if(nrow(out$raw)){
     message("...Unhandled cases for weight: ", paste0(out$raw$weight_kg %>% unique(), collapse = "; "))
-    log_CvT_doc_load(f=f, m="unhandled_weight_normalize_case",log_path=log_path)
+    log_CvT_doc_load(f=f, m="unhandled_weight_normalize_case", log_path=log_path, val=out$raw$id)
   }
   #out$unhandled_cases = out$raw
   #Convert kg, g, mg, lbs, etc.

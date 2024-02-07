@@ -42,16 +42,16 @@ log_CvT_doc_load <- function(f,
   }
   if(f %in% log$filename){
     if(reset){#Reset to 0 for entry
-      log[log$filename == f, names(log)[!names(log) %in% c("filename", "timestamp")]] <- "0"
+      log[log$filename %in% f, names(log)[!names(log) %in% c("filename", "timestamp")]] <- "0"
     }
     if(!is.null(m)){
       #Set new flag
       if(!is.null(val)){
-        log[log$filename == f, m] <- val
+        log[log$filename %in% f, m] <- toString(val)
       } else {
-        log[log$filename == f, m] <- "1"
+        log[log$filename %in% f, m] <- "-1"
       }
-      log[log$filename == f, "timestamp"] <- as.character(Sys.time())  
+      log[log$filename %in% f, "timestamp"] <- as.character(Sys.time())  
     }
   } else {
     tmp = stats::setNames(data.frame(matrix(ncol = length(log), nrow = 1)), names(log))
@@ -59,9 +59,9 @@ log_CvT_doc_load <- function(f,
     tmp$filename = f
     if(!is.null(m)){
       if(!is.null(val)){
-        tmp[m] = val
+        tmp[m] = toString(val)
       } else {
-        tmp[m] = "1"
+        tmp[m] = "-1"
       }
     }
     tmp$timestamp <- as.character(Sys.time())

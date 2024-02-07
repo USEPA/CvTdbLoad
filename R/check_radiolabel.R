@@ -39,6 +39,6 @@ check_radiolabel <- function(raw, f, log_path){
              test_substance_name_check == TRUE)
   if(nrow(check)){
     message("...chemicals or analyte found that need radiolabel set to 1")
-    log_CvT_doc_load(f=f, m=paste0("potential_missing_radiolabel_detected"), log_path=log_path)
+    log_CvT_doc_load(f=f, m=paste0("potential_missing_radiolabel_detected"), log_path=log_path, val=check$id)
   }
 }

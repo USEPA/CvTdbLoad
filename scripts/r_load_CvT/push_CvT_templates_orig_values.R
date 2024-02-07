@@ -11,9 +11,10 @@ tmp_load_cvt <- function(){
   baseurl = Sys.getenv("baseurl")
   dsID = Sys.getenv("file_dsID")
   doc_dsID = Sys.getenv("doc_dsID")
-  cvt_dataset = "PCB"
+  cvt_dataset = "CVT_dermal"
   schema = "cvt"
   log_path = "output/load_required_fields_log.xlsx"
+  cvt_template = get_cvt_template("input/CvT_data_template_articles.xlsx")
   
   # Query already loaded Jira tickets
   loaded_jira_docs = db_query_cvt("SELECT jira_ticket FROM cvt.documents WHERE jira_ticket IS NOT NULL")
@@ -41,6 +42,25 @@ tmp_load_cvt <- function(){
                                           mode = "wb",
                                           file_type = "xlsx")
       
+      # Select Template Sheets
+      doc_sheet_list = doc_sheet_list[names(cvt_template)]
+      
+      # Fill in missing template fields
+      doc_sheet_list = lapply(names(doc_sheet_list), function(s){
+        
+        doc_sheet_list[[s]][, names(cvt_template[[s]])[!names(cvt_template[[s]]) %in% names(doc_sheet_list[[s]])]] <- as.character(NA)
+        return(doc_sheet_list[[s]])
+      }) %T>% {
+        names(.) <- names(doc_sheet_list)
+      }
+      
+      # Remove rows with only NA values (empty rows)
+      doc_sheet_list = lapply(names(doc_sheet_list), function(s){
+        doc_sheet_list[[s]] = doc_sheet_list[[s]][!apply(is.na(doc_sheet_list[[s]]), 1, all),]
+      }) %T>% {
+        names(.) <- names(doc_sheet_list)
+      }
+      
       # Check for template with only Documents sheet
       if(length(doc_sheet_list) == 1 & all(names(doc_sheet_list) == "Documents")){
         load_doc_sheet_only = TRUE
@@ -57,9 +77,9 @@ tmp_load_cvt <- function(){
       
       req_fields_check = readxl::read_xlsx(log_path) %>%
         dplyr::filter(filename == f) %>%
-        # Select log columns with value of 1
+        # Select log columns with value of -1
         # https://stackoverflow.com/questions/63743572/select-columns-based-on-column-value-range-with-dplyr
-        dplyr::select(where(~any(. == 1)))
+        dplyr::select(where(~any(. == -1)))
       # Warn user of requirements issues with file
       if(length(req_fields_check)){
         message("File missing required fields: ")
@@ -83,14 +103,14 @@ tmp_load_cvt <- function(){
       ### Parse the where clause to search by pmid, other_study_identifier, or doi
       ###########################################################################
       # Check for duplicate docs within the template
-      if(any(duplicated(doc_sheet_list$Documents$pmid))) stop("Duplicate PMID valies found in template...")
-      if(any(duplicated(doc_sheet_list$Documents$other_study_identifier))) stop("Duplicate other_study_identifier values found in template...")
+      if(any(duplicated(doc_sheet_list$Documents$pmid[!is.na(doc_sheet_list$Documents$pmid)]))) stop("Duplicate PMID values found in template...")
+      if(any(duplicated(doc_sheet_list$Documents$other_study_identifier[!is.na(doc_sheet_list$Documents$other_study_identifier)]))) stop("Duplicate other_study_identifier values found in template...")
       # Match to document records in CvTdb, if available
       doc_sheet_list$Documents = match_cvt_doc_to_db_doc(df = doc_sheet_list$Documents)
       
       # Skip processing if any document entries already present in the database
       # Ignore reference documents already matched from database
-      if(any(!is.na(doc_sheet_list$Documents$fk_document_id[doc_sheet_list$Documents$document_type != 2]))){
+      if(any(!is.na(doc_sheet_list$Documents$fk_document_id[doc_sheet_list$Documents$document_type == 1]))){
         message("...Document entry already in CvTdb...")
         # Check if any study data is associated with document
         doc_studies = db_query_cvt(paste0("SELECT * FROM cvt.studies where fk_extraction_document_id = ", 
@@ -114,12 +134,18 @@ tmp_load_cvt <- function(){
         dplyr::mutate(jira_ticket = to_load$jira_ticket[i],
                       curation_set_tag = to_load$curation_set_tag[i],
                       clowder_template_id = to_load$clowder_id[i])
-      # TODO - Improve Clowder ID mapping logic (case where template has clowder_id field)
-      # Match to Clowder documents
-      doc_sheet_list$Documents = clowder_match_docs(df=doc_sheet_list$Documents,
-                                                    dsID=doc_dsID,
-                                                    baseurl=baseurl,
-                                                    apiKey=apiKey)
+      # Add field if not present
+      if(!"clowder_file_id" %in% names(doc_sheet_list$Documents)){
+        doc_sheet_list$Documents$clowder_file_id = as.character(NA)
+      }
+      # Match to Clowder documents where clowder_file_id is NA
+      if(any(is.na(doc_sheet_list$Documents$clowder_file_id))){
+        doc_sheet_list$Documents = clowder_match_docs(df=doc_sheet_list$Documents,
+                                                      dsID=doc_dsID,
+                                                      baseurl=baseurl,
+                                                      apiKey=apiKey)  
+      }
+      
       # If document already present, but without associations, remove old record and append new
       if(update_doc_in_db){
         # Get documents table fields
@@ -182,13 +208,35 @@ tmp_load_cvt <- function(){
         browser()
       }
       
+      # Push Document Lineage Linkages
+      doc_lineage = doc_sheet_list$Documents %>%
+        dplyr::select(fk_doc_id = fk_document_id, 
+                      relationship_type = document_type)
+      # Add parent doc (document_type == 1)
+      doc_lineage$fk_parent_doc_id = doc_lineage$fk_doc_id[doc_lineage$relationship_type == 1]
+      doc_lineage = doc_lineage %>%
+        dplyr::filter(fk_parent_doc_id != fk_doc_id) %>%
+        dplyr::mutate(relationship_type = dplyr::case_when(
+          relationship_type == 2 ~ "Reference Document",
+          relationship_type == 3 ~ "Supplemental Document",
+          relationship_type == 4 ~ "Study Methods Document",
+          TRUE ~ as.character(relationship_type)
+        ))
+      
+      message("...pushing to Document Lineage table")
+      browser()
+      db_push_tbl_to_db(dat=doc_lineage,
+                        tblName="documents_lineage",
+                        overwrite=FALSE, 
+                        append=TRUE)
+      
       #####################################################################################
       #### Push Studies Sheet to CvT (after adding fk_extraction_document_id from idList)
       #####################################################################################
       doc_sheet_list$Studies$fk_extraction_document_id = doc_sheet_list$Documents$fk_document_id[doc_sheet_list$Documents$document_type == 1]
       
       # If multiple documents (reference docs)
-      if(nrow(doc_sheet_list$Documents[doc_sheet_list$Documents$document_type == 2,])){
+      if(nrow(doc_sheet_list$Documents[doc_sheet_list$Documents$document_type != 1,])){
         # stop("NEED TO FLESH OUT REF DOC ID MATCHING NAMES OUTPUT")
         #Join by id values matching to documents sheet of template
         # doc_sheet_list$Studies = doc_sheet_list$Studies %>%
@@ -278,6 +326,19 @@ tmp_load_cvt <- function(){
                fk_subject_id = new_fk_subject_id) %>%
         select(-new_fk_subject_id, -new_fk_study_id)
       
+      # Check if foreign key matching was successful
+      if(anyNA(doc_sheet_list$Series$fk_study_id)){
+        message("Unmapped Series fk_study_id")
+        browser()
+        stop("Unmapped Series fk_study_id")
+      }
+      
+      if(anyNA(doc_sheet_list$Series$fk_subject_id)){
+        message("Unmapped Series fk_subject_id")
+        browser()
+        stop("Unmapped Series fk_subject_id")
+      }
+      
       message("...pushing to Series table")
       # Get Series table fields
       tbl_fields = db_query_cvt("SELECT * FROM cvt.series limit 1") %>% 
@@ -312,6 +373,13 @@ tmp_load_cvt <- function(){
                            dplyr::select(fk_series_id=id, new_fk_series_id), by=c("fk_series_id")) %>%
         dplyr::mutate(fk_series_id = new_fk_series_id) %>%
         dplyr::select(-new_fk_series_id)
+      
+      # Check if foreign key matching was successful
+      if(anyNA(doc_sheet_list$Conc_Time_Values$fk_series_id)){
+        message("Unmapped Conc_Time_Values fk_series_id")
+        browser()
+        stop("Unmapped Conc_Time_Values fk_series_id")
+      }
       
       message("...pushing to Conc_Time_Values table")
       # Get Conc_Time_Values table fields

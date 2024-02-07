@@ -2,30 +2,27 @@ rules:
 - expr: '!is.na(id)'
   meta:
     message: NA_in_required_field_id
-- expr: 'any(duplicated(id))'
+- expr: 'is_unique(id)'
   meta:
     message: id_field_not_unique
 - expr: '!is.na(document_type)'
   meta:
     message: NA_in_required_field_document_type
-- expr: 'if (document_type == 2) id %in% ref_ids'
-  meta:
-    message: unused_fk_reference_document_id
 - expr: '!is.na(pmid) | !is.na(other_study_identifier)'
   meta:
     message: missing_required_document_identifier
 - expr: '!is.na(extracted)'
   meta:
     message: NA_in_required_field_extracted
-- expr: '!is.na(tk_params)'
-  meta:
-    message: NA_in_required_field_tk_params
-- expr: '!is.na(effects_data)'
-  meta:
-    message: NA_in_required_field_effects_data
-- expr: '!is.na(httk_data)'
-  meta:
-    message: NA_in_required_field_httk_data
-- expr: '!is.na(clowder_file_id)'
-  meta:
-    message: NA_in_required_field_clowder_file_id
+# - expr: '!is.na(tk_params)'
+#   meta:
+#     message: NA_in_required_field_tk_params
+# - expr: '!is.na(effects_data)'
+#   meta:
+#     message: NA_in_required_field_effects_data
+# - expr: '!is.na(httk_data)'
+#   meta:
+#     message: NA_in_required_field_httk_data
+# - expr: '!is.na(clowder_file_id)'
+#   meta:
+#     message: NA_in_required_field_clowder_file_id

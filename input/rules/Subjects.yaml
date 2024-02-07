@@ -2,18 +2,18 @@ rules:
 - expr: '!is.na(id)'
   meta:
     message: NA_in_required_field_id
-- expr: 'any(duplicated(id))'
+- expr: 'is_unique(id)'
   meta:
     message: id_field_not_unique
 - expr: '!is.na(species)'
   meta:
     message: NA_in_required_field_species
-- expr: 'exists_any(if (!is.na(age)) !is.na(age_units))'
+- expr: 'exists_any(if (!is.na(age) & !age %in% c("NR")) !is.na(age_units))'
   meta:
     message: missing_age_units_pair
-- expr: 'exists_any(if (!is.na(height)) !is.na(height_units))'
+- expr: 'exists_any(if (!is.na(height) & !height %in% c("NR")) !is.na(height_units))'
   meta:
     message: missing_height_units_pair
-- expr: 'exists_any(if (!is.na(weight)) !is.na(weight_units))'
+- expr: 'exists_any(if (!is.na(weight) & !weight %in% c("NR")) !is.na(weight_units))'
   meta:
     message: missing_weight_units_pair
