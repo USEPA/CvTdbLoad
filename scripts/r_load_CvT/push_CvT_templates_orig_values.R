@@ -11,7 +11,7 @@ tmp_load_cvt <- function(){
   baseurl = Sys.getenv("baseurl")
   dsID = Sys.getenv("file_dsID")
   doc_dsID = Sys.getenv("doc_dsID")
-  cvt_dataset = "CVT_dermal"
+  cvt_dataset = "NTP"
   schema = "cvt"
   log_path = "output/load_required_fields_log.xlsx"
   cvt_template = get_cvt_template("input/CvT_data_template_articles.xlsx")
@@ -250,6 +250,7 @@ tmp_load_cvt <- function(){
         doc_sheet_list$Studies = doc_sheet_list$Studies %>%
           dplyr::rename(fk_doc_id = fk_reference_document_id) %>%
           dplyr::left_join(doc_sheet_list$Documents %>% 
+                             dplyr::mutate(id = as.numeric(id)) %>%
                              dplyr::select(id, fk_reference_document_id=fk_document_id),
                            by=c("fk_doc_id"="id"))
         
@@ -370,7 +371,9 @@ tmp_load_cvt <- function(){
       doc_sheet_list$Conc_Time_Values = doc_sheet_list$Conc_Time_Values %>%
         dplyr::mutate(fk_series_id = as.numeric(fk_series_id)) %>%
         dplyr::left_join(doc_sheet_list$Series %>% 
-                           dplyr::select(fk_series_id=id, new_fk_series_id), by=c("fk_series_id")) %>%
+                           dplyr::mutate(id = as.numeric(id)) %>%
+                           dplyr::select(fk_series_id=id, new_fk_series_id), 
+                         by=c("fk_series_id")) %>%
         dplyr::mutate(fk_series_id = new_fk_series_id) %>%
         dplyr::select(-new_fk_series_id)
       
