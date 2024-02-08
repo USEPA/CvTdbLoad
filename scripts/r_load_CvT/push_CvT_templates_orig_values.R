@@ -11,7 +11,7 @@ tmp_load_cvt <- function(){
   baseurl = Sys.getenv("baseurl")
   dsID = Sys.getenv("file_dsID")
   doc_dsID = Sys.getenv("doc_dsID")
-  cvt_dataset = "NTP"
+  cvt_dataset = "3M_PFAS_TK"
   schema = "cvt"
   log_path = "output/load_required_fields_log.xlsx"
   cvt_template = get_cvt_template("input/CvT_data_template_articles.xlsx")
@@ -69,6 +69,11 @@ tmp_load_cvt <- function(){
       if(any(!doc_sheet_list$Documents$extracted %in% 1:3)){
         load_doc_sheet_only = TRUE
       }
+      
+      ##########################################################################
+      ### Default extracted to 3 if submitted as NA
+      doc_sheet_list$Documents$extracted[is.na(doc_sheet_list$Documents$extracted)] = 3
+      ##########################################################################
       
       # Required field validation check
       check_required_fields_validator(df = doc_sheet_list, 
