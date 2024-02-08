@@ -29,8 +29,9 @@ pull_clowder_files_to_load <- function(dsID, baseurl, apiKey, curation_set_tag){
     to_load_files = lapply(seq_len(length(to_load_files)), function(i){
       # Add logic to chunk
       to_load_files[[i]] = clowder_get_file_metadata(fileID=to_load_files[[i]]$clowder_id, baseurl, apiKey)  %>%
+        dplyr::select(clowder_id, any_of(contains("cvt_to_load"))) %>%
         tidyr::pivot_longer(-clowder_id) %>%
-        dplyr::filter(value == 1)
+        dplyr::filter(!is.na(value))
     }) %>%
       dplyr::bind_rows() %>%
       dplyr::select(clowder_id) %>%
