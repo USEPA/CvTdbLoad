@@ -14,19 +14,20 @@ tmp_load_cvt <- function(){
   cvt_dataset = "CVTDB_2020, inhalation"
   schema = "cvt"
   log_path = "output/load_required_fields_log.xlsx"
-  cvt_template = get_cvt_template("input/CvT_data_template_articles.xlsx")
-  tbl_field_list = db_query_cvt("SELECT table_name, column_name FROM information_schema.columns WHERE table_schema='cvt'")
-  clowder_file_list = clowder_get_dataset_files(dsID=doc_dsID, baseurl=baseurl, apiKey=apiKey)
   
   # Query already loaded Jira tickets
-  loaded_jira_docs = db_query_cvt("SELECT jira_ticket FROM cvt.documents WHERE jira_ticket IS NOT NULL")
+  loaded_jira_docs = db_query_cvt(paste0("SELECT clowder_template_id FROM cvt.documents ",
+                                         "WHERE jira_ticket IS NOT NULL"))
   # Pull dataset ticket templates and filter to those not loaded
   to_load = pull_clowder_files_to_load(dsID, baseurl, apiKey, curation_set_tag=cvt_dataset) %>%
-    dplyr::filter(!jira_ticket %in% loaded_jira_docs$jira_ticket)
+    dplyr::filter(!clowder_id %in% loaded_jira_docs$clowder_template_id)
   
   # Only process if Clowder File records pulled
   if(nrow(to_load)){
-    
+    # Load inputs for needed load
+    cvt_template = get_cvt_template("input/CvT_data_template_articles.xlsx")
+    tbl_field_list = db_query_cvt("SELECT table_name, column_name FROM information_schema.columns WHERE table_schema='cvt'")
+    clowder_file_list = clowder_get_dataset_files(dsID=doc_dsID, baseurl=baseurl, apiKey=apiKey)
     # Loop through Clowder files to load
     for(i in seq_len(nrow(to_load))){
       message("Pushing file (", i, "/", nrow(to_load),"): ", toString(to_load[i,c("jira_ticket", "filename")]), "...", Sys.time())
@@ -66,6 +67,11 @@ tmp_load_cvt <- function(){
       # Check for template with only Documents sheet
       if(length(doc_sheet_list) == 1 & all(names(doc_sheet_list) == "Documents")){
         load_doc_sheet_only = TRUE
+      } else {
+        # Check for extracted field values - only 1-3 are loading data
+        if(any(!doc_sheet_list$Documents$extracted %in% 1:3)){
+          stop("Template with multiple sheets but extracted status not 1,2,3...check template...")
+        }
       }
       
       ##########################################################################
@@ -73,10 +79,7 @@ tmp_load_cvt <- function(){
       doc_sheet_list$Documents$extracted[is.na(doc_sheet_list$Documents$extracted)] = 3
       ##########################################################################
       
-      # Check for extracted field values - only 1-3 are loading data
-      if(any(!doc_sheet_list$Documents$extracted %in% 1:3)){
-        load_doc_sheet_only = TRUE
-      }
+      
     
       # Required field validation check
       message("Checking required fields...")
@@ -195,7 +198,7 @@ tmp_load_cvt <- function(){
           # Remove versioning, handled by database audit triggers
           dplyr::select(-rec_create_dt, -version, -created_by) %>%
           # Order columns by database table order
-          dplyr::select(any_of(tbl_fields), document_type)
+          dplyr::select(id, any_of(tbl_fields), document_type)
         
         # Update database entry for document
         db_update_tbl(df=doc_in_db %>%
