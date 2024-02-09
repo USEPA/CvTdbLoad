@@ -78,6 +78,7 @@ tmp_load_cvt <- function(){
       ##########################################################################
       
       # Required field validation check
+      message("Checking required fields...")
       check_required_fields_validator(df = doc_sheet_list, 
                                       f = f,
                                       log_path = log_path)
