@@ -11,7 +11,7 @@ tmp_load_cvt <- function(){
   baseurl = Sys.getenv("baseurl")
   dsID = Sys.getenv("file_dsID")
   doc_dsID = Sys.getenv("doc_dsID")
-  cvt_dataset = "CVT_dermal, inhalation"
+  cvt_dataset = "CVTDB_2020, inhalation"
   schema = "cvt"
   log_path = "output/load_required_fields_log.xlsx"
   cvt_template = get_cvt_template("input/CvT_data_template_articles.xlsx")
@@ -45,7 +45,7 @@ tmp_load_cvt <- function(){
                                           file_type = "xlsx")
       
       # Select Template Sheets
-      doc_sheet_list = doc_sheet_list[names(cvt_template)]
+      doc_sheet_list = doc_sheet_list[names(cvt_template)[names(cvt_template) %in% names(doc_sheet_list)]]
       
       # Fill in missing template fields
       doc_sheet_list = lapply(names(doc_sheet_list), function(s){
@@ -118,11 +118,13 @@ tmp_load_cvt <- function(){
       # Update database dictionaries and get dictionary foreign keys    
       doc_sheet_list = get_dict_update_ids(sheet_list=doc_sheet_list, schema = schema)
       
-      # Rename foreign key fields as needed
-      doc_sheet_list$Studies = doc_sheet_list$Studies %>%
-        dplyr::rename(fk_dosed_chemical_id=fk_chemicals_id)
-      doc_sheet_list$Series = doc_sheet_list$Series %>%
-        dplyr::rename(fk_analyzed_chemical_id=fk_chemicals_id)
+      if(!load_doc_sheet_only){
+        # Rename foreign key fields as needed
+        doc_sheet_list$Studies = doc_sheet_list$Studies %>%
+          dplyr::rename(fk_dosed_chemical_id=fk_chemicals_id)
+        doc_sheet_list$Series = doc_sheet_list$Series %>%
+          dplyr::rename(fk_analyzed_chemical_id=fk_chemicals_id)  
+      }
       
       ###########################################################################
       ### Parse the where clause to search by pmid, other_study_identifier, or doi
@@ -253,6 +255,20 @@ tmp_load_cvt <- function(){
                         tblName="documents_lineage",
                         overwrite=FALSE, 
                         append=TRUE)
+      
+      if(load_doc_sheet_only){
+        # Export loaded template log
+        output_dir = file.path("output", "Document Loading", cvt_dataset)
+        if(!dir.exists(output_dir)) dir.create(output_dir, recursive = TRUE)
+        
+        # Write export file  
+        writexl::write_xlsx(doc_sheet_list, path=paste0(output_dir,"/", 
+                                                        basename(to_load$filename[i]) %>% gsub(".xlsx", "", .), 
+                                                        "_loaded_", format(Sys.time(), "%Y%m%d"), 
+                                                        ".xlsx"))
+        message("Finished load of document sheet only...")
+        next
+      }
       
       #####################################################################################
       #### Push Studies Sheet to CvT (after adding fk_extraction_document_id from idList)
