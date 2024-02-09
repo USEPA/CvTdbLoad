@@ -11,7 +11,7 @@ tmp_load_cvt <- function(){
   baseurl = Sys.getenv("baseurl")
   dsID = Sys.getenv("file_dsID")
   doc_dsID = Sys.getenv("doc_dsID")
-  cvt_dataset = "CVTDB_2020, inhalation"
+  cvt_dataset = "3M_topical, CVT_dermal"
   schema = "cvt"
   log_path = "output/load_required_fields_log.xlsx"
   
@@ -64,23 +64,16 @@ tmp_load_cvt <- function(){
         names(.) <- names(doc_sheet_list)
       }
       
-      # Check for template with only Documents sheet
-      if(length(doc_sheet_list) == 1 & all(names(doc_sheet_list) == "Documents")){
-        load_doc_sheet_only = TRUE
-      } else {
-        # Check for extracted field values - only 1-3 are loading data
-        if(any(!doc_sheet_list$Documents$extracted %in% 1:3)){
-          stop("Template with multiple sheets but extracted status not 1,2,3...check template...")
-        }
-      }
-      
       ##########################################################################
       ### Default extracted to 3 if submitted as NA
       doc_sheet_list$Documents$extracted[is.na(doc_sheet_list$Documents$extracted)] = 3
       ##########################################################################
       
+      # Check for template with only Documents sheet
+      if(length(doc_sheet_list) == 1 & all(names(doc_sheet_list) == "Documents")){
+        load_doc_sheet_only = TRUE
+      } 
       
-    
       # Required field validation check
       message("Checking required fields...")
       check_required_fields_validator(df = doc_sheet_list, 
