@@ -11,7 +11,7 @@ tmp_load_cvt <- function(){
   baseurl = Sys.getenv("baseurl")
   dsID = Sys.getenv("file_dsID")
   doc_dsID = Sys.getenv("doc_dsID")
-  cvt_dataset = "3M_topical, CVT_dermal"
+  cvt_dataset = "inhalation"
   schema = "cvt"
   log_path = "output/load_required_fields_log.xlsx"
   
@@ -48,18 +48,19 @@ tmp_load_cvt <- function(){
       # Select Template Sheets
       doc_sheet_list = doc_sheet_list[names(cvt_template)[names(cvt_template) %in% names(doc_sheet_list)]]
       
+      # Remove empty rows and columns (all NA values)
+      doc_sheet_list = lapply(names(doc_sheet_list), function(s){
+        doc_sheet_list[[s]] = doc_sheet_list[[s]][!apply(is.na(doc_sheet_list[[s]]), 1, all),]
+        doc_sheet_list[[s]] = doc_sheet_list[[s]][!sapply(doc_sheet_list[[s]], function(x) all(is.na(x)))]
+      }) %T>% {
+        names(.) <- names(doc_sheet_list)
+      }
+      
       # Fill in missing template fields
       doc_sheet_list = lapply(names(doc_sheet_list), function(s){
         
         doc_sheet_list[[s]][, names(cvt_template[[s]])[!names(cvt_template[[s]]) %in% names(doc_sheet_list[[s]])]] <- as.character(NA)
         return(doc_sheet_list[[s]])
-      }) %T>% {
-        names(.) <- names(doc_sheet_list)
-      }
-      
-      # Remove rows with only NA values (empty rows)
-      doc_sheet_list = lapply(names(doc_sheet_list), function(s){
-        doc_sheet_list[[s]] = doc_sheet_list[[s]][!apply(is.na(doc_sheet_list[[s]]), 1, all),]
       }) %T>% {
         names(.) <- names(doc_sheet_list)
       }
