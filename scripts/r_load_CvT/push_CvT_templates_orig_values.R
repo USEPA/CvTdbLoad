@@ -15,6 +15,8 @@ tmp_load_cvt <- function(){
   schema = "cvt"
   log_path = "output/load_required_fields_log.xlsx"
   cvt_template = get_cvt_template("input/CvT_data_template_articles.xlsx")
+  tbl_field_list = db_query_cvt("SELECT table_name, column_name FROM information_schema.columns WHERE table_schema='cvt'")
+  clowder_file_list = clowder_get_dataset_files(dsID=doc_dsID, baseurl=baseurl, apiKey=apiKey)
   
   # Query already loaded Jira tickets
   loaded_jira_docs = db_query_cvt("SELECT jira_ticket FROM cvt.documents WHERE jira_ticket IS NOT NULL")
@@ -148,14 +150,15 @@ tmp_load_cvt <- function(){
         doc_sheet_list$Documents = clowder_match_docs(df=doc_sheet_list$Documents,
                                                       dsID=doc_dsID,
                                                       baseurl=baseurl,
-                                                      apiKey=apiKey)  
+                                                      apiKey=apiKey,
+                                                      clowder_file_list=clowder_file_list)  
       }
       
       # If document already present, but without associations, remove old record and append new
       if(update_doc_in_db){
         # Get documents table fields
-        tbl_fields = db_query_cvt("SELECT * FROM cvt.documents limit 1") %>% 
-          names()
+        tbl_fields = tbl_field_list$column_name[tbl_field_list$table_name == "documents"] %>%
+          .[!. %in% col_exclude]
         doc_in_db = db_query_cvt(paste0("SELECT * FROM cvt.documents where id = ",
                                         doc_sheet_list$Documents$fk_document_id[doc_sheet_list$Documents$document_type == 1]))
         temp_doc = doc_sheet_list$Documents %>%
@@ -186,10 +189,8 @@ tmp_load_cvt <- function(){
       } else {
         message("...pushing to Documents table")
         # Get documents table fields
-        tbl_fields = db_query_cvt("SELECT * FROM cvt.documents limit 1") %>% 
-          names() %>%
+        tbl_fields = tbl_field_list$column_name[tbl_field_list$table_name == "documents"] %>%
           .[!. %in% col_exclude]
-        # names(doc_sheet_list$Documents)[!names(doc_sheet_list$Documents) %in% tbl_fields]
         browser()
         db_push_rs = db_push_tbl_to_db(dat=doc_sheet_list$Documents %>%
                                          # Filter out reference documents that are already in CvTDB
@@ -265,8 +266,7 @@ tmp_load_cvt <- function(){
       
       message("...pushing to Studies table")
       # Get Studies table fields
-      tbl_fields = db_query_cvt("SELECT * FROM cvt.studies limit 1") %>% 
-        names() %>%
+      tbl_fields = tbl_field_list$column_name[tbl_field_list$table_name == "studies"] %>%
         .[!. %in% col_exclude]
       # names(doc_sheet_list$Studies)[!names(doc_sheet_list$Studies) %in% tbl_fields]
       browser()
@@ -292,10 +292,8 @@ tmp_load_cvt <- function(){
       #####################################################################################
       message("...pushing to Subjects table")
       # Get Subjects table fields
-      tbl_fields = db_query_cvt("SELECT * FROM cvt.subjects limit 1") %>% 
-        names() %>%
+      tbl_fields = tbl_field_list$column_name[tbl_field_list$table_name == "subjects"] %>%
         .[!. %in% col_exclude]
-      # names(doc_sheet_list$Subjects)[!names(doc_sheet_list$Subjects) %in% tbl_fields]
       browser()
       db_push_rs = db_push_tbl_to_db(dat=doc_sheet_list$Subjects %>%
                           dplyr::select(dplyr::any_of(tbl_fields)),
@@ -347,10 +345,8 @@ tmp_load_cvt <- function(){
       
       message("...pushing to Series table")
       # Get Series table fields
-      tbl_fields = db_query_cvt("SELECT * FROM cvt.series limit 1") %>% 
-        names() %>%
+      tbl_fields = tbl_field_list$column_name[tbl_field_list$table_name == "series"] %>%
         .[!. %in% col_exclude]
-      # names(doc_sheet_list$Series)[!names(doc_sheet_list$Series) %in% tbl_fields]
       browser()
       db_push_rs = db_push_tbl_to_db(dat=doc_sheet_list$Series %>%
                           dplyr::select(dplyr::any_of(tbl_fields)),
@@ -391,10 +387,8 @@ tmp_load_cvt <- function(){
       
       message("...pushing to Conc_Time_Values table")
       # Get Conc_Time_Values table fields
-      tbl_fields = db_query_cvt("SELECT * FROM cvt.conc_time_values limit 1") %>% 
-        names() %>%
+      tbl_fields = tbl_field_list$column_name[tbl_field_list$table_name == "conc_time_values"] %>%
         .[!. %in% col_exclude]
-      # names(doc_sheet_list$Conc_Time_Values)[!names(doc_sheet_list$Conc_Time_Values) %in% tbl_fields]
       browser()
       db_push_rs = db_push_tbl_to_db(dat=doc_sheet_list$Conc_Time_Values %>%
                                        dplyr::select(dplyr::any_of(tbl_fields)),
