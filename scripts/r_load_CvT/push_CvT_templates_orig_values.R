@@ -11,7 +11,7 @@ tmp_load_cvt <- function(){
   baseurl = Sys.getenv("baseurl")
   dsID = Sys.getenv("file_dsID")
   doc_dsID = Sys.getenv("doc_dsID")
-  cvt_dataset = "3M_PFAS_TK"
+  cvt_dataset = "CVT_dermal, inhalation"
   schema = "cvt"
   log_path = "output/load_required_fields_log.xlsx"
   cvt_template = get_cvt_template("input/CvT_data_template_articles.xlsx")
@@ -67,16 +67,17 @@ tmp_load_cvt <- function(){
       if(length(doc_sheet_list) == 1 & all(names(doc_sheet_list) == "Documents")){
         load_doc_sheet_only = TRUE
       }
-      # Check for extracted field values - only 1-3 are loading data
-      if(any(!doc_sheet_list$Documents$extracted %in% 1:3)){
-        load_doc_sheet_only = TRUE
-      }
       
       ##########################################################################
       ### Default extracted to 3 if submitted as NA
       doc_sheet_list$Documents$extracted[is.na(doc_sheet_list$Documents$extracted)] = 3
       ##########################################################################
       
+      # Check for extracted field values - only 1-3 are loading data
+      if(any(!doc_sheet_list$Documents$extracted %in% 1:3)){
+        load_doc_sheet_only = TRUE
+      }
+    
       # Required field validation check
       message("Checking required fields...")
       check_required_fields_validator(df = doc_sheet_list, 
@@ -98,6 +99,22 @@ tmp_load_cvt <- function(){
       # stop("Found passing file to load!")
       # Rename "original" fields
       doc_sheet_list = set_original_fields(sheet_list=doc_sheet_list, schema = schema)
+      
+      # Check for fields not in database tables - need to add
+      for(s in names(doc_sheet_list)){
+        # Set names to lowercase (case of dermal_dose_vehicle_pH should be dermal_dose_vehicle_ph)
+        names(doc_sheet_list[[s]]) <- tolower(names(doc_sheet_list[[s]]))
+        new_names = names(doc_sheet_list[[s]])[
+          !names(doc_sheet_list[[s]]) %in% 
+            tbl_field_list$column_name[
+              tbl_field_list$table_name == tolower(s)]] %>%
+          .[!grepl("^fk_|_original$|document_type", .)]
+        if(length(new_names)){
+          message("New fields to add to database for table ", s, ": ")
+          cat(paste0("- ", new_names), sep="\n")
+          stop("Add new fields to table...")
+        }
+      }
       # Update database dictionaries and get dictionary foreign keys    
       doc_sheet_list = get_dict_update_ids(sheet_list=doc_sheet_list, schema = schema)
       
