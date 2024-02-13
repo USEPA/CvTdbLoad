@@ -2,6 +2,7 @@
 #' @param df Input template document's sheet for mapping
 #' @param dsID Clowder dataset ID to pull from.
 #' @param apiKey API key to access Clowder repo
+#' @param clowder_file_list Opitonal input list of Clowder files from clowder_get_dataset_files().
 #' @title FUNCTION_TITLE
 #' @return OUTPUT_DESCRIPTION
 #' @details DETAILS
@@ -16,7 +17,7 @@
 #' @rdname clowder_match_docs
 #' @export 
 #' @importFrom dplyr filter mutate left_join arrange
-clowder_match_docs <- function(df=NULL, dsID=NULL, baseurl=NULL, apiKey=NULL){
+clowder_match_docs <- function(df=NULL, dsID=NULL, baseurl=NULL, apiKey=NULL, clowder_file_list=NULL){
   message("Matching clowder documents to template identifiers...")
   if(is.null(apiKey)) stop("Error: missing required Clowder apiKey")
   if(is.null(dsID)) stop("Error: missing required Clowder dataset ID")
@@ -38,7 +39,10 @@ clowder_match_docs <- function(df=NULL, dsID=NULL, baseurl=NULL, apiKey=NULL){
   
   # Attempt to match to PMID
   # c_docs = get_clowder_docList_2(dsID=dsID, baseurl=baseurl, apiKey=apiKey)
-  c_docs = clowder_get_dataset_files(dsID=dsID, baseurl=baseurl, apiKey=apiKey) %>%
+  if(is.null(clowder_file_list)){
+    clowder_file_list = clowder_get_dataset_files(dsID=dsID, baseurl=baseurl, apiKey=apiKey)
+  }
+  c_docs = clowder_file_list %>%
     dplyr::select(-folders.name) %>%
     dplyr::distinct() %>%
     dplyr::rename(clowder_file_id = clowder_id) %>%

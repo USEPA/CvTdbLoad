@@ -11,7 +11,7 @@ get_dict_update_ids <- function(sheet_list, schema){
                                              "test_substance_casrn_original",
                                              "analyte_name_original",
                                              "analyte_name_secondary_original",
-                                             "analyte_casrn")
+                                             "analyte_casrn_original")
                                     )
                             
   # Upload new dictionary entries

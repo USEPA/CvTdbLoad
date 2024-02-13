@@ -28,11 +28,14 @@ pull_clowder_files_to_load <- function(dsID, baseurl, apiKey, curation_set_tag){
     # Loop through each chunk and filter to those marked as "cvt_to_load"
     to_load_files = lapply(seq_len(length(to_load_files)), function(i){
       # Add logic to chunk
-      to_load_files[[i]] = clowder_get_file_metadata(fileID=to_load_files[[i]]$clowder_id, baseurl, apiKey)
+      to_load_files[[i]] = clowder_get_file_metadata(fileID=to_load_files[[i]]$clowder_id, baseurl, apiKey)  %>%
+        dplyr::select(clowder_id, any_of(contains("cvt_to_load"))) %>%
+        tidyr::pivot_longer(-clowder_id) %>%
+        dplyr::filter(!is.na(value))
     }) %>%
       dplyr::bind_rows() %>%
-      dplyr::filter(cvt_to_load == 1) %>%
-      dplyr::select(clowder_id)
+      dplyr::select(clowder_id) %>%
+      dplyr::distinct()
     
     # Filter original list to get ticket number and filename
     to_load_files = c_files_list %>%

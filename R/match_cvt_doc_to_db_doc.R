@@ -1,6 +1,6 @@
 # Function to match input document metadata to CvTdb document records by pmid, other_study_identifier, doi, url hierarchy
 match_cvt_doc_to_db_doc <- function(df=NULL){
-  check_list = c("pmid", "other_study_identifier", "doi", "url")
+  check_list = c("pmid", "other_study_identifier", "doi", "url", "title")
   #Find potential duplicate values per ID level (irrespective of the hierarchy)
   where_clause = lapply(check_list, function(x){
     tmp = df %>%
