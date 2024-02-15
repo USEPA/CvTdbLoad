@@ -18,9 +18,17 @@ get_chems_for_curation <- function(){
   chems = in_data %>%
     dplyr::select(external_id, raw_name = name, raw_casrn = casrn) %>%
     dplyr::bind_cols(out$res0 %>%
-                       dplyr::select(cleaned_name = name, cleaned_casrn = casrn)
+                       dplyr::mutate(casrn = case_when(
+                         cs == FALSE ~ NA,
+                         TRUE ~ casrn
+                       )) %>%
+                       dplyr::select(cleaned_name = name, cleaned_casrn = casrn, checksum_pass = cs)
                      ) %>%
-    dplyr::mutate(dplyr::across(where(is.character), ~na_if(., "NA"))) %T>% 
+    dplyr::mutate(dplyr::across(where(is.character), ~na_if(., "NA"))) %>% 
+    # Filter out any without cleaned information
+    tidyr::unite(cleaned_name, cleaned_casrn, col = "filter_key", sep = "_", remove=FALSE) %>%
+    dplyr::filter(filter_key != "NA_NA") %>%
+    dplyr::select(-filter_key) %T>%
     writexl::write_xlsx(., paste0("output/chemical_mapping/cvtdb_chems_to_curate_",Sys.Date(),".xlsx"))
     
 

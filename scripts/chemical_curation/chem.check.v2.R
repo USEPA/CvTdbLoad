@@ -93,15 +93,16 @@ chem.check.v2 <- function(res0, verbose=FALSE) {
 
   if(nrow(ccheck_cas)) {
     casrn.OK = FALSE
-    if(any(ccheck_cas$cs == 0)){
-      checksum.OK = FALSE
-      cat("bad checksum present\n")
-    }
+  }
+  
+  if(any(res0$cs == FALSE)){
+    checksum.OK = FALSE
+    cat("bad checksum present\n")
   }
 
   # Set name as cleaned n2, remove intermediates
   res0 = res0 %>%
-    dplyr::select(-casrn, -n0, -n1, -cs) %>%
+    dplyr::select(-casrn, -n0, -n1) %>%
     dplyr::rename(casrn = n2)
 
   # Prep check export
