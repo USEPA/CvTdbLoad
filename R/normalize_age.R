@@ -37,6 +37,8 @@ normalize_age <- function(raw, f, log_path){
   out = list()
   out$raw = normalization_prep(x=raw, newcols=c())
   out$raw$species = tolower(trimws(out$raw$species))
+  out$raw$age_original = out$raw$age
+  out$raw$age_units_original = out$raw$age_units
   out$raw = out$raw %>% dplyr::mutate(age_normalized = age)
   # Extract units
   # out$raw = extract_weight_units(x=out$raw)

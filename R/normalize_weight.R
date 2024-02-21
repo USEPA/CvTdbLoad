@@ -39,6 +39,7 @@ normalize_weight <- function(raw, f, log_path){
   #out$raw = extract_weight_units(x=out$raw)
   out$raw = extract_units(x=out$raw, units_col="weight_units", 
                           conv_col="weight_kg", unit_type="weight")
+
   #Extrapolate  weights - no longer doing this
   # out = norm_extrapolate(x=out, f=f, extrap_type = "weight", log_path=log_path)
   # Missing weight

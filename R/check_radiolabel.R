@@ -26,7 +26,7 @@ check_radiolabel <- function(raw, f, log_path){
   # }) %>%
   #   bind_rows()
   check = raw %>%
-    dplyr::filter((is.na(radiolabeled) | radiolabeled != 1),
+    dplyr::filter(is.na(radiolabeled),
            !grepl("DTXSID", analyte_name),
            !grepl("DTXSID", analyte_name_secondary),
            !grepl("DTXSID", test_substance_name)) %>%

@@ -104,7 +104,7 @@ normalize_CvT_data <- function(df, f, log_path){
                          dplyr::select(id, fk_series_id, species, conc_medium, analyte_name, analyte_name_secondary, analyte_casrn,
                                        conc_original, conc_units_original,
                                        conc_sd_original, conc_lower_bound_original,
-                                       conc_upper_bound_original), 
+                                       conc_upper_bound_original, dsstox_substance_id), 
                        f=f,
                        log_path=log_path)
   

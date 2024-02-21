@@ -12,7 +12,7 @@
 #' }
 #' @seealso 
 #'  [mutate][dplyr::mutate], [filter][dplyr::filter], [across][dplyr::across], [bind_rows][dplyr::bind_rows], [arrange][dplyr::arrange]
-#'  [get_physchem_param][httk::get_physchem_param]
+#'  [POST][httr::POST]
 #' @rdname normalize_conc
 #' @export 
 #' @importFrom dplyr mutate filter across bind_rows arrange
@@ -115,11 +115,22 @@ normalize_conc <- function(raw, f, log_path){
   #Need to split up between routes as well (ug/mL tissue and ug/m3 breath)
   for(t in c("conc", "conc_sd", "conc_lower_bound", "conc_upper_bound")){
     for(i in seq_len(nrow(out$convert_ready))){
-      #Molecular Weight conversion (have to find MW first)
+      # Molecular Weight conversion (have to find MW first)
+      # Units must be mol, and dsstox_substance_id must be present
       MW=NA
-      if(grepl("mol/", out$convert_ready[i,]$conc_units_original)){
-        MW = tryCatch({httk::get_physchem_param("MW", chem.name=tolower(out$convert_ready[i,]$analyte_name))},
-                      error=function(cond){NA})
+      if(grepl("mol/", out$convert_ready[i,]$conc_units_original) && !is.na(out$convert_ready[i,]$dsstox_substance_id)){
+        mw <- tryCatch(
+          httr::POST(
+            "https://api-ccte.epa.gov/chemical/detail/search/by-dtxsid/",
+            httr::accept_json(),
+            httr::content_type_json(),
+            # Use API Key for authorization
+            httr::add_headers(`x-api-key` = API_AUTH),
+            encode = "json",
+            body=as.list(out$convert_ready[i,]$dsstox_substance_id)
+          ) %>% httr::content() %>% dplyr::bind_rows() %>% dplyr::select(mw=averageMass),
+          error=function(cond){NA}
+        )[[1]]
         
       }
       out$convert_ready[i,] = convert_units(x=out$convert_ready[i,], 
