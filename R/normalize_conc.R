@@ -119,7 +119,6 @@ normalize_conc <- function(raw, f){
       # Units must be mol, and dsstox_substance_id must be present
       MW=NA
       if(grepl("mol/", out$convert_ready[i,]$conc_units_original) && !is.na(out$convert_ready[i,]$dsstox_substance_id)){
-        DTXSID=paste0("DTXSID", out$convert_ready[i,]$dsstox_substance_id)
         mw <- tryCatch(
           httr::POST(
             "https://api-ccte.epa.gov/chemical/detail/search/by-dtxsid/",
@@ -128,7 +127,7 @@ normalize_conc <- function(raw, f){
             # Use API Key for authorization
             httr::add_headers(`x-api-key` = API_AUTH),
             encode = "json",
-            body=as.list(DTXSID)
+            body=as.list(out$convert_ready[i,]$dsstox_substance_id)
           ) %>% httr::content() %>% dplyr::bind_rows() %>% dplyr::select(mw=averageMass),
           error=function(cond){NA}
         )[[1]]
