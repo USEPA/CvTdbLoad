@@ -2,6 +2,9 @@ rules:
 - expr: '!is.na(id)'
   meta:
     message: NA_in_required_field_id
+- expr: 'is_unique(id)'
+  meta:
+    message: id_field_not_unique
 - expr: '!is.na(test_substance_name)'
   meta:
     message: NA_in_required_field_test_substance_name
@@ -17,30 +20,30 @@ rules:
 - expr: '!is.na(dose_frequency)'
   meta:
     message: NA_in_required_field_dose_frequency
-- expr: 'exists_any(if (!dose_frequency %in% c("single dose", 1)) !is.na(administration_term))'
+- expr: 'exists_any(if (!dose_frequency %in% c("1/day", "single dose", 1, "NR", "ad libitum")) !is.na(administration_term))'
   meta:
     message: missing_administration_term_pair
-- expr: 'exists_any(if (!is.na(administration_term)) !is.na(administration_term_units))'
+- expr: 'exists_any(if (!is.na(administration_term) & !administration_term %in% c("NR")) !is.na(administration_term_units))'
   meta:
     message: missing_administration_term_units_pair
-- expr: 'exists_any(if (!is.na(dose_duration)) !is.na(dose_duration_units))'
+- expr: 'exists_any(if (!is.na(dose_duration) & !dose_duration %in% c("NR")) !is.na(dose_duration_units))'
   meta:
     message: missing_dose_duration_units_pair
-- expr: 'exists_any(if (!is.na(dose_volume)) !is.na(dose_volume_units))'
+- expr: 'exists_any(if (!is.na(dose_volume) & !dose_volume %in% c("NR")) !is.na(dose_volume_units))'
   meta:
     message: missing_dose_volume_units_pair
-- expr: 'exists_any(if (!is.na(dermal_applied_area)) !is.na(dermal_applied_area_units))'
+- expr: 'exists_any(if (!is.na(dermal_applied_area) & !dermal_applied_area %in% c("NR")) !is.na(dermal_applied_area_units))'
   meta:
     message: missing_dermal_applied_area_units_pair
-- expr: 'exists_any(if (!is.na(aerosol_particle_diameter)) !is.na(aerosol_particle_diameter_units))'
+- expr: 'exists_any(if (!is.na(aerosol_particle_diameter) & !aerosol_particle_diameter %in% c("NR")) !is.na(aerosol_particle_diameter_units))'
   meta:
     message: missing_aerosol_particle_diameter_units_pair
-- expr: 'exists_any(if (!is.na(aerosol_particle_density)) !is.na(aerosol_particle_density_units))'
+- expr: 'exists_any(if (!is.na(aerosol_particle_density) & !aerosol_particle_density %in% c("NR")) !is.na(aerosol_particle_density_units))'
   meta:
     message: missing_aerosol_particle_density_units_pair
-- expr: 'exists_any(if (!is.na(flow_rate)) !is.na(flow_rate_units))'
+- expr: 'exists_any(if (!is.na(flow_rate) & !flow_rate %in% c("NR")) !is.na(flow_rate_units))'
   meta:
     message: missing_flow_rate_units_pair
-- expr: 'exists_any(if (!is.na(chamber_size)) !is.na(chamber_size_units))'
+- expr: 'exists_any(if (!is.na(chamber_size) & !chamber_size %in% c("NR")) !is.na(chamber_size_units))'
   meta:
     message: missing_aerosol_particle_density_units_pair

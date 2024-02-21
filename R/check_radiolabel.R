@@ -2,6 +2,7 @@
 #' @description FUNCTION_DESCRIPTION
 #' @param raw PARAM_DESCRIPTION
 #' @param f PARAM_DESCRIPTION
+#' @param log_path File path where to save the log file.
 #' @return OUTPUT_DESCRIPTION
 #' @details DETAILS
 #' @examples 
@@ -15,7 +16,7 @@
 #' @rdname check_radiolabel
 #' @export 
 #' @importFrom dplyr filter mutate
-check_radiolabel <- function(raw, f){
+check_radiolabel <- function(raw, f, log_path){
   # tmp = lapply(fileList, function(f){
   #   s_list = load_sheet_group(fileName = f, template_path = template_path)
   #   s_list$Series %>%
@@ -38,6 +39,6 @@ check_radiolabel <- function(raw, f){
              test_substance_name_check == TRUE)
   if(nrow(check)){
     message("...chemicals or analyte found that need radiolabel set to 1")
-    log_CvT_doc_load(f=f, m=paste0("potential_missing_radiolabel_detected"))
+    log_CvT_doc_load(f=f, m=paste0("potential_missing_radiolabel_detected"), log_path=log_path, val=check$id)
   }
 }

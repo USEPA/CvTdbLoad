@@ -9,7 +9,8 @@ set_original_fields <- function(sheet_list, schema){
     dplyr::filter(grepl("_original", column_name)) %>%
     dplyr::select(column_name) %>%
     dplyr::mutate(template_field = column_name %>%
-                    gsub("_original$", "", .))
+                    gsub("_original$", "", .)) %>%
+    dplyr::distinct()
   
   # Create named list for renaming
   db_f_list = db_f_list$template_field %>%

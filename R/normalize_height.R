@@ -7,6 +7,7 @@
 #' @title FUNCTION_TITLE
 #' @param raw PARAM_DESCRIPTION
 #' @param f PARAM_DESCRIPTION
+#' @param log_path File path where to save the log file.
 #' @return OUTPUT_DESCRIPTION
 #' @details DETAILS
 #' @examples 
@@ -20,7 +21,7 @@
 #' @rdname normalize_height
 #' @export 
 #' @importFrom dplyr mutate filter bind_rows arrange
-normalize_height <- function(raw, f){
+normalize_height <- function(raw, f, log_path){
   message("...normalizing height...")
   # tmp = lapply(fileList, function(f){
   #   s_list = load_sheet_group(fileName = f, template_path = template_path)
@@ -41,19 +42,22 @@ normalize_height <- function(raw, f){
   #out$raw = extract_height_units(x=out$raw)
   out$raw = extract_units(x=out$raw, units_col="height_units", 
                           conv_col="height_cm", unit_type="height")
-  #Extrapolate heights - no longer doing this
-  #out = norm_extrapolate(x=out, f=f, extrap_type="height")
-  #Missing height
-  out = check_missing(x=out, miss_col = "height", f=f, flag=FALSE)
+  # Extrapolate heights - no longer doing this
+  # out = norm_extrapolate(x=out, f=f, extrap_type="height")
+  # Missing height
+  out = check_missing(x=out, miss_col = "height", f=f, flag=FALSE, log_path=log_path)
   #Missing units
-  out = check_missing_units(x=out, f=f, units_col="height_units")
-  out$missing_units$height_units = NA #Replacing missing units to NA after flagging
+  out = check_missing_units(x=out, f=f, units_col="height_units", log_path=log_path, flag=FALSE)
+  if(nrow(out$missing_units)){
+    out$missing_units$height_units = NA #Replacing missing units to NA after flagging  
+  }
+  
   #List of heights
-  out = check_subject_list(x=out, f=f, col="height_cm")
+  out = check_subject_list(x=out, f=f, col="height_cm", log_path=log_path)
   # +/- Group
-  out = check_unit_ci(x=out, f=f, col="height_cm", estimated=c())#"height_estimated")
+  out = check_unit_ci(x=out, f=f, col="height_cm", estimated=c(), log_path=log_path)#"height_estimated")
   #Height range
-  out = check_unit_range(x=out, f=f, col="height_cm", estimated=c())#"height_estimated")
+  out = check_unit_range(x=out, f=f, col="height_cm", estimated=c(), log_path=log_path)#"height_estimated")
   #Ready for conversion
   out$conversion = out$raw %>% 
     dplyr::mutate(height_cm = suppressWarnings(as.numeric(height_cm))) %>%
@@ -63,7 +67,7 @@ normalize_height <- function(raw, f){
   
   if(nrow(out$raw)){
     message("...Unhandled cases for height: ", paste0(out$raw$height_cm %>% unique(), collapse = "; "))
-    log_CvT_doc_load(f=f, m="unhandled_height_normalize_case")
+    log_CvT_doc_load(f=f, m="unhandled_height_normalize_case", log_path=log_path, val=out$raw$id)
   }
   #out$unhandled_cases = out$raw
   #Convert m, cm, mm, in, ft, etc.
@@ -75,6 +79,8 @@ normalize_height <- function(raw, f){
                                           units="height_units", desired="cm", 
                                           overwrite_units = FALSE)
   }
+  # Remove empty list elements
+  out = out[sapply(out, nrow) > 0]
   #Convert to NA for all lists that were not normalized
   out = lapply(names(out), function(n){
     if(n %in% c("convert_ready")){
@@ -88,7 +94,7 @@ normalize_height <- function(raw, f){
   out = lapply(out, function(x){ 
     x = x %>% dplyr::mutate(height_cm = suppressWarnings(as.numeric(height_cm)))
   })
-  #Remove empty list elements
+  # Remove empty list elements
   out = out[sapply(out, nrow) > 0]
   return(out %>% dplyr::bind_rows() %>% dplyr::arrange(tempID))
 }

@@ -11,10 +11,10 @@
 #' }
 #' @rdname normalize_species
 #' @export 
-normalize_species <- function(x){
+normalize_species <- function(x, log_path){
   message("...normalizing species...")
   #Convert species
-  x = tolower(x)
+  x$species = tolower(x$species)
   conv = list(dog=list("dog", "dogs"),
               human=list("human", "humans", "female", "male", "females", "males", "woman", "women", "man", "men"),
               mouse=list("mouse", "mice", "mouses"),
@@ -27,7 +27,14 @@ normalize_species <- function(x){
               frog = list("frog", "frogs")
   )
   
-  x = lapply(x, function(s){
+  if(any(!x$species %in% unlist(conv))){
+    log_CvT_doc_load(f=f, 
+                     m="species_not_normalized", 
+                     log_path=log_path,
+                     val = x$id[!x$species %in% unlist(conv)])
+  }
+  
+  x$species = lapply(x$species, function(s){
     for(c in names(conv)){
       if(!s %in% conv[[c]]){
         next
