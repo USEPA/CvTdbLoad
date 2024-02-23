@@ -21,7 +21,7 @@
 #' @export 
 #' @importFrom dplyr filter mutate bind_rows arrange select
 #' @importFrom httk get_physchem_param
-normalize_dose <- function(raw, f, log_path){
+normalize_dose <- function(raw, f, log_path, debug = FALSE){
   message("...normalizing dose...")
   #message("Normalize_dose is still in development...")
   # tmp = lapply(fileList, function(f){
@@ -133,6 +133,10 @@ normalize_dose <- function(raw, f, log_path){
     }
     #Divide by weight (given or extrapolated)
     out$need_per_weight$dose_level_normalized = out$need_per_weight$dose_level_normalized / out$need_per_weight$weight_kg
+  }
+  
+  if (isTRUE(debug)) {
+    return(out$raw)
   }
  
   #Convert dosages

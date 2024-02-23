@@ -21,7 +21,7 @@
 #' @rdname normalize_height
 #' @export 
 #' @importFrom dplyr mutate filter bind_rows arrange
-normalize_height <- function(raw, f, log_path){
+normalize_height <- function(raw, f, log_path, debug=FALSE){
   message("...normalizing height...")
   # tmp = lapply(fileList, function(f){
   #   s_list = load_sheet_group(fileName = f, template_path = template_path)
@@ -68,6 +68,9 @@ normalize_height <- function(raw, f, log_path){
   if(nrow(out$raw)){
     message("...Unhandled cases for height: ", paste0(out$raw$height_cm %>% unique(), collapse = "; "))
     log_CvT_doc_load(f=f, m="unhandled_height_normalize_case", log_path=log_path, val=out$raw$id)
+  }
+  if (isTRUE(debug)) {
+    return(out$raw)
   }
   #out$unhandled_cases = out$raw
   #Convert m, cm, mm, in, ft, etc.

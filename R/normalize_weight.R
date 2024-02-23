@@ -16,7 +16,7 @@
 #' @rdname normalize_weight
 #' @export 
 #' @importFrom dplyr mutate filter bind_rows arrange select
-normalize_weight <- function(raw, f, log_path){
+normalize_weight <- function(raw, f, log_path, debug=FALSE){
   message("...normalizing weight...")
   #weight_estimated --> 0 = No estimation (just conversion); 1 = extrapolated; 2 = range mean
   # tmp = lapply(fileList, function(f){
@@ -67,6 +67,11 @@ normalize_weight <- function(raw, f, log_path){
     message("...Unhandled cases for weight: ", paste0(out$raw$weight_kg %>% unique(), collapse = "; "))
     log_CvT_doc_load(f=f, m="unhandled_weight_normalize_case", log_path=log_path, val=out$raw$id)
   }
+  
+  if (isTRUE(debug)){
+    return(out$raw)
+  }
+  
   #out$unhandled_cases = out$raw
   #Convert kg, g, mg, lbs, etc.
   out$convert_ready = dplyr::bind_rows(out$conversion, out$ci, out$unit_range)

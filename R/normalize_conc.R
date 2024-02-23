@@ -17,7 +17,7 @@
 #' @export 
 #' @importFrom dplyr mutate filter across bind_rows arrange
 #' @importFrom httk get_physchem_param
-normalize_conc <- function(raw, f, log_path){
+normalize_conc <- function(raw, f, log_path, debug = FALSE){
   message("...normalizing conc...")
   # tmp = lapply(fileList, function(f){
   #   s_list = load_sheet_group(fileName = f, template_path = template_path)
@@ -93,6 +93,11 @@ normalize_conc <- function(raw, f, log_path){
   out = check_non_numeric(x=out, f=f, col="conc_original", log_path=log_path)
   #Prep for conversion
   out$convert_ready = out$raw %>% dplyr::mutate(conc = as.numeric(conc_original))
+  
+  if (isTRUE(debug)) {
+    return(out$raw)
+  }
+  
   out$raw = NULL
 
   #Conc needs liquid portion (doesn't have / units)

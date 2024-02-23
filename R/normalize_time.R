@@ -16,7 +16,7 @@
 #' @rdname normalize_time
 #' @export 
 #' @importFrom dplyr mutate bind_rows arrange
-normalize_time <- function(raw, f, log_path){
+normalize_time <- function(raw, f, log_path, debug = FALSE){
   message("...normalizing conc time...")
   # tmp = lapply(fileList, function(f){
   #   s_list = load_sheet_group(fileName = f, template_path = template_path)
@@ -47,6 +47,11 @@ normalize_time <- function(raw, f, log_path){
   out = check_non_numeric(x=out, f=f, col="time_original", log_path=log_path)
   #Prep for conversion
   out$convert_ready = out$raw %>% dplyr::mutate(time_hr = as.numeric(time_original))
+  
+  if (isTRUE(debug)) {
+    return(out$raw)
+  }
+  
   out$raw = NULL
   #Convert time
   for(i in seq_len(nrow(out$convert_ready))){

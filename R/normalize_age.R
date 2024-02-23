@@ -18,7 +18,7 @@
 #' @export 
 #' @importFrom readxl read_xlsx
 #' @importFrom dplyr mutate filter select bind_rows rename arrange
-normalize_age <- function(raw, f, log_path){
+normalize_age <- function(raw, f, log_path, debug = FALSE){
   message("...normalizing age...")
   age_dict = readxl::read_xlsx("input/dictionaries/age_category_dict.xlsx")
   # tmp = lapply(fileList, function(f){
@@ -66,6 +66,11 @@ normalize_age <- function(raw, f, log_path){
             paste0(out$unmatched_species$species, collapse = "; "))
     log_CvT_doc_load(f=f, m="no_species_age_category_match", log_path = log_path, val=out$unmatched_species$id)
   }
+  
+  if (isTRUE(debug)) {
+    return(out$raw)
+  }
+  
   out$raw = out$raw %>% dplyr::filter(!tempID %in% out$unmatched_species$tempID)
   #Normalize units
   out$raw$age_units = normalize_age_units(out$raw$age_units)
