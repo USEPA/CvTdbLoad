@@ -13,25 +13,23 @@ bulk_update_conc_normalization <- function(){
                   "LEFT JOIN cvt.conc_time_values b ON a.id = b.fk_series_id ",
                   "LEFT JOIN cvt.chemicals c ON c.id = a.fk_analyzed_chemical_id ",
                   "LEFT JOIN cvt.conc_medium_dict d ON d.id = a.fk_conc_medium_id ",
-                  "LIMIT 50000"
+                  "WHERE b.conc_original IS NOT NULL"
   )
 
   # Pull data to check
   df_raw <- db_query_cvt(query) %>%
     # Preserve previous conversion value
     dplyr::mutate(conc_old = conc,
-                  conc_medium = conc_medium_normalized) %>%
-    # Skip NA conc_original which don't need updated Normalization
-    dplyr::filter(!is.na(conc_original))
+                  conc_medium = conc_medium_normalized)
     
   # Collapse ID field to improve conversion speeds (only convert unique cases once)
-  df_raw_zip = df_raw %>%
+  df_raw_zip <- df_raw %>%
     dplyr::group_by(dplyr::across(c(-id))) %>%  
     dplyr::summarise(id = toString(id)) %>%
     dplyr::ungroup()
   
   # Normalized data
-  df_normalized <- normalize_conc(raw=df_raw)
+  df_normalized <- normalize_conc(raw=df_raw_zip)
   
   # Filter to those where "conc_old" does not equal the new "conc"
   compare <- df_normalized %>% 
@@ -58,7 +56,7 @@ bulk_update_conc_normalization <- function(){
     cat()
   
   # Expand back out the ID field
-  df_update = df_normalized %>%
+  df_update <- df_normalized %>%
     tidyr::separate_rows(id, sep = ", ")
   
   if(nrow(df_update) != nrow(df_raw)){
