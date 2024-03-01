@@ -8,7 +8,7 @@ bulk_update_conc_normalization <- function(){
   query <- paste0("SELECT distinct ",
                   "b.id, a.conc_units_original, ",
                   "b.conc_original, b.conc, b.conc_sd_original, b.conc_lower_bound_original, b.conc_upper_bound_original, ",
-                  "c.chemical_name_original, c.chemical_name_secondary_original, c.casrn_original, c.dsstox_substance_id, ",
+                  "c.chemical_name_original, c.chemical_name_secondary_original, c.casrn_original, c.id as fk_analyzed_chemical_id, ",
                   "d.conc_medium_normalized, ",
                   "e.species ",
                   "FROM cvt.series a ",

@@ -136,6 +136,7 @@ normalize_conc <- function(raw, f, log_path){
   
   # TODO Split up between routes as well (ug/mL tissue and ug/m3 breath)
   for(t in c("conc", "conc_sd", "conc_lower_bound", "conc_upper_bound")){
+    message("...normalizing ", t)
     for(i in seq_len(nrow(out$convert_ready))){
       # Molecular Weight conversion (have to find MW first)
       # Units must be mol and dsstox_substance_id must be present
