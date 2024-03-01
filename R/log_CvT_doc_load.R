@@ -27,6 +27,11 @@ log_CvT_doc_load <- function(f,
                              reset=FALSE, 
                              val=NULL,
                              log_path = "output/template_normalization_log.xlsx"){
+  if(exists("ENV_DEBUG")){
+    if(ENV_DEBUG){
+      return()
+    }
+  }
   if(file.exists(log_path)){
     log = readxl::read_xlsx(log_path)
     log$timestamp = as.character(log$timestamp)  

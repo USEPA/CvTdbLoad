@@ -41,6 +41,9 @@ vignettes/*.pdf
 # Python Environment Variables
 .env
 
+# Python Virtual Environments
+*env/
+
 # pkgdown site
 docs/
 

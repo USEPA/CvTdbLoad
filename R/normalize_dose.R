@@ -56,7 +56,9 @@ normalize_dose <- function(raw, f, log_path, debug = FALSE){
     gsub(" per ", "/", .) %>% 
     trimws()
   #Remove parenthetical information from dose_level_normalized
-  out$raw$dose_level_normalized = gsub("\\([^()]*\\)", "", out$raw$dose_level_normalized) %>% trimws()
+  if ("dose_level_normalized" %in% names(out$raw)) {
+    out$raw$dose_level_normalized = gsub("\\([^()]*\\)", "", out$raw$dose_level_normalized) %>% trimws()
+  }
   #Missing dose value
   out = check_missing(x=out, miss_col = "dose_level", f=f, flag=TRUE, log_path=log_path)
 
@@ -123,6 +125,11 @@ normalize_dose <- function(raw, f, log_path, debug = FALSE){
   #Dose needs weight (doesn't have / units)
   out$need_per_weight = out$conversion %>% dplyr::filter(!grepl("/|per", dose_level_units))
   out$conversion = out$conversion %>% dplyr::filter(!tempID %in% out$need_per_weight$tempID)
+  
+  if (isTRUE(debug)) {
+    return(out$raw)
+  }
+  
   #Fix need_per_weight - convert to mg then divide by kg weight (given or extrapolated)
   if(nrow(out$need_per_weight)){
     for(i in seq_len(nrow(out$need_per_weight))){
@@ -133,10 +140,6 @@ normalize_dose <- function(raw, f, log_path, debug = FALSE){
     }
     #Divide by weight (given or extrapolated)
     out$need_per_weight$dose_level_normalized = out$need_per_weight$dose_level_normalized / out$need_per_weight$weight_kg
-  }
-  
-  if (isTRUE(debug)) {
-    return(out$raw)
   }
  
   #Convert dosages
