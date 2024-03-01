@@ -86,7 +86,7 @@ normalize_CvT_data <- function(df, f, log_path){
                          dplyr::rename(fk_series_id = id) %>%
                          dplyr::left_join(df$Subjects %>%
                                             dplyr::select(id, species), 
-                                          by=c("fk_study_id"="id")) %>%
+                                          by=c("fk_subject_id"="id")) %>%
                          dplyr::left_join(df$Conc_Time_Values, 
                                           by="fk_series_id") %>%
                          # dplyr::rename(any_of(c(
@@ -95,16 +95,15 @@ normalize_CvT_data <- function(df, f, log_path){
                          #   "conc_upper_bound_original"="conc_upper_bound"
                          # ))) %>%
                          dplyr::rename(any_of(c(
-                           "conc_medium" = "conc_medium_original",
+                           "conc_medium" = "conc_medium_normalized",
                            "analyte_name"="analyte_name_original",
                            "analyte_name_secondary"="analyte_name_secondary_original",
                            "analyte_casrn_secondary"="analyte_casrn_original"
-                           
                          ))) %>%
                          dplyr::select(id, fk_series_id, species, conc_medium, analyte_name, analyte_name_secondary, analyte_casrn,
                                        conc_original, conc_units_original,
                                        conc_sd_original, conc_lower_bound_original,
-                                       conc_upper_bound_original, dsstox_substance_id), 
+                                       conc_upper_bound_original, fk_analyzed_chemical_id), 
                        f=f,
                        log_path=log_path)
   

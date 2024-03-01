@@ -96,7 +96,9 @@ normalize_conc <- function(raw, f, log_path){
   out$raw = NULL
 
   #Conc needs liquid portion (doesn't have / units)
-  out$need_per_liquid = out$convert_ready %>% dplyr::filter(!grepl("/|per|ppm|ppb|ppmv|ppbv", conc_units_original))
+  out$need_per_liquid = out$convert_ready %>% dplyr::filter(!grepl("/|per|ppm|ppb|ppmv|ppbv", conc_units_original),
+                                                            # Filter out tissue measures to httk Density conversion attempts
+                                                            !conc_units_original %in% c("ug"))
   out$convert_ready = out$convert_ready %>% dplyr::filter(!tempID %in% out$need_per_liquid$tempID)
   #Is per weight
   out$per_weight = out$convert_ready %>% 
@@ -112,26 +114,47 @@ normalize_conc <- function(raw, f, log_path){
   #remaining logic TBD
   #message("...Conc_units conversion logic TBD")
   #warning("...Conc_units conversion logic TBD")
-  #Need to split up between routes as well (ug/mL tissue and ug/m3 breath)
+  
+  # Map to chemical entries for DTXSID
+  chem_map = db_query_cvt(paste0("SELECT id as fk_analyzed_chemical_id, dsstox_substance_id ",
+                                 "FROM cvt.chemicals WHERE id in (", 
+                                 toString(unique(out$convert_ready$fk_analyzed_chemical_id)), ") ",
+                                 "AND dsstox_substance_id IS NOT NULL"))
+  
+  out$convert_ready = out$convert_ready %>%
+    dplyr::left_join(chem_map, by="fk_analyzed_chemical_id")
+  
+  # Pull MW dictionary
+  if(any(grepl("mol/", out$convert_ready$conc_units_original))){
+    # Check environment variable for api_key
+    if(!exists("API_AUTH")){
+      stop("Need API key for CCTE Chemicals API...")
+    }
+    MW_dict = get_mw_chemicals_api(dtxsid_list=unique(out$convert_ready$dsstox_substance_id),
+                                   api_key=API_AUTH)
+  }
+  
+  # TODO Split up between routes as well (ug/mL tissue and ug/m3 breath)
   for(t in c("conc", "conc_sd", "conc_lower_bound", "conc_upper_bound")){
+    message("...normalizing ", t)
     for(i in seq_len(nrow(out$convert_ready))){
       # Molecular Weight conversion (have to find MW first)
-      # Units must be mol, and dsstox_substance_id must be present
+      # Units must be mol and dsstox_substance_id must be present
       MW=NA
       if(grepl("mol/", out$convert_ready[i,]$conc_units_original) && !is.na(out$convert_ready[i,]$dsstox_substance_id)){
-        mw <- tryCatch(
-          httr::POST(
-            "https://api-ccte.epa.gov/chemical/detail/search/by-dtxsid/",
-            httr::accept_json(),
-            httr::content_type_json(),
-            # Use API Key for authorization
-            httr::add_headers(`x-api-key` = API_AUTH),
-            encode = "json",
-            body=as.list(out$convert_ready[i,]$dsstox_substance_id)
-          ) %>% httr::content() %>% dplyr::bind_rows() %>% dplyr::select(mw=averageMass),
-          error=function(cond){NA}
-        )[[1]]
-        
+        # Pull MW from dictionary by DTXSID
+        MW <- MW_dict$mw[MW_dict$dtxsid == out$convert_ready[i,]$dsstox_substance_id]
+      }
+      # Tissue density lookup/conversion attempt
+      if(out$convert_ready[i,]$conc_units_original %in% c("ug")){
+        out$convert_ready[i,]$conc_units_original = paste0(out$convert_ready[i,]$conc_units_original, " tissue conc")
+        MW <- httk::tissue.data[httk::tissue.data$variable == "Density (g/cm^3)",] %>%
+          dplyr::filter(Tissue == out$convert_ready[i,]$conc_medium) %>%
+          dplyr::mutate(Species = tolower(Species)) %>%
+          dplyr::filter(Species == out$convert_ready[i,]$species) %>%
+          dplyr::pull(value)
+        # If not matching tissue density, set NA
+        if(!length(MW)) MW = NA
       }
       out$convert_ready[i,] = convert_units(x=out$convert_ready[i,], 
                                             num=t, 

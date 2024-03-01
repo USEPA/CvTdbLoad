@@ -3,7 +3,7 @@
 #' @param num Name of column with values to convert
 #' @param units Name of column with units to convert from
 #' @param desired Desired units to convert the input value into
-#' @param MW Molecular weight of the input chemical (if applicable)
+#' @param MW Conversion factor to use (such as Molecular weight, tissue Density, etc.)
 #' @param overwrite_units Boolean to overwrite the 'units' with desired units.
 #' @title FUNCTION_TITLE
 #' @return OUTPUT_DESCRIPTION
@@ -56,7 +56,9 @@ convert_units <- function(x, num, units, desired, MW=NA, overwrite_units=FALSE){
               `umol/l` = list(`ug/ml`=paste0("*",MW,"/1000")), #1000 less than nmol/l conversion 
               `pmol/ml` = list(`ug/ml`=paste0("*",MW,"/1000000")), #1 pmol/ml*(1mol/1000000000000pmol)*(MW g/1mol)*(1000000ug/1g)=1*MW/1000000
               `ug/g` = list(`ug/ml`=paste0("*", MW)), #1 ug/g*1000g/kg*MW kg/L*1L/1000mL=ug/mL --> using httk density value for MW variable (refactor name)
-              `umol/kg` = list(`mg/kg`= paste0("*", MW, "/1000")) # MW is g/mol, which is the same as mg/mmol or ug/umol
+              `umol/kg` = list(`mg/kg`= paste0("*", MW, "/1000")), # MW is g/mol, which is the same as mg/mmol or ug/umol
+              # Tissue density conversions (Density = g/mL from httk)
+              `ug tissue conc` = list(`ug/ml`=paste0("*MW"))
               )
   #Convert units based on input string equation
   if(is.null(conv[[x[[units]]]][[desired]])){
