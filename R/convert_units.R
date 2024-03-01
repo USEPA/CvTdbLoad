@@ -20,7 +20,7 @@ convert_units <- function(x, num, units, desired, MW=NA, overwrite_units=FALSE){
   #Map of input units to desired output units equation
   conv = list(day = list(hr="*24", day="/1", week="/7", month="/30", year="/365"),
               week = list(hr="*24*7", day="*7", week="/1", month="/4", year="/52"),
-              month = list(day="*30", week="*4", month="/1", year="/52"),
+              month = list(hr="*30*24", day="*30", week="*4", month="/1", year="/52"),
               year = list(day="*365", week="*52", month="*12", year="/1"),
               kg = list(kg="/1"), #Only care to convert to kg for all weights
               g = list(mg="*1000", kg="/1000"),

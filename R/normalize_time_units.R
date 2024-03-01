@@ -15,10 +15,11 @@ normalize_time_units <- function(x){
   #Convert time
   x = tolower(x)
   conv = list(s=list("s", "sec", "second", "seconds"),
-              min=list("min", "minute", "minutes"),
+              min=list("min", "minute", "minutes", "minutess"),
               hr=list("hr","hour", "hours", "h"),
-              day=list("day", "days"),
-              week=list("week", "weeks", "wk", "wks")
+              day=list("day", "days", "gestation day"),
+              week=list("week", "weeks", "wk", "wks"),
+              month=list("month", "months")
   )
   
   x = lapply(x, function(s){

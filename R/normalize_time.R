@@ -48,10 +48,6 @@ normalize_time <- function(raw, f, log_path, debug = FALSE){
   #Prep for conversion
   out$convert_ready = out$raw %>% dplyr::mutate(time_hr = as.numeric(time_original))
   
-  if (isTRUE(debug)) {
-    return(out)
-  }
-  
   out$raw = NULL
   #Convert time
   for(i in seq_len(nrow(out$convert_ready))){
@@ -62,6 +58,10 @@ normalize_time <- function(raw, f, log_path, debug = FALSE){
   }
   # Convert Failed
   out = check_convert_failed(x=out, f=f, col="time_hr", log_path=log_path)
+  
+  if (isTRUE(debug)) {
+    return(out)
+  }
   #Remove empty list elements
   out = out[sapply(out, nrow) > 0]
   #Convert to NA for all lists that were not normalized
