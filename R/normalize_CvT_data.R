@@ -71,7 +71,7 @@ normalize_CvT_data <- function(df, f, log_path){
                          ))) %>%
                          dplyr::select(id, fk_study_id, species, subtype, weight_kg, height_cm,
                                        test_substance_name, dose_level, dose_level_units, 
-                                       dose_volume, administration_route_normalized),
+                                       dose_volume, administration_route_normalized, fk_dosed_chemical_id),
                        f=f,
                        log_path = log_path) %>%
     dplyr::select(fk_study_id, dose_level_normalized) %>% 

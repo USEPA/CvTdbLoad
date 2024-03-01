@@ -66,11 +66,7 @@ normalize_age <- function(raw, f, log_path, debug = FALSE){
             paste0(out$unmatched_species$species, collapse = "; "))
     log_CvT_doc_load(f=f, m="no_species_age_category_match", log_path = log_path, val=out$unmatched_species$id)
   }
-  
-  if (isTRUE(debug)) {
-    return(out$raw)
-  }
-  
+
   out$raw = out$raw %>% dplyr::filter(!tempID %in% out$unmatched_species$tempID)
   #Normalize units
   out$raw$age_units = normalize_age_units(out$raw$age_units)
@@ -95,6 +91,11 @@ normalize_age <- function(raw, f, log_path, debug = FALSE){
     message("...Unhandled age normalization...Needs further curation")
     log_CvT_doc_load(f=f, m="unhandled_age_normalize_case", log_path=log_path, val=out$need_curation$id)
   }
+  
+  if (isTRUE(debug)) {
+    return(out)
+  }
+  
   out$raw = out$raw %>% dplyr::filter(!tempID %in% out$need_curation$tempID) %>%
     dplyr::mutate(age_normalized = as.numeric(age_normalized))
   out$to_convert = out$raw

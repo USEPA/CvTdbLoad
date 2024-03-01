@@ -95,7 +95,7 @@ normalize_conc <- function(raw, f, log_path, debug = FALSE){
   out$convert_ready = out$raw %>% dplyr::mutate(conc = as.numeric(conc_original))
   
   if (isTRUE(debug)) {
-    return(out$raw)
+    return(out)
   }
   
   out$raw = NULL

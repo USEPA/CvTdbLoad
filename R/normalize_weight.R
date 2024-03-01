@@ -69,7 +69,7 @@ normalize_weight <- function(raw, f, log_path, debug=FALSE){
   }
   
   if (isTRUE(debug)){
-    return(out$raw)
+    return(out)
   }
   
   #out$unhandled_cases = out$raw

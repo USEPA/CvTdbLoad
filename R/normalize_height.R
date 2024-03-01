@@ -69,8 +69,9 @@ normalize_height <- function(raw, f, log_path, debug=FALSE){
     message("...Unhandled cases for height: ", paste0(out$raw$height_cm %>% unique(), collapse = "; "))
     log_CvT_doc_load(f=f, m="unhandled_height_normalize_case", log_path=log_path, val=out$raw$id)
   }
+  
   if (isTRUE(debug)) {
-    return(out$raw)
+    return(out)
   }
   #out$unhandled_cases = out$raw
   #Convert m, cm, mm, in, ft, etc.
