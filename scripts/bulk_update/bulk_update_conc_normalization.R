@@ -2,17 +2,20 @@
 bulk_update_conc_normalization <- function(){
   # Set global variable for debugging (skip logging)
   ENV_DEBUG <<- TRUE
+  API_AUTH <<- Sys.getenv("API_AUTH")
   
   # Query with needed columns
   query <- paste0("SELECT distinct ",
                   "b.id, a.conc_units_original, ",
                   "b.conc_original, b.conc, b.conc_sd_original, b.conc_lower_bound_original, b.conc_upper_bound_original, ",
                   "c.chemical_name_original, c.chemical_name_secondary_original, c.casrn_original, c.dsstox_substance_id, ",
-                  "d.conc_medium_normalized ",
+                  "d.conc_medium_normalized, ",
+                  "e.species ",
                   "FROM cvt.series a ",
                   "LEFT JOIN cvt.conc_time_values b ON a.id = b.fk_series_id ",
                   "LEFT JOIN cvt.chemicals c ON c.id = a.fk_analyzed_chemical_id ",
                   "LEFT JOIN cvt.conc_medium_dict d ON d.id = a.fk_conc_medium_id ",
+                  "LEFT JOIN cvt.subjects e ON a.fk_subject_id = e.id ",
                   "WHERE b.conc_original IS NOT NULL"
   )
 
@@ -65,6 +68,16 @@ bulk_update_conc_normalization <- function(){
     stop("Error with normalization, input rows do not equal output...")
   }
   
-  # TODO Push updated values to Conc_Time_Values sheet based on "id" field
-    
+  # Filter to only entries that need updating
+  df_out = df_update %>%
+    dplyr::filter(conc_old != conc) %>%
+    dplyr::select(id, conc, conc_sd, conc_lower_bound, conc_upper_bound) %>%
+    dplyr::distinct()
+  
+  # Push updated values to Conc_Time_Values sheet based on "id" field
+  db_update_tbl(df=df_out,
+                tblName = "conc_time_values")
+  
+  # Return updated values
+  return(df_out)
 }

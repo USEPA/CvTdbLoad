@@ -30,7 +30,8 @@ normalize_conc_units <- function(x){
               `ng/l`=list("ng/l", "ng/L"),
               `pmol/ml`=list("pmole/ml"),
               ug=list("ug", "ug", "ug concentration equivalents", "?g"),
-              mg=list("mg"))
+              mg=list("mg"),
+              `umol/l`=list("um", "uM"))
   
   x = lapply(x, function(s){
     for(c in names(conv)){
