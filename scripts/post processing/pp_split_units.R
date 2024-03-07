@@ -57,7 +57,37 @@ pp_split_units <- function(schema_name){
                  stringr::str_squish(),
                ws_count = stringr::str_count(split_value, "[:space:]"))
       
+      # Perform simple substitutions
+      # Replace "at least " with ">"
+      tmp = tmp %>% mutate(split_value = gsub("at least ", ">", split_value) %>%
+                             stringr::str_squish())
+      # Replace "at most " with "<"
+      tmp = tmp %>% mutate(split_value = gsub("at most ", "<", split_value) %>%
+                             stringr::str_squish())
+      # Replace .D with .
+      tmp = tmp %>% mutate(split_value = gsub("([0-9]+)\\.D([0-9]+)", "\\1.\\2", split_value) %>%
+                             stringr::str_squish())
+      # Remove " (SD)"
+      tmp = tmp %>% mutate(split_value = gsub(" \\(SD\\)", "", split_value) %>%
+                             stringr::str_squish())
+      # Remove " - seems too low"
+      tmp = tmp %>% mutate(split_value = gsub(" - seems too low", "", split_value) %>%
+                             stringr::str_squish())
+      # Remove " free base"
+      tmp = tmp %>% mutate(split_value = gsub(" free base", "", split_value) %>%
+                             stringr::str_squish())
+      # Remove "adult"
+      tmp = tmp %>% mutate(split_value = gsub("adult", "", split_value) %>%
+                             stringr::str_squish())
+      # Rectify split decimals (24. 04 to 24.04)
+      tmp = tmp %>% mutate(split_value = gsub("(\\d+) \\.(\\d+)", "\\1.\\2", split_value) %>%
+                             stringr::str_squish())
+     
+      # Calculate ws_count
+      tmp = tmp %>% mutate(ws_count = stringr::str_count(split_value, "[:space:]"))
+      
       out = list()
+      
       # Filter to simple split cases (start with numeric and only one whitespace)
       out$simple_split = tmp %>%
         filter(grepl("^[0-9]|^[\\.]|^[>]", split_value), 
@@ -82,7 +112,7 @@ pp_split_units <- function(schema_name){
       # Handle or, +/-, etc.
       out$range = tmp %>%
         # Ensure it's numbers separated by or, +/-, or -
-        filter(grepl("[0-9] or [0-9]|[0-9] ± [0-9]|[0-9] - [0-9]", split_value))
+        filter(grepl("[0-9] or [0-9]|[0-9] ± [0-9]|[0-9] +-[0-9]|[0-9] - [0-9]", split_value))
       if(nrow(out$range)){
         out$range = out$range %>%
           mutate(split_units = gsub("^.* ", "", split_value))
@@ -101,6 +131,7 @@ pp_split_units <- function(schema_name){
         mutate(split_units = sub("[0-9]*.?[0-9]*-[0-9]*.?[0-9]", "", split_value),
                split_value = sub("[^0-9.-]", "", split_value))
       tmp = tmp %>% filter(!id %in% out$range_2$id)
+      
       # Handle case like 27.82 (2.13) g
       out$parenthetic_1 = tmp %>%
         filter(grepl(") [A-Za-z]+$", split_value)) %>%
@@ -109,6 +140,7 @@ pp_split_units <- function(schema_name){
                split_value = sub('\\).*', ')', split_value) %>%
                  stringr::str_squish())
       tmp = tmp %>% filter(!id %in% out$parenthetic_1$id)
+      
       # Handle case like 72.6-90.7 kg (mean 83.1)
       out$parenthetic_2 = tmp %>%
         filter(grepl("[0-9] [A-Za-z]+\\s\\(mean", split_value)) %>%
@@ -118,6 +150,7 @@ pp_split_units <- function(schema_name){
                split_value=sub("\\s[A-Za-z]+\\s\\(", " (", split_value) %>%
                  stringr::str_squish())
       tmp = tmp %>% filter(!id %in% out$parenthetic_2$id)
+      
       # Handle case like 
       out$parenthetic_3 = tmp %>%
         filter(grepl("[0-9] [A-Za-z]+\\s\\([0-9]*.?[0-9]*-[0-9]*.?[0-9]\\)$", split_value)) %>%
@@ -126,6 +159,13 @@ pp_split_units <- function(schema_name){
                  stringr::str_squish(),
                split_value=sub("\\s[A-Za-z]+\\s\\(", " (", split_value) %>%
                  stringr::str_squish())
+      
+      # Handle case like (23-29y)
+      out$parenthetic_4 = tmp %>%
+        filter(grepl("\\([0-9]+-[0-9]+[a-zA-Z]\\)$", split_value)) %>%
+        mutate(
+          split_value = gsub("\\(([0-9]+)-([0-9]+)[a-zA-Z]\\)$", "(\\1-\\2)", split_value)
+        )
       
       tmp = tmp %>% filter(!id %in% out$parenthetic_3$id)
       # Recombine for return
