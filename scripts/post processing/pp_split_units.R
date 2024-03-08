@@ -67,9 +67,6 @@ pp_split_units <- function(schema_name){
       # Replace .D with .
       tmp = tmp %>% mutate(split_value = gsub("([0-9]+)\\.D([0-9]+)", "\\1.\\2", split_value) %>%
                              stringr::str_squish())
-      # Remove " (SD)"
-      tmp = tmp %>% mutate(split_value = gsub(" \\(SD\\)", "", split_value) %>%
-                             stringr::str_squish())
       # Remove " - seems too low"
       tmp = tmp %>% mutate(split_value = gsub(" - seems too low", "", split_value) %>%
                              stringr::str_squish())
@@ -83,7 +80,7 @@ pp_split_units <- function(schema_name){
       tmp = tmp %>% mutate(split_value = gsub("(\\d+) \\.(\\d+)", "\\1.\\2", split_value) %>%
                              stringr::str_squish())
      
-      # Calculate ws_count
+      # Calculate whitespace count
       tmp = tmp %>% mutate(ws_count = stringr::str_count(split_value, "[:space:]"))
       
       out = list()
@@ -159,15 +156,31 @@ pp_split_units <- function(schema_name){
                  stringr::str_squish(),
                split_value=sub("\\s[A-Za-z]+\\s\\(", " (", split_value) %>%
                  stringr::str_squish())
+      tmp = tmp %>% filter(!id %in% out$parenthetic_3$id)
       
       # Handle case like (23-29y)
       out$parenthetic_4 = tmp %>%
-        filter(grepl("\\([0-9]+-[0-9]+[a-zA-Z]\\)$", split_value)) %>%
+        filter(grepl("\\([0-9]+\\.?[0-9]*-[0-9]+\\.?[0-9]*[a-zA-Z]+\\)$", split_value)) %>%
         mutate(
-          split_value = gsub("\\(([0-9]+)-([0-9]+)[a-zA-Z]\\)$", "(\\1-\\2)", split_value)
+          split_units = stringr::str_extract(split_value, "[a-zA-Z]+(?=\\)$)"),
+          split_value = sub("\\(([0-9]+\\.?[0-9]*)-([0-9]+\\.?[0-9]*)[a-zA-Z]+\\)$", "\\1-\\2", split_value)
         )
+      tmp = tmp %>% filter(!id %in% out$parenthetic_4$id)
       
-      tmp = tmp %>% filter(!id %in% out$parenthetic_3$id)
+      # Handle case like "6 hr 10min", "2 hr - 20 min"
+      out$partial_hours = tmp %>%
+        filter(grepl("^\\d+\\s*hr\\s*-?\\s*\\d+\\s*min$", split_value)) %>%
+        mutate(
+          clean_value = gsub(" |-", "", split_value),
+          hours = as.numeric(stringr::str_extract(clean_value, "^[0-9]+(?=hr)")),
+          minutes = as.numeric(stringr::str_extract(clean_value, "(?<=hr)[0-9]+(?=min)")),
+          split_value = as.character(ifelse(!is.na(minutes),
+                               sprintf("%f", hours + minutes / 60),
+                               sprintf("%d", hours))),
+          split_units = "hr"
+        )
+      tmp = tmp %>% filter(!id %in% out$partial_hours$id)
+      
       # Recombine for return
       out = bind_rows(out) %>%
         # Add table name
