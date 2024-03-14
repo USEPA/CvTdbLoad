@@ -151,7 +151,7 @@ normalize_CvT_templates <- function(file_location = "clowder",
     }
     
     #Normalize species
-    doc_sheet_list$Subjects$species = normalize_species(x=doc_sheet_list$Subjects$species)
+    doc_sheet_list$Subjects = normalize_species(x=doc_sheet_list$Subjects)
     
     #Normalize administration route (use dictionary to map)
     doc_sheet_list$Studies = doc_sheet_list$Studies %>%

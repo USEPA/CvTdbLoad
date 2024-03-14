@@ -24,7 +24,7 @@ convert_units <- function(x, num, units, desired, MW=NA, overwrite_units=FALSE){
               year = list(day="*365", week="*52", month="*12", year="/1"),
               kg = list(kg="/1"), #Only care to convert to kg for all weights
               g = list(mg="*1000", kg="/1000"),
-              ug = list(mg="/1000"),
+              ug = list(ug="/1", mg="/1000"),
               `µg` = list(mg="/1000"),
               mg = list(mg="/1", kg="/1000000"),
               lb = list(kg="/2.2"),
@@ -37,7 +37,9 @@ convert_units <- function(x, num, units, desired, MW=NA, overwrite_units=FALSE){
               min=list(hr="/60"),
               hr=list(hr="/1"),
               `mg/kg`=list(`mg/kg`="/1", `ug/ml`=paste0("*", MW)), #1 mg/kg*MW kg/L*1L/1000mL*1000ug/mg=ug/mL --> using httk density value for MW variable (refactor name)
-              `ug/kg`=list(`mg/kg`="/1000", `ug/ml`=paste0("*", MW, "/1000")),
+              `ng/g`=list(`ug/kg`="/1"),
+              `ug/g`=list(`ug/kg`="*1000"),
+              `ug/kg`=list(`ug/kg`="/1", `mg/kg`="/1000", `ug/ml`=paste0("*", MW, "/1000")),
               `µg/kg` = list(`ug/ml`=paste0("*", MW, "/1000")), 
               `g/kg`=list(`mg/kg`="*1000"),
               `ug/250 g`=list(`mg/kg`="*4/1000"),
@@ -53,9 +55,9 @@ convert_units <- function(x, num, units, desired, MW=NA, overwrite_units=FALSE){
               `nmol/l` = list(`ug/ml`=paste0("*",MW,"/1000000")), #1 nmol/L*(1mol/1000000000nmol)*(MW g/1mol)*(1000000ug/1g)*(1L/1000mL)=1*MW/1000000
               `nmol/ml` = list(`ug/ml`=paste0("*",MW,"/1000")),
               `nmoles/ml` = list(`ug/ml`=paste0("*",MW,"/1000")),
-              `umol/l` = list(`ug/ml`=paste0("*",MW,"/1000")), #1000 less than nmol/l conversion 
+              `umol/l` = list(`umol/l`="/1", `ug/ml`=paste0("*",MW,"/1000")), #1000 less than nmol/l conversion 
               `pmol/ml` = list(`ug/ml`=paste0("*",MW,"/1000000")), #1 pmol/ml*(1mol/1000000000000pmol)*(MW g/1mol)*(1000000ug/1g)=1*MW/1000000
-              `ug/g` = list(`ug/ml`=paste0("*", MW)), #1 ug/g*1000g/kg*MW kg/L*1L/1000mL=ug/mL --> using httk density value for MW variable (refactor name)
+              `ug/g` = list(`ug/g`="/1", `ug/ml`=paste0("*", MW)), #1 ug/g*1000g/kg*MW kg/L*1L/1000mL=ug/mL --> using httk density value for MW variable (refactor name)
               `umol/kg` = list(`mg/kg`= paste0("*", MW, "/1000")), # MW is g/mol, which is the same as mg/mmol or ug/umol
               # Tissue density conversions (Density = g/mL from httk)
               `ug tissue conc` = list(`ug/ml`=paste0("*MW"))

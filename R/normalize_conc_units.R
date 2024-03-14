@@ -17,21 +17,31 @@ normalize_conc_units <- function(x){
   }
   #Convert conc units
   x = tolower(x)
-  conv = list(`ng/ml`=list("ng/ml", "ng/mL"),
-              `mg/ml`=list("mg/ml"),
-              `percentage`=list("%", "% of original dose", "percent", "% Dose", "% dose", "cumulative %"),
-              `ug/g`=list("ug/g", "ug/g liver"),
-              `ug/kg`=list("ug/kg"),
-              `mg/kg`=list("mg/kg"),
-              `ug/ml`=list("mcg/mL", "mcg/ml", "ug/ml"),
-              `mg/l`=list("mg/l", "mg/L"),
-              `ug/l`=list("ug/l", "ug/L"),
-              `ug/ml`=list("ug/ml", "ug/mL"),
+  conv = list(`percentage`=list("%", "% of original dose", "percent", "percentage", "% Dose", "% dose", "cumulative %", "perc_dose", "% 14C-PFOA recovered"),
+              `ng/ml`=list("ng/ml", "ng/mL"),
               `ng/l`=list("ng/l", "ng/L"),
-              `pmol/ml`=list("pmole/ml"),
-              ug=list("ug", "ug", "ug concentration equivalents", "?g"),
+              `ng/g`=list("ng/g", "ng/g-tissue"),
+              ug=list("ug", "ug concentration equivalents", "?g"),
+              `ug/ml`=list("mcg/mL", "mcg/ml", "ug/ml", "ugml", "ug/mL"),
+              `ug/l`=list("ug/l", "ug/L", "ugL"),
+              `ug/mg`=list("ug/mg"),
+              `ug/g`=list("ug/g", "ug/g liver", "ugg", "µg/g"),
+              `ug/kg`=list("ug/kg", "ugkg", "µgkg"),
               mg=list("mg"),
-              `umol/l`=list("um", "uM"))
+              `mg/ml`=list("mg/ml", "mgmL"),
+              `mg/l`=list("mg/l", "mg/L"),
+              `mg/kg`=list("mg/kg", "mgkg", "mg kg", "mgkgday"),
+              `mg/m^3`=list("mgm3"),
+              `nl/g`=list("nl gasg"),
+              `ul/kg`=list("µl liquidkg"),
+              `pmol/ml`=list("pmole/ml"),
+              `nmol`=list("nmole"),
+              `umol/l`=list("um", "uM"),
+              `umol/kg`=list("umolkg"),
+              `mmol/m3`=list("mmolm3"),
+              `pcb/kg`=list("PCBkg"),
+              `ppm`=list("ppm", "ppmv")
+              )
   
   x = lapply(x, function(s){
     for(c in names(conv)){
