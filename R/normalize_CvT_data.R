@@ -23,7 +23,7 @@ normalize_CvT_data <- function(df, f, log_path){
   # "SELECT c.id, s.id, c.fk_series_id, c.time_original, s.time_units_original, c.time_hr FROM series s LEFT JOIN conc_time_values c on s.id = c.fk_series_id"
   # Normalize time requires Series and Conc_Time_Values
   tmp = normalize_time(raw = df$Series %>% 
-                         dplyr::rename(fk_series_id = id) %>%
+                         dplyr::mutate(fk_series_id = id) %>%
                          dplyr::left_join(df$Conc_Time_Values, 
                                           by=c("fk_series_id")) %>%
                          dplyr::rename(any_of(c("time_original"="time", "time_units_original"="time_units"))) %>%
@@ -83,27 +83,27 @@ normalize_CvT_data <- function(df, f, log_path){
   
   #Normalize Conc Units
   tmp = normalize_conc(raw=df$Series %>%
-                         dplyr::rename(fk_series_id = id) %>%
+                         dplyr::mutate(fk_series_id = id) %>%
                          dplyr::left_join(df$Subjects %>%
                                             dplyr::select(id, species), 
                                           by=c("fk_subject_id"="id")) %>%
                          dplyr::left_join(df$Conc_Time_Values, 
                                           by="fk_series_id") %>%
-                         # dplyr::rename(any_of(c(
-                         #   "conc_original"="conc", "conc_units_original"="conc_units",
-                         #   "conc_sd_original"="conc_sd", "conc_lower_bound_original"="conc_lower_bound",
-                         #   "conc_upper_bound_original"="conc_upper_bound"
-                         # ))) %>%
-                         dplyr::rename(any_of(c(
-                           "conc_medium" = "conc_medium_normalized",
-                           "analyte_name"="analyte_name_original",
-                           "analyte_name_secondary"="analyte_name_secondary_original",
-                           "analyte_casrn_secondary"="analyte_casrn_original"
-                         ))) %>%
+                          dplyr::rename(any_of(c(
+                            "conc_original"="conc", "conc_units_original"="conc_units",
+                            "conc_sd_original"="conc_sd", "conc_lower_bound_original"="conc_lower_bound",
+                            "conc_upper_bound_original"="conc_upper_bound"
+                          ))) %>%
+                         #dplyr::rename(any_of(c(
+                        #   "conc_medium" = "conc_medium_normalized",
+                        #   "analyte_name"="analyte_name_original",
+                        #   "analyte_name_secondary"="analyte_name_secondary_original",
+                        #   "analyte_casrn_secondary"="analyte_casrn_original"
+                        # ))) %>%
                          dplyr::select(id, fk_series_id, species, conc_medium, analyte_name, analyte_name_secondary, analyte_casrn,
                                        conc_original, conc_units_original,
                                        conc_sd_original, conc_lower_bound_original,
-                                       conc_upper_bound_original, fk_analyzed_chemical_id), 
+                                       conc_upper_bound_original),#, fk_analyzed_chemical_id), 
                        f=f,
                        log_path=log_path)
   
