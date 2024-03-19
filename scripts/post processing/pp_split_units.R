@@ -55,30 +55,32 @@ pp_split_units <- function(schema_name){
         # Add logic to count whitespace, filter out those with > 1
         mutate(split_value := !!as.symbol(u_fields$value[r]) %>%
                  stringr::str_squish(),
-               ws_count = stringr::str_count(split_value, "[:space:]"))
+               ws_count = stringr::str_count(split_value, "[:space:]"),
+               curator_comment = "")
       
       # Perform simple substitutions
       # Replace "at least " with ">"
-      tmp = tmp %>% mutate(split_value = gsub("at least ", ">", split_value) %>%
-                             stringr::str_squish())
+      tmp = tmp %>% mutate(split_value = gsub("at least ", ">=", split_value))
       # Replace "at most " with "<"
-      tmp = tmp %>% mutate(split_value = gsub("at most ", "<", split_value) %>%
-                             stringr::str_squish())
+      tmp = tmp %>% mutate(split_value = gsub("at most ", "<=", split_value))
       # Replace .D with .
-      tmp = tmp %>% mutate(split_value = gsub("([0-9]+)\\.D([0-9]+)", "\\1.\\2", split_value) %>%
-                             stringr::str_squish())
-      # Remove " - seems too low"
-      tmp = tmp %>% mutate(split_value = gsub(" - seems too low", "", split_value) %>%
-                             stringr::str_squish())
-      # Remove " free base"
-      tmp = tmp %>% mutate(split_value = gsub(" free base", "", split_value) %>%
-                             stringr::str_squish())
-      # Remove "adult"
-      tmp = tmp %>% mutate(split_value = gsub("adult", "", split_value) %>%
-                             stringr::str_squish())
+      tmp = tmp %>% mutate(split_value = gsub("([0-9]+)\\.D([0-9]+)", "\\1.\\2", split_value))
+      # Remove " - seems too low" and add it to a curator comment, if it exists
+      tmp = tmp %>% mutate(curator_comment = ifelse(stringr::str_detect(split_value, " - seems too low"),
+                                                     "seems too low", curator_comment),
+                            split_value = stringr::str_remove_all(split_value, " - seems too low"))
+      
+      # Remove " free base" and add it to a curator comment, if it exists
+      tmp = tmp %>% mutate(curator_comment = ifelse(stringr::str_detect(split_value, " free base"),
+                                                     "free base", curator_comment),
+                            split_value = stringr::str_remove_all(split_value, " free base"))
+      
+      # Remove "adult" and add it to a curator comment, if it exists
+      tmp = tmp %>% mutate(curator_comment = ifelse(stringr::str_detect(split_value, "adult"),
+                                                     "adult", curator_comment),
+                            split_value = stringr::str_remove_all(split_value, "adult"))
       # Rectify split decimals (24. 04 to 24.04)
-      tmp = tmp %>% mutate(split_value = gsub("(\\d+) \\.(\\d+)", "\\1.\\2", split_value) %>%
-                             stringr::str_squish())
+      tmp = tmp %>% mutate(split_value = gsub("(\\d+) \\.(\\d+)", "\\1.\\2", split_value))
      
       # Calculate whitespace count
       tmp = tmp %>% mutate(ws_count = stringr::str_count(split_value, "[:space:]"))
