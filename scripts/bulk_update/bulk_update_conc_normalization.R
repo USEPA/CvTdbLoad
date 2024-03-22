@@ -50,7 +50,7 @@ bulk_update_conc_normalization <- function(){
     cat()
   
   # Units with conversions now, but not before
-  message("Missing old logic unit conversions: ")
+  message("Newly covered unit conversions: ")
   compare %>% 
     dplyr::filter(is.na(conc_old), !is.na(conc)) %>%
     dplyr::pull(conc_units_original) %>%
@@ -70,13 +70,22 @@ bulk_update_conc_normalization <- function(){
   
   # Filter to only entries that need updating
   df_out = df_update %>%
+    # Can't compare NA values, so replace for now
+    tidyr::replace_na(list(conc_old = -99999, conc = -99999)) %>%
     dplyr::filter(conc_old != conc) %>%
+    dplyr::filter(conc != -99999) %>%
     dplyr::select(id, conc, conc_sd, conc_lower_bound, conc_upper_bound) %>%
-    dplyr::distinct()
+    dplyr::distinct() %>%
+    dplyr::mutate(qc_notes = "normalized conc updated")
   
-  # Push updated values to Conc_Time_Values sheet based on "id" field
-  db_update_tbl(df=df_out,
-                tblName = "conc_time_values")
+  if(nrow(df_out)){
+    # Push updated values to Conc_Time_Values sheet based on "id" field
+    db_update_tbl(df=df_out,
+                  tblName = "conc_time_values")  
+  } else {
+    message("No conc normalization updates to push")
+  }
+  
   
   # Return updated values
   return(df_out)
