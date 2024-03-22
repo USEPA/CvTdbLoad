@@ -165,7 +165,7 @@ normalize_conc <- function(raw, f, log_path, debug = FALSE){
                                             num=t, 
                                             units="conc_units_original", desired="ug/ml",
                                             overwrite_units = FALSE,
-                                            MW=MW)
+                                            conv_factor=MW)
     }
   }
   

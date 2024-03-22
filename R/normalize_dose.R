@@ -179,7 +179,7 @@ normalize_dose <- function(raw, f, log_path, debug = FALSE){
                                             units="dose_level_units", 
                                             desired="mg/kg",
                                             overwrite_units = FALSE,
-                                            MW=MW)
+                                            conv_factor=MW)
     }
   }
   
