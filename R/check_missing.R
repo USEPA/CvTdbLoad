@@ -19,7 +19,7 @@
 #' @export 
 #' @importFrom dplyr filter
 check_missing <- function(x, miss_col, f, flag=TRUE, log_path){
-  x$missing = x$raw %>% dplyr::filter(!!as.symbol(miss_col) %in% c("NA", "n/a", "N/A")  |
+  x$missing = x$raw %>% dplyr::filter(!!as.symbol(miss_col) %in% c("NA", "n/a", "N/A", "NR", "ND", "NQ")  |
                                        is.na(!!as.symbol(miss_col)))
   x$raw = x$raw %>% dplyr::filter(!tempID %in% x$missing$tempID)
   if(flag & nrow(x$missing)){

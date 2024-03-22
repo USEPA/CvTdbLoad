@@ -36,10 +36,10 @@ convert_units <- function(x, num, units, desired, MW=NA, overwrite_units=FALSE){
               s=list(hr="/60/60"), #Only care to convert to hr f time
               min=list(hr="/60"),
               hr=list(hr="/1"),
-              `mg/kg`=list(`mg/kg`="/1", `ug/ml`=paste0("*", MW)), #1 mg/kg*MW kg/L*1L/1000mL*1000ug/mg=ug/mL --> using httk density value for MW variable (refactor name)
-              `ng/g`=list(`ug/kg`="/1"),
+              `mg/kg`=list(`mg/kg`="/1", `ug/ml`= paste0("*", MW)), #1 mg/kg*MW kg/L*1L/1000mL*1000ug/mg=ug/mL --> using httk density value for MW variable (refactor name)
+              `ng/g`=list(`ug/kg`="/1", `ug/ml`= paste0("*", MW, "/1000")), # ug/mL from httk g/mL tissue density
               `ug/g`=list(`ug/kg`="*1000"),
-              `ug/kg`=list(`ug/kg`="/1", `mg/kg`="/1000", `ug/ml`=paste0("*", MW, "/1000")),
+              `ug/kg`=list(`ug/kg`="/1", `mg/kg`="/1000", `ug/ml`=paste0("*", MW, "/1000")), # ug/mL from httk g/mL tissue density
               `µg/kg` = list(`ug/ml`=paste0("*", MW, "/1000")), 
               `g/kg`=list(`mg/kg`="*1000"),
               `ug/250 g`=list(`mg/kg`="*4/1000"),

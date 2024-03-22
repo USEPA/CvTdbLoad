@@ -1,4 +1,4 @@
-bulk_check_normalization <- function(f="debug_file", log_path="output/debug_log.xlsx"){
+get_unhandled_normalize_log <- function(f="debug_file", log_path="output/debug_log.xlsx"){
   ENV_DEBUG <<- TRUE
     
   # TODO Check for normalize_conc_units, normalize_boolean
@@ -13,8 +13,13 @@ bulk_check_normalization <- function(f="debug_file", log_path="output/debug_log.
                             "LEFT JOIN cvt.series b ",
                             "ON b.id = a.fk_series_id ",
                             "WHERE a.time_hr is null"),
-    normalize_dose = paste0("SELECT distinct dose_level_original as dose_level, id, dose_level_units_original as dose_level_units ",
-                            "FROM cvt.studies WHERE dose_level_normalized is null"),
+    normalize_dose = paste0("SELECT distinct b.dose_level_original as dose_level, b.id, b.dose_level_units_original as dose_level_units, ",
+                            "c.species ",
+                            "FROM cvt.series a ",
+                            "LEFT JOIN cvt.studies b ON a.fk_study_id = b.id ",
+                            "LEFT JOIN cvt.subjects c ON a.fk_subject_id = c.id ",
+                            "WHERE b.dose_level_normalized is null"
+                            ),
     normalize_conc = paste0("SELECT distinct b.id, ",
                                 "a.conc_units_original, a.fk_conc_medium_id, ",
                                 "b.conc_original, b.conc, b.conc_sd_original, b.conc_lower_bound_original, b.conc_upper_bound_original, ",
@@ -43,7 +48,12 @@ bulk_check_normalization <- function(f="debug_file", log_path="output/debug_log.
     # }
     
     normalization_query = query_list[[normalization_name]]
-    query_results <- db_query_cvt(normalization_query)
+    query_results <- db_query_cvt(normalization_query) %>%
+      # Collapse to duplicate values are only normalized once
+      dplyr::group_by(dplyr::across(c(-id))) %>%  
+      dplyr::summarise(id = toString(id)) %>%
+      dplyr::ungroup() %>%
+      dplyr::distinct()
     
     # Return the out$raw "unhandled" cases
     normalization_function <- match.fun(normalization_name)
@@ -70,13 +80,14 @@ bulk_check_normalization <- function(f="debug_file", log_path="output/debug_log.
     # Add flag name
     summary_list[[normalization_name]] = lapply(names(summary), function(sn){
       summary[[sn]] %>%
+        dplyr::select(all_of(columns)) %>%
         dplyr::mutate(norm_flag_name = sn) %>%
-        dplyr::select(all_of(columns))
+        tidyr::separate_rows(id, sep = ", ")
     }) %>%
       dplyr::bind_rows() %>%
       dplyr::distinct()
   }
   
   # Output XLSX from dataframe list
-  writexl::write_xlsx(summary_list, "output/normalization_summary.xlsx")
+  writexl::write_xlsx(summary_list, paste0("output/unhandled_normalization_summary_", Sys.Date(),".xlsx"))
 }
