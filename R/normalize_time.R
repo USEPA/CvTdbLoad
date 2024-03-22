@@ -16,7 +16,7 @@
 #' @rdname normalize_time
 #' @export 
 #' @importFrom dplyr mutate bind_rows arrange
-normalize_time <- function(raw, f, log_path){
+normalize_time <- function(raw, f, log_path, debug = FALSE){
   message("...normalizing conc time...")
   # tmp = lapply(fileList, function(f){
   #   s_list = load_sheet_group(fileName = f, template_path = template_path)
@@ -47,6 +47,7 @@ normalize_time <- function(raw, f, log_path){
   out = check_non_numeric(x=out, f=f, col="time_original", log_path=log_path)
   #Prep for conversion
   out$convert_ready = out$raw %>% dplyr::mutate(time_hr = as.numeric(time_original))
+  
   out$raw = NULL
   #Convert time
   for(i in seq_len(nrow(out$convert_ready))){
@@ -57,6 +58,10 @@ normalize_time <- function(raw, f, log_path){
   }
   # Convert Failed
   out = check_convert_failed(x=out, f=f, col="time_hr", log_path=log_path)
+  
+  if (isTRUE(debug)) {
+    return(out)
+  }
   #Remove empty list elements
   out = out[sapply(out, nrow) > 0]
   #Convert to NA for all lists that were not normalized

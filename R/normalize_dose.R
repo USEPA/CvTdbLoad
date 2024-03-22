@@ -21,7 +21,7 @@
 #' @export 
 #' @importFrom dplyr filter mutate bind_rows arrange select
 #' @importFrom httk get_physchem_param
-normalize_dose <- function(raw, f, log_path){
+normalize_dose <- function(raw, f, log_path, debug = FALSE){
   message("...normalizing dose...")
   #message("Normalize_dose is still in development...")
   # tmp = lapply(fileList, function(f){
@@ -56,7 +56,9 @@ normalize_dose <- function(raw, f, log_path){
     gsub(" per ", "/", .) %>% 
     trimws()
   #Remove parenthetical information from dose_level_normalized
-  out$raw$dose_level_normalized = gsub("\\([^()]*\\)", "", out$raw$dose_level_normalized) %>% trimws()
+  if ("dose_level_normalized" %in% names(out$raw)) {
+    out$raw$dose_level_normalized = gsub("\\([^()]*\\)", "", out$raw$dose_level_normalized) %>% trimws()
+  }
   #Missing dose value
   out = check_missing(x=out, miss_col = "dose_level", f=f, flag=TRUE, log_path=log_path)
 
@@ -123,6 +125,11 @@ normalize_dose <- function(raw, f, log_path){
   #Dose needs weight (doesn't have / units)
   out$need_per_weight = out$conversion %>% dplyr::filter(!grepl("/|per", dose_level_units))
   out$conversion = out$conversion %>% dplyr::filter(!tempID %in% out$need_per_weight$tempID)
+  
+  if (isTRUE(debug)) {
+    return(out)
+  }
+  
   #Fix need_per_weight - convert to mg then divide by kg weight (given or extrapolated)
   if(nrow(out$need_per_weight)){
     for(i in seq_len(nrow(out$need_per_weight))){
@@ -138,22 +145,44 @@ normalize_dose <- function(raw, f, log_path){
   #Convert dosages
   out$convert_ready = dplyr::bind_rows(out$conversion, out$ci, out$unit_range)
   out$conversion = NULL; out$ci = NULL; out$unit_range = NULL
-  for(i in seq_len(nrow(out$convert_ready))){
-    #Molecular Weight conversion (have to find MW first)
-    MW=NA
-    if(grepl("mol/", out$convert_ready[i,]$dose_level_units)){
-      MW = tryCatch({httk::get_physchem_param("MW", chem.name=tolower(out$convert_ready[i,]$test_substance_name))},
-                    error=function(cond){NA})
-      
+  
+  if(nrow(out$convert_ready)){
+    # Map to chemical entries for DTXSID
+    chem_map = db_query_cvt(paste0("SELECT id as fk_dosed_chemical_id, dsstox_substance_id ",
+                                   "FROM cvt.chemicals WHERE id in (", 
+                                   toString(unique(out$convert_ready$fk_dosed_chemical_id)), ") ",
+                                   "AND dsstox_substance_id IS NOT NULL"))
+    
+    out$convert_ready = out$convert_ready %>%
+      dplyr::left_join(chem_map, by="fk_dosed_chemical_id")
+    
+    # Pull MW dictionary
+    if(any(grepl("mol/", out$convert_ready$dose_level_units))){
+      # Check environment variable for api_key
+      if(!exists("API_AUTH")){
+        stop("Need API key for CCTE Chemicals API...")
+      }
+      MW_dict = get_mw_chemicals_api(dtxsid_list=unique(out$convert_ready$dsstox_substance_id),
+                                     api_key=API_AUTH)
     }
-    #NEED subject weight to convert!
-    out$convert_ready[i,] = convert_units(x=out$convert_ready[i,], 
-                                          num="dose_level_normalized",
-                                          units="dose_level_units", 
-                                          desired="mg/kg",
-                                          overwrite_units = FALSE,
-                                          MW=MW)
+    
+    for(i in seq_len(nrow(out$convert_ready))){
+      #Molecular Weight conversion (have to find MW first)
+      MW=NA
+      if(grepl("mol/", out$convert_ready[i,]$dose_level_units)){
+        # Pull MW from dictionary by DTXSID
+        MW <- MW_dict$mw[MW_dict$dtxsid == out$convert_ready[i,]$dsstox_substance_id]
+      }
+      #NEED subject weight to convert!
+      out$convert_ready[i,] = convert_units(x=out$convert_ready[i,], 
+                                            num="dose_level_normalized",
+                                            units="dose_level_units", 
+                                            desired="mg/kg",
+                                            overwrite_units = FALSE,
+                                            conv_factor=MW)
+    }
   }
+  
   # Convert Failed
   out = check_convert_failed(x=out, f=f, col="dose_level_normalized", log_path=log_path, id_col = "fk_study_id")
   #Remove empty list elements
