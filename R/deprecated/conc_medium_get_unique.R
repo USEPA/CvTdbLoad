@@ -32,7 +32,7 @@ conc_medium_get_unique <- function(fileList, template_path){
     dplyr::mutate(conc_medium_original = trimws(tolower(conc_medium_original))) %>%
     unique() %>%
     #Attempt match
-    #dplyr::left_join(conc_medium_get_dict(), by="conc_medium_original") %>%
+    dplyr::left_join(conc_medium_get_dict(), by="conc_medium_original") %>%
     dplyr::filter(is.na(conc_medium_normalized),
            !is.na(conc_medium_original)) %>%
     dplyr::select(filepath, conc_medium_original, conc_medium_normalized)
