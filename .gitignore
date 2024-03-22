@@ -40,6 +40,7 @@ vignettes/*.pdf
 
 # Python Environment Variables
 .env
+env/
 
 # pkgdown site
 docs/
@@ -56,10 +57,4 @@ output/
 # Ignore CvT Curation Temp Files
 CvT Curation/
 Planning/
-<<<<<<< HEAD
-
-# Ignore .env files
-.env
-=======
 /Meta/
->>>>>>> master
