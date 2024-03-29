@@ -1,9 +1,11 @@
 #' @title pull_jira_info
 #' @description Script to process CSV export of Jira into a status log
-#' @param jira_project Jira project code (e.g. CVTDB)
+#' @param jira_project Jira project code (e.g. CVTDB).
 #' @param download_bulk Boolean whether to bulk download ticket attachments, Default: FALSE.
-#' @param auth_token Authorization token for Jira
-#' @return Summary DataFrame of Jira tickets by Epic, Label, and Status
+#' @param auth_token Authorization token for Jira.
+#' @param status_filter Custom filtering to a ticket status or vector of statuses. Default: NULL.
+#' @param epic_filter Custom filtering to a specific ticket Epic link by name (single or vector). Default: empty vector.
+#' @return Summary DataFrame of Jira tickets by Epic, Label, and Status.
 #' @details DETAILS
 #' @examples 
 #' \dontrun{
@@ -24,7 +26,7 @@
 #' @importFrom dplyr select contains mutate everything filter distinct left_join group_by summarise n
 #' @importFrom tidyr unite
 #' @importFrom stringr str_squish
-pull_jira_info <- function(jira_project, in_file = NULL, auth_token = NULL, status_filter = "Done"){
+pull_jira_info <- function(jira_project, in_file = NULL, auth_token = NULL, status_filter = "Done", epic_filter = c()){
   
   # Format headers
   if(!is.null(auth_token)){
@@ -76,7 +78,7 @@ pull_jira_info <- function(jira_project, in_file = NULL, auth_token = NULL, stat
   in_data <- in_data %>%
     dplyr::left_join(epics,
                      by=c("Epic Link"="Issue key")) %>%
-    dplyr::filter(`Epic Name` == "Document Curation",
+    dplyr::filter(`Epic Name` %in% c(epic_filter),
                   `Issue Type` != "Epic",
                   Status %in% c(status_filter)
     ) %>%

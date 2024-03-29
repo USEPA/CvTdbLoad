@@ -8,6 +8,7 @@
 #' @param userID Clowder user ID
 #' @param apiKey Clowder API key
 #' @param labels_filter Vector list of Jira ticket labels to filter to
+#' @param epic_filter Custom filtering to a specific ticket Epic link by name (single or vector). Default: empty vector.
 download_jira_update_clowder_info <- function(jira_project, 
                                               in_file = NULL, 
                                               auth_token, 
@@ -16,11 +17,13 @@ download_jira_update_clowder_info <- function(jira_project,
                                               baseurl, 
                                               userID, 
                                               apiKey,
-                                              labels_filter = NULL){
+                                              labels_filter = NULL,
+                                              epic_filter = c()){
   # Pull initial Jira information
   jira_info = pull_jira_info(jira_project=jira_project,
                              in_file=in_file,
-                             auth_token=auth_token)
+                             auth_token=auth_token,
+                             epic_filter=epic_filter)
   # Filter labels if provided
   if(!is.null(labels_filter)){
     jira_info$in_data = jira_info$in_data %>%
