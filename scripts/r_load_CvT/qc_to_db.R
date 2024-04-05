@@ -54,11 +54,11 @@ qc_to_cvt <- function(f) {
     validate_qc_fields(doc_sheet_list)
 
     for (sheet_name in names(doc_sheet_list)) {
-        # Get the sheet mapping to remap the fields
+        # Get the sheet mapping to rename the qc template fields to db fields
         sheet_mapping <- field_mapping %>%
             dplyr::filter(sheet == tolower(sheet_name))
 
-        # Iterate over each row in the sheet_mapping and update the column name
+        # Iterate through each column for the respective sheet
         for (i in 1:nrow(sheet_mapping)) {
             new_value <- sheet_mapping$to[i]
             old_value <- sheet_mapping$from[i]
@@ -83,19 +83,25 @@ qc_to_cvt <- function(f) {
             dplyr::select(id, category)
 
         # Remove these ids from the database
-        ids_to_remove <- dplyr::filter(categorized_records, category == "Remove")
+        ids_to_remove <- dplyr::filter(categorized_records, category == "Remove" )%>%
+            dplyr::select(id)
         # query <- "DELETE FROM cvt.{sheet} WHERE id = {id}"
+        
+        # Likely shouldn't need to touch these passing, unmodified records
+        ids_to_ignore <- dplyr::filter(categorized_records, category == "Ignore") %>%
+            dplyr::select(id)
+
+        # Normalize the rest of these fields
 
         # Update any fields that have changed
-        ids_to_update <- dplyr::filter(categorized_records, category == "Update")
+        ids_to_update <- dplyr::filter(categorized_records, category == "Update") %>%
+            dplyr::select(id)
         # query <- "UPDATE cvt.{sheet} SET record = new_df[record][ids_to_update]"
 
         # Add these new rows to the database
-        ids_to_add <- dplyr::filter(categorized_records, category == "Add")
+        ids_to_add <- dplyr::filter(categorized_records, category == "Add") %>%
+            dplyr::select(id)
         # query <- "INSERT INTO cvt.{sheet} (columns) VALUES records[ids_to_add]"
-        
-        # Likely shouldn't need to touch these passing, unmodified records
-        ids_to_ignore <- dplyr::filter(categorized_records, category == "Ignore")
     }
 }
 
@@ -103,7 +109,8 @@ fileList <- c(
     "input/test_qc/PMID17668360_QC_template_bkesic_erowan_20240212.xlsx",
     "input/test_qc/test_validation.xlsx",
     "input/test_qc/test_invalidation.xlsx",
-    "input/test_qc/PMID24495244_QC_template_bkesic_mhuse_20240206.xlsx"
+    "input/test_qc/PMID24495244_QC_template_bkesic_mhuse_20240206.xlsx",
+    "input/test_qc/qc_template.xlsx"
 )
 f <- fileList[[1]]
 
