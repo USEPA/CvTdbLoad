@@ -1,11 +1,14 @@
 rules:
-- expr: '!is.na(qc_status) | !is.na(qc_flags)'
+- expr: 'if(is.na(qc_status)) !is.na(qc_flags)'
+  meta:
+    message: Found row missing both qc_status and qc_flags.
+- expr: 'if(is.na(qc_flags)) !is.na(qc_status)'
   meta:
     message: Found row missing both qc_status and qc_flags.
 - expr: 'if (!is.na(qc_status)) qc_status == "pass" | qc_status == "fail"'
   meta:
     message: Found qc_status other than "pass" or "fail".
-- expr: 'if (qc_status == "pass") is.na(qc_flags) | qc_flags == "modified"'
+- expr: 'if (qc_status == "pass") is.na(qc_flags) | qc_flags == "modified" | qc_flags == "new entry" | qc_flags == "split entry, new"'
   meta:
     message: Found passing record with qc_flags other than "modified" or NA.
 - expr: 'if (qc_status == "fail") qc_flags == "not suitable" | qc_flags == "split entry, original"'
