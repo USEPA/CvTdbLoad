@@ -1,15 +1,4 @@
-# There are 4 situations
-# 1. A record fails
-#       - Remove these
-# 2. A record passes with no modifications
-#       - Do nothing
-# 3. A record passes with modifications
-#       - Update these entries in the database
-# 4. A new record is added
-#       - Add this new record to the database
-
 # TODO: Maybe validate cvt fields alongside validating qc fields. So that we can rename all the columns, if we need all the columns. Currently just skipping non-existing columns, which might be a bad idea.
-# TODO: Still need to handle normalization in this workflow
 
 validate_qc_fields <- function(df) {
     validation <- TRUE # False if an invalid condition was encountered
@@ -33,10 +22,36 @@ validate_qc_fields <- function(df) {
     return (validation)
 }
 
-qc_to_cvt <- function(files) {
+map_to_database_fieldnames <- function(df) {
+    field_mapping <- readxl::read_xlsx("input/qa_template_map.xlsx")
+    
+    for (sheet_name in names(df)) {
+        # Get the sheet mapping to rename the qc template fields to db fields
+        sheet_mapping <- field_mapping %>%
+            dplyr::filter(sheet == tolower(sheet_name))
+
+        # Iterate through each column for the respective sheet
+        for (i in 1:nrow(sheet_mapping)) {
+            new_value <- sheet_mapping$to[i]
+            old_value <- sheet_mapping$from[i]
+            
+            # Rename the column if it exists in the sheet, otherwise skip it
+            if (old_value %in% df[[sheet_name]]) {
+                df[[sheet_name]] <- df[[sheet_name]] %>%
+                    dplyr::rename(!!old_value := !!new_value)
+            }
+        }
+    }
+
+    return (df)
+}
+
+qc_to_db <- function(files) {
+    curated_chemicals <- "input/chemicals/curated_chemicals_comparison_2021-11-23.xlsx"
+    log_path <- "output/qc_to_db_log.xlsx"
+
     for (f in files) {
         doc_sheet_list <- load_sheet_group(fileName = f, template_path = "input/qc_template.xlsx")
-        field_mapping <- readxl::read_xlsx("input/qa_template_map.xlsx")
 
         # Convert all qc_status and qc_flags to lowercase, for simpler comparison
         for (sheet_name in names(doc_sheet_list)) {
@@ -46,44 +61,56 @@ qc_to_cvt <- function(files) {
                     qc_flags = tolower(qc_flags)
                 )
         }
+        
+        #Check if normalized data has all required fields (and no NA missing values in required fields)
+        check_required_fields_validator(df=doc_sheet_list, f=f)
 
         # Validate that all qc_fields values are as expected
-        validation <- validate_qc_fields(doc_sheet_list)
-        
-        if (!validation) {
+        if (!validate_qc_fields(doc_sheet_list)) {
             message("Validation failed, exiting.")
             stop()
         }
 
-        # Normalize fields
-        normalize_CvT_templates(file_location = "local",
-                                inputDir = f,
-                                template_path = "input/CvT_data_template_articles.xlsx",
-                                sheetList = c("Documents", "Studies", "Subjects", "Series", "Conc_Time_Values"),
-                                curated_chemicals = "input/chemicals/curated_chemicals_comparison_2021-11-23.xlsx",
-                                apiKey = Sys.getenv("apiKey"),
-                                baseurl = Sys.getenv("baseurl"),
-                                file_dsID = Sys.getenv("file_dsID"),
-                                doc_dsID = Sys.getenv("doc_dsID")
-        )
+        #Normalize species
+        doc_sheet_list$Subjects <- normalize_species(x=doc_sheet_list$Subjects)
+        
+        #Normalize administration route (use dictionary to map)
+        doc_sheet_list$Studies <- doc_sheet_list$Studies %>%
+            dplyr::rename(administration_route_original = administration_route) %>%
+            mutate(administration_route_original = tolower(administration_route_original)) %>%
+            left_join(readxl::read_xlsx("input\\dictionaries\\administration_route_dict.xlsx") %>%
+                        dplyr::rename(fk_administration_route = id),
+                        by="administration_route_original")
+        
+        #Check Species
+        species_check <- db_query_cvt(paste0("SELECT DISTINCT species FROM cvt.subjects"))
+        if(any(!doc_sheet_list$Subjects$species %in% species_check$species)){
+            message("...File contains species not already in database: ", doc_sheet_list$Subjects$species[!doc_sheet_list$Subjects$species %in% species_check$species])
+            log_CvT_doc_load(f, m="species_not_found")
+        }
+        
+        #Match curated chemicals - rename columns to generic names 
+        tmp <- chemical_curation_match_curated_chemicals(df=doc_sheet_list$Studies %>%
+                                        select(name=test_substance_name, 
+                                            name_secondary=test_substance_name_secondary, 
+                                            casrn=test_substance_casrn), 
+                                    f_name=curated_chemicals)
+        doc_sheet_list$Studies = cbind(doc_sheet_list$Studies, tmp)
+        
+        #Match curated chemicals - rename columns to generic names 
+        tmp <- chemical_curation_match_curated_chemicals(df=doc_sheet_list$Series %>%
+                                        select(name=analyte_name, 
+                                            name_secondary=analyte_name_secondary, 
+                                            casrn=analyte_casrn), 
+                                    f_name=curated_chemicals)
+        doc_sheet_list$Series = cbind(doc_sheet_list$Series, tmp)
+        
+        #Call to the orchestration function for data normalization (with error logging)
+        doc_sheet_list <- normalize_CvT_data(doc_sheet_list, f, log_path)
+        doc_sheet_list <- map_to_database_fieldnames(doc_sheet_list)
 
+        # Interate through the sheets, and update each row to the database
         for (sheet_name in names(doc_sheet_list)) {
-            # Get the sheet mapping to rename the qc template fields to db fields
-            sheet_mapping <- field_mapping %>%
-                dplyr::filter(sheet == tolower(sheet_name))
-
-            # Iterate through each column for the respective sheet
-            for (i in 1:nrow(sheet_mapping)) {
-                new_value <- sheet_mapping$to[i]
-                old_value <- sheet_mapping$from[i]
-                
-                # Rename the column if it exists in the sheet, otherwise skip it
-                if (old_value %in% doc_sheet_list[[sheet_name]]) {
-                    doc_sheet_list[[sheet_name]] <- doc_sheet_list[[sheet_name]] %>%
-                        dplyr::rename(!!old_value := !!new_value)
-                }
-            }
-
             # Categorize each record based on 4 conditions of remove, update, add, or ignore
             categorized_records <- doc_sheet_list[[sheet_name]] %>%
                 dplyr::mutate(
@@ -115,6 +142,8 @@ qc_to_cvt <- function(files) {
             ids_to_add <- dplyr::filter(categorized_records, category == "Add") %>%
                 dplyr::select(id)
             # query <- "INSERT INTO cvt.{sheet} (columns) VALUES records[ids_to_add]"
+
+            print(paste(ids_to_add, ids_to_ignore, ids_to_remove, ids_to_update))
         }
     }
 }
