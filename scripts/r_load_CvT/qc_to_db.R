@@ -1,5 +1,4 @@
-# TODO: Maybe validate cvt fields alongside validating qc fields. So that we can rename all the columns, if we need all the columns. Currently just skipping non-existing columns, which might be a bad idea.
-
+# TODO: Add log path to preserve alignment with curation validation logic
 validate_qc_fields <- function(df) {
     validation <- TRUE # False if an invalid condition was encountered
     rules <- validate::validator(.file=paste0("input/rules/QC.yaml"))
@@ -49,6 +48,7 @@ map_to_database_fieldnames <- function(df) {
 qc_to_db <- function(files) {
     curated_chemicals <- "input/chemicals/curated_chemicals_comparison_2021-11-23.xlsx"
     log_path <- "output/qc_to_db_log.xlsx"
+    sheetList <- c("Documents", "Studies", "Subjects", "Series", "Conc_Time_Values")
 
     for (f in files) {
         doc_sheet_list <- load_sheet_group(fileName = f, template_path = "input/qc_template.xlsx")
@@ -60,6 +60,12 @@ qc_to_db <- function(files) {
                     qc_status = tolower(qc_status),
                     qc_flags = tolower(qc_flags)
                 )
+        }
+
+        #Check if file contains all expected sheets
+        if(any(!sheetList %in% names(doc_sheet_list))){
+            message("...File missing sheet: ", paste0(sheetList[!sheetList %in% names(doc_sheet_list)], collapse = ", "), "...skipping...")
+            log_CvT_doc_load(f, m="missing_sheets")
         }
         
         #Check if normalized data has all required fields (and no NA missing values in required fields)
