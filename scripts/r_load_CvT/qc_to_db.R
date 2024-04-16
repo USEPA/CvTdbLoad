@@ -1,5 +1,5 @@
 # TODO: Add log path to preserve alignment with curation validation logic
-validate_qc_fields <- function(df) {
+validate_qc_fields <- function(df, f, log_path) {
     validation <- TRUE # False if an invalid condition was encountered
     rules <- validate::validator(.file=paste0("input/rules/QC.yaml"))
     
@@ -14,11 +14,20 @@ validate_qc_fields <- function(df) {
         for (i in seq_len(nrow(fails))) {
             validation <- FALSE
             m <- validate::meta(rules[fails$name[i]])$message
-            message(paste0(sheet_name, ": ", m))
-            # log_CvT_doc_load(f=f, m=m, log_path=log_path)
+            message(paste0(sheet, ": ", m))
+            log_CvT_doc_load(f=f, m=m, log_path=log_path)
         }
     }
     return (validation)
+}
+
+validate_all_sheets_present <- function(df, f, log_path) {
+    sheetList <- c("Documents", "Studies", "Subjects", "Series", "Conc_Time_Values")
+    #Check if file contains all expected sheets
+    if(any(!sheetList %in% names(df))){
+        message("...File missing sheet: ", paste0(sheetList[!sheetList %in% names(doc_sheet_list)], collapse = ", "))
+        log_CvT_doc_load(f, m="missing_sheets", log_path=log_path)
+    }
 }
 
 map_to_database_fieldnames <- function(df) {
@@ -48,7 +57,6 @@ map_to_database_fieldnames <- function(df) {
 qc_to_db <- function(files) {
     curated_chemicals <- "input/chemicals/curated_chemicals_comparison_2021-11-23.xlsx"
     log_path <- "output/qc_to_db_log.xlsx"
-    sheetList <- c("Documents", "Studies", "Subjects", "Series", "Conc_Time_Values")
 
     for (f in files) {
         doc_sheet_list <- load_sheet_group(fileName = f, template_path = "input/qc_template.xlsx")
@@ -63,16 +71,13 @@ qc_to_db <- function(files) {
         }
 
         #Check if file contains all expected sheets
-        if(any(!sheetList %in% names(doc_sheet_list))){
-            message("...File missing sheet: ", paste0(sheetList[!sheetList %in% names(doc_sheet_list)], collapse = ", "), "...skipping...")
-            log_CvT_doc_load(f, m="missing_sheets")
-        }
+        validate_all_sheets_present(df=doc_sheet_list, f=file, log_path=log_path)
         
         #Check if normalized data has all required fields (and no NA missing values in required fields)
-        check_required_fields_validator(df=doc_sheet_list, f=f)
+        check_required_fields_validator(df=doc_sheet_list, f=f, log_path=log_path)
 
         # Validate that all qc_fields values are as expected
-        if (!validate_qc_fields(doc_sheet_list)) {
+        if (!validate_qc_fields(doc_sheet_list, f, log_path)) {
             message("Validation failed, exiting.")
             stop()
         }
