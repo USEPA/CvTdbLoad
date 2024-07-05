@@ -89,13 +89,12 @@ download_jira_update_clowder_info <- function(jira_project,
                              mode = "wb")  
       }
     }
-
-    # Update Clowder Jira file metadata
-    upload_file_metadata(metadata=metadata,
-                        dsID=dsID,
-                        userID=userID,
-                        baseurl=baseurl,
-                        apiKey=apiKey)
   }
-  
+
+  # Update Clowder Jira file metadata
+  upload_file_metadata(metadata=metadata,
+                      dsID=dsID,
+                      userID=userID,
+                      baseurl=baseurl,
+                      apiKey=apiKey)
 }

@@ -16,7 +16,8 @@
 #' @rdname check_required_fields_new
 #' @export 
 #' @importFrom
-check_required_fields_validator <- function(df, f, log_path){
+validate_required_fields <- function(df, f, log_path){
+  validation <- TRUE # False if an invalid condition was encountered
   # Get reference document id's from studies, used for document id check
   ref_ids <- df$Studies$fk_reference_document_id
   ref_ids <- ref_ids[!is.na(ref_ids)]
@@ -31,7 +32,7 @@ check_required_fields_validator <- function(df, f, log_path){
     }
     
     # Pull rules from the respective YAML, and store failing validation checks
-    rules <- validate::validator(.file=paste0("input/rules/", sheet,".yaml"))
+    rules <- validate::validator(.file=paste0("input/rules/required/", sheet,".yaml"))
     out <- validate::confront(df[[sheet]], rules, ref=list(ref_ids=ref_ids))
     fails <- validate::summary(out) %>% 
       dplyr::filter(fails > 0)
@@ -41,6 +42,9 @@ check_required_fields_validator <- function(df, f, log_path){
       m <- validate::meta(rules[fails$name[i]])$message
       message(paste0(sheet, ": ", m))
       log_CvT_doc_load(f=f, m=m, log_path=log_path)
+      validation <- FALSE
     }
   }
+
+  return (validation)
 }
