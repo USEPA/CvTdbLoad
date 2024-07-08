@@ -7,7 +7,7 @@ map_to_database_fieldnames <- function(df) {
             dplyr::filter(sheet == tolower(sheet_name))
 
         # Iterate through each column for the respective sheet
-        for (i in 1:nrow(sheet_mapping)) {
+        for (i in seq_len(nrow(sheet_mapping))) {
             new_value <- sheet_mapping$to[i]
             old_value <- sheet_mapping$from[i]
             
@@ -53,7 +53,7 @@ qc_to_db <- function(files) {
                     category = dplyr::case_when(
                         qc_status == "fail" ~ "Remove",
                         qc_flags == "modified" ~ "Update",
-                        qc_flags == "new entry" | stringr::str_detect(qc_flags, "split entry") ~ "Add",
+                        qc_flags == "new entry" | grepl("split entry", qc_flags) ~ "Add",
                         TRUE ~ "Ignore"
                     )
                 ) %>%
