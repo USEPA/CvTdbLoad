@@ -25,7 +25,7 @@ validate_qc_fields <- function(df, f, log_path) {
     for (i in seq_len(nrow(fails))) {
       validation <- FALSE
       m <- validate::meta(rules[fails$name[i]])$message
-      message(paste0(sheet, ": ", m))
+      message(paste0(sheet_name, ": ", m))
       log_CvT_doc_load(f=f, m=m, log_path=log_path)
     }
   }
