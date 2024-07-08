@@ -37,7 +37,7 @@ qc_to_db <- function(files) {
                 )
         }
 
-        if (!validate_cvt(file_path=f, log_path=log_path)) {
+        if (!validate_cvt(df=doc_sheet_list, log_path=log_path)) {
             message("Validation failed, exiting.")
             stop()
         }

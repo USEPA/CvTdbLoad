@@ -15,7 +15,6 @@
 #'  [validator][validate::validator]
 #' @rdname check_required_fields_new
 #' @export 
-#' @importFrom
 validate_required_fields <- function(df, f, log_path){
   validation <- TRUE # False if an invalid condition was encountered
   # Get reference document id's from studies, used for document id check
