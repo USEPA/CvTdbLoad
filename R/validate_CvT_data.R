@@ -1,3 +1,4 @@
+#' @export
 validate_cvt <- function(
     clowder_file_id = NULL,
     file_path = NULL,
@@ -12,8 +13,16 @@ validate_cvt <- function(
     ignore_field_entries = FALSE
   ) {
 
-  template_path <- "input/CvT_data_template_articles.xlsx"
+  cvt_template_path <- "input/CvT_data_template_articles.xlsx"
+  qc_template_path <- "input/qc_template.xlsx"
   template_map <- "input/qa_template_map.xlsx"
+
+  # Load in either the QC template or a standard template
+  if (ignore_qc) {
+    template_path <- cvt_template_path
+  } else {
+    template_path <- qc_template_path
+  }
 
   # Pull document either locally, from the database, from clowder, or from a template df
   if (!is.null(file_path)) {
@@ -28,12 +37,12 @@ validate_cvt <- function(
     f <- clowder_file_id
   }
   else if (!is.null(db_identifier)) {
-    doc_sheet_list <- cvtdb_to_template(id=db_identifier, template_path=template_path, template_map=template_map)
+    doc_sheet_list <- cvtdb_to_template(id=list(id=db_identifier), template_path=template_path, template_map=template_map)
     f <- db_identifier
   } 
   else if (!is.null(df)) {
     doc_sheet_list <- df
-    f <- "list_name"
+    f <- "needs_unique_name"
   }
   else {
     stop("Must include a valid parameter. Either a clowder_file_id, file_path, db_identifier, or df.")

@@ -5,7 +5,10 @@ validate_qc_fields <- function(df, f, log_path) {
   # Loop through each sheet
   for (sheet_name in names(df)) {
     # Check if not a QC document, or missing columns, or poorly named columns
-    if ( !all(c("qc_status", "qc_flags") %in% names(df[[sheet_name]])) ) {
+    if (!all(c("qc_status", "qc_flags") %in% names(df[[sheet_name]])) ) {
+      m <- paste0(sheet_name, ": Missing either qc_status or qc_flags")
+      message(m)
+      log_CvT_doc_load(f=f, m=m, log_path=log_path)
       return (FALSE)
     }
     
