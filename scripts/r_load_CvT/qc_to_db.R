@@ -1,32 +1,95 @@
-map_to_database_fieldnames <- function(df) {
-  field_mapping <- readxl::read_xlsx("input/qa_template_map.xlsx")
-  
-  for (sheet_name in names(df)) {
-    # Get the sheet mapping to rename the qc template fields to db fields
-    sheet_mapping <- field_mapping %>%
-      dplyr::filter(sheet == tolower(sheet_name))
-    
-    # Iterate through each column for the respective sheet
-    for (i in seq_len(nrow(sheet_mapping))) {
-      new_value <- sheet_mapping$to[i]
-      old_value <- sheet_mapping$from[i]
-      
-      # Rename the column if it exists in the sheet, otherwise skip it
-      if (old_value %in% df[[sheet_name]]) {
-        df[[sheet_name]] <- df[[sheet_name]] %>%
-          dplyr::rename(!!old_value := !!new_value)
-      }
-    }
-  }
-  
-  return (df)
-}
-
-qc_to_db <- function(files) {
+qc_to_db <- function(files, schema) {
+  col_exclude = c()
   log_path <- "output/qc_to_db_log.xlsx"
+  load_doc_sheet_only = FALSE
+  apiKey = Sys.getenv("apiKey")
+  baseurl = Sys.getenv("baseurl")
+  dsID = Sys.getenv("file_dsID")
+  doc_dsID = Sys.getenv("doc_dsID")
+  # cvt_dataset = "inhalation"
+  schema = "cvt"
+  log_path = "output/load_required_fields_log.xlsx"
+  
+  tbl_field_list = db_query_cvt("SELECT table_name, column_name FROM information_schema.columns WHERE table_schema='cvt'")
+  clowder_file_list = clowder_get_dataset_files(dsID=doc_dsID, baseurl=baseurl, apiKey=apiKey)
   
   for (f in files) {
+    
+#############################################################################################
+### Start of generic logic used for both Load and QC
+### TODO Make generic function for these overall steps between Load and QC
+#############################################################################################
     doc_sheet_list <- load_sheet_group(fileName = f, template_path = "input/qc_template.xlsx")
+    
+    if (!validate_cvt(df=doc_sheet_list, log_path=log_path)) {
+      message("Validation failed, exiting.")
+      stop()
+    }
+    
+    # Check for template with only Documents sheet
+    if(length(doc_sheet_list) == 1 & all(names(doc_sheet_list) == "Documents")){
+      load_doc_sheet_only = TRUE
+    } 
+    
+    # Rename "original" fields
+    doc_sheet_list = set_original_fields(sheet_list=doc_sheet_list, schema = schema)
+    
+    # Check for fields not in database tables - need to add
+    for(s in names(doc_sheet_list)){
+      # Set names to lowercase (case of dermal_dose_vehicle_pH should be dermal_dose_vehicle_ph)
+      names(doc_sheet_list[[s]]) <- tolower(names(doc_sheet_list[[s]]))
+      new_names = names(doc_sheet_list[[s]])[
+        !names(doc_sheet_list[[s]]) %in% 
+          tbl_field_list$column_name[
+            tbl_field_list$table_name == tolower(s)]] %>%
+        .[!grepl("^fk_|_original$|document_type|qc_push_category|qc_reviewer_lanid", .)]
+      if(length(new_names)){
+        message("New fields to add to database for table ", s, ": ")
+        cat(paste0("- ", new_names), sep="\n")
+        stop("Add new fields to table...")
+      }
+    }
+    # Update database dictionaries and get dictionary foreign keys    
+    doc_sheet_list = get_dict_update_ids(sheet_list=doc_sheet_list, schema = schema)
+    
+    if(!load_doc_sheet_only){
+      # Rename foreign key fields as needed
+      doc_sheet_list$Studies = doc_sheet_list$Studies %>%
+        dplyr::rename(fk_dosed_chemical_id=fk_chemicals_id)
+      doc_sheet_list$Series = doc_sheet_list$Series %>%
+        dplyr::rename(fk_analyzed_chemical_id=fk_chemicals_id)  
+    }
+    
+    # Match to document records in CvTdb, if available
+    doc_sheet_list$Documents = match_cvt_doc_to_db_doc(df = doc_sheet_list$Documents)
+    
+    # Skipped push_CvT_templates_orig_values.R logic to check if doc entries already exist because for QC they will
+    
+    # Set boolean to update doc db information
+    update_doc_in_db = TRUE
+    
+    # TODO Add QC Jira provenance fields to database
+    # Add Clowder data provenance
+    doc_sheet_list$Documents = doc_sheet_list$Documents %>%
+      dplyr::mutate(qc_jira_ticket = to_load$jira_ticket[i],
+                    qc_set_tag = to_load$curation_set_tag[i],
+                    qc_clowder_template_id = to_load$clowder_id[i])
+    # Add field if not present
+    if(!"clowder_file_id" %in% names(doc_sheet_list$Documents)){
+      doc_sheet_list$Documents$clowder_file_id = as.character(NA)
+    }
+    # Match to Clowder documents where clowder_file_id is NA
+    if(any(is.na(doc_sheet_list$Documents$clowder_file_id))){
+      doc_sheet_list$Documents = clowder_match_docs(df=doc_sheet_list$Documents,
+                                                    dsID=doc_dsID,
+                                                    baseurl=baseurl,
+                                                    apiKey=apiKey,
+                                                    clowder_file_list=clowder_file_list)  
+    }
+
+#############################################################################################
+### End of generic logic used for both Load and QC
+#############################################################################################
     
     # Convert all qc_status and qc_flags to lowercase, for simpler comparison
     for (sheet_name in names(doc_sheet_list)) {
@@ -37,20 +100,12 @@ qc_to_db <- function(files) {
         )
     }
     
-    if (!validate_cvt(df=doc_sheet_list, log_path=log_path)) {
-      message("Validation failed, exiting.")
-      stop()
-    }
-    
-    # Update the column names to match their database field names
-    doc_sheet_list <- map_to_database_fieldnames(doc_sheet_list)
-    
-    # Set QC category to determine database action by status and flags
+    # Set QC qc_push_category to determine database action by status and flags
     doc_sheet_list = lapply(doc_sheet_list, function(sheet){
       sheet %>%
         # Categorize each record based on 4 conditions of remove, update, add, or ignore
         dplyr::mutate(
-          category = dplyr::case_when(
+          qc_push_category = dplyr::case_when(
             qc_status == "fail" ~ "Remove",
             qc_flags == "modified" ~ "Update",
             qc_flags == "new entry" | grepl("split entry", qc_flags) ~ "Add",
@@ -61,29 +116,40 @@ qc_to_db <- function(files) {
       names(.) <- names(doc_sheet_list)
     }
     
+    # TODO Set created_by as Documents "qc_reviewer_lanid" for all add and update processes
+    
+    # TODO Ensure connections between split entry records are clear/captured
+    # before deleting parent record (i.e. qc_notes establish the parent ID)
+    
     # Delete/remove records in specific order to handle cascade needs due to foreign key connections
     for(sheet_name in c("Conc_Time_Values", "Series", "Subjects", "Studies", "Documents")){
       # Remove these ids from the database
       qc_remove_record(df = doc_sheet_list[[sheet_name]] %>%
-                         dplyr::filter(category == "Remove") %>%
+                         dplyr::filter(qc_push_category == "Remove") %>%
                          dplyr::select(id, qc_notes, qc_flags),
                        tbl_name = sheet_name)
     }
     
-    # Interate through each sheet and QC category to perform specific actions in the database
+    # Interate through each sheet and qc_push_category to perform specific actions in the database
     for (sheet_name in names(doc_sheet_list)) {
+      
+      tbl_fields = tbl_field_list$column_name[tbl_field_list$table_name == tolower(sheet_name)]
       
       # Update unchanged records to qc_status = "pass"
       db_update_tbl(df = doc_sheet_list[[sheet_name]] %>%
-                      dplyr::filter(category == "Pass") %>%
+                      dplyr::filter(qc_push_category == "Pass") %>%
                       dplyr::select(id) %>%
                       dplyr::mutate(qc_status = "pass",
-                                    qc_notes = "QC pass without changes"), 
+                                    qc_notes = "QC pass without changes") %>%
+                      dplyr::select(dplyr::any_of(tbl_fields)), 
                     tblName = sheet_name)
       
+      # TODO Consider taking Add outside of loop and having subset doc_sheet_list of
+      # all records that need to be added - process linearly as if they're a new template load
+      # Then match back local ID linkages for records that need them
       # Add these new rows to the database
       new_records = qc_add_record(df = doc_sheet_list[[sheet_name]] %>%
-                                    dplyr::filter(category == "Add"),
+                                    dplyr::filter(qc_push_category == "Add"),
                                   tbl_name = sheet_name)
       
       # TODO Append updated ID values to doc_sheet_list for foreign key 
@@ -92,8 +158,9 @@ qc_to_db <- function(files) {
       # TODO: Add check/select for only fields in database table
       # Update unchanged records to qc_status = "pass"
       db_update_tbl(df = doc_sheet_list[[sheet_name]] %>%
-                      dplyr::filter(category == "Update") %>%
-                      dplyr::mutate(qc_status = "pass"), 
+                      dplyr::filter(qc_push_category == "Update") %>%
+                      dplyr::mutate(qc_status = "pass") %>%
+                      dplyr::select(dplyr::any_of(tbl_fields)), 
                     tblName = sheet_name)
       
       # TODO: Run normalization of updated/added records
