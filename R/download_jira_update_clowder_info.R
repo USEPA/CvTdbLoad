@@ -13,12 +13,14 @@ download_jira_update_clowder_info <- function(jira_project,
                                               in_file = NULL, 
                                               auth_token, 
                                               reset_attachments=FALSE, 
+                                              update_clowder_metadata=FALSE,
                                               dsID, 
                                               baseurl, 
                                               userID, 
                                               apiKey,
                                               labels_filter = NULL,
-                                              epic_filter = c()){
+                                              epic_filter = c(),
+                                              attachment_filter = c()){
   # Pull initial Jira information
   jira_info = pull_jira_info(jira_project=jira_project,
                              in_file=in_file,
@@ -33,6 +35,15 @@ download_jira_update_clowder_info <- function(jira_project,
     jira_info$out_summary = jira_info$out_summary %>%
       dplyr::filter(Labels %in% labels_filter)
   }
+  
+  # Filter to specified filename regex
+  if(length(attachment_filter)){
+    jira_info$ticket_attachment_metadata = jira_info$ticket_attachment_metadata %>%
+      dplyr::filter(grepl(paste0(attachment_filter, collapse = "|"), filename))
+    jira_info$in_data = jira_info$in_data %>%
+      dplyr::filter(`Issue key` %in% unique(jira_info$ticket_attachment_metadata$`Issue key`))
+  }
+  
   # Download attachments as needed
   # Pull all
   if(!reset_attachments){
@@ -91,10 +102,13 @@ download_jira_update_clowder_info <- function(jira_project,
     }
   }
 
-  # Update Clowder Jira file metadata
-  upload_file_metadata(metadata=metadata,
-                      dsID=dsID,
-                      userID=userID,
-                      baseurl=baseurl,
-                      apiKey=apiKey)
+  if(update_clowder_metadata){
+    # Update Clowder Jira file metadata
+    upload_file_metadata(metadata=metadata,
+                         dsID=dsID,
+                         userID=userID,
+                         baseurl=baseurl,
+                         apiKey=apiKey)  
+  }
+  return(metadata)
 }

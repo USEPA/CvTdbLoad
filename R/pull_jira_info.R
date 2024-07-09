@@ -78,7 +78,7 @@ pull_jira_info <- function(jira_project, in_file = NULL, auth_token = NULL, stat
   in_data <- in_data %>%
     dplyr::left_join(epics,
                      by=c("Epic Link"="Issue key")) %>%
-    dplyr::filter(`Epic Name` %in% c(epic_filter),
+    dplyr::filter((`Epic Name` %in% c(epic_filter) | `Epic Link` %in% c(epic_filter)),
                   `Issue Type` != "Epic",
                   Status %in% c(status_filter)
     ) %>%
