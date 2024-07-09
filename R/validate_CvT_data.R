@@ -30,7 +30,7 @@ validate_cvt <- function(
     f <- file_path
   }
   else if (!is.null(clowder_file_id)) {
-    doc_sheet_list <- load_file_from_api(url = paste0(baseurl,"/api/files/",clowder_file_id,"/blob"),
+    doc_sheet_list <- load_file_from_api(url = paste0("https://clowder.edap-cluster.com/api/files/",clowder_file_id,"/blob"),
                                         headers = c(`X-API-Key` = apiKey),
                                         mode = "wb",
                                         file_type = "xlsx")
