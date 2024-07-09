@@ -205,8 +205,7 @@ normalize_CvT_templates <- function(file_location = "clowder",
     #Check if normalized data has all required fields (and no NA missing values in required fields)
     #check_required_fields(df=doc_sheet_list, f=f)
     if (!validate_cvt(df=doc_sheet_list, log_path=log_path, ignore_qc=TRUE)) {
-      message("Validation failed, exiting.")
-      stop()
+      stop("Validation failed, exiting.")
     }
     
     #Rename columns

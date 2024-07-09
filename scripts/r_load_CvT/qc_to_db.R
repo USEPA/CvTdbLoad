@@ -22,8 +22,7 @@ qc_to_db <- function(files, schema) {
     doc_sheet_list <- load_sheet_group(fileName = f, template_path = "input/qc_template.xlsx")
     
     if (!validate_cvt(df=doc_sheet_list, log_path=log_path)) {
-      message("Validation failed, exiting.")
-      stop()
+      stop("Validation failed, exiting.")
     }
     
     # Check for template with only Documents sheet

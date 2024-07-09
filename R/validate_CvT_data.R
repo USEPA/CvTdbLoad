@@ -4,6 +4,7 @@ validate_cvt <- function(
     file_path = NULL,
     db_identifier = NULL,
     df = NULL,
+    df_identifier = NULL,
     log_path="output/validation/validate_cvt_log.xlsx",
     ignore_present = FALSE,
     ignore_nonempty = FALSE,
@@ -41,8 +42,11 @@ validate_cvt <- function(
     f <- db_identifier
   } 
   else if (!is.null(df)) {
+    if (is.null(df_identifier)) {
+      stop("Must include parameter 'df_identifier' to uniquely identify the passed 'df'.")
+    }
     doc_sheet_list <- df
-    f <- "needs_unique_name"
+    f <- df_identifier
   }
   else {
     stop("Must include a valid parameter. Either a clowder_file_id, file_path, db_identifier, or df.")
