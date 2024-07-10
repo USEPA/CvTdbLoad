@@ -1,1 +1,7 @@
 rules:
+- expr: 'if (!is.na(fk_series_id)) as.numeric(gsub("QC_", "", fk_series_id)) >= 0'
+  meta:
+    message: invalid_field_entry_fk_series_id
+- expr: 'if (!is.na(conc)) conc %in% c("ND", "NQ", "NA", "NE") || as.numeric(conc) >= 0'
+  meta:
+    message: invalid_field_entry_id

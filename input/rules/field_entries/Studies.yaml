@@ -1,1 +1,13 @@
 rules:
+- expr: 'if (!is.na(id)) as.numeric(gsub("QC_", "", id)) >= 0'
+  meta:
+    message: invalid_field_entry_id
+- expr: 'if (!is.na(fk_reference_document_id)) as.numeric(gsub("QC_", "", fk_reference_document_id)) >= 0'
+  meta:
+    message: invalid_field_entry_fk_reference_document_id
+- expr: 'if (!is.na(skin_laceration)) skin_laceration %in% c("0", "1")'
+  meta:
+    message: invalid_field_skin_laceration
+- expr: 'if (!is.na(clipped_fur)) clipped_fur %in% c("0", "1")'
+  meta:
+    message: invalid_field_clipped_fur

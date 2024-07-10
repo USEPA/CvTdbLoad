@@ -11,7 +11,7 @@ validate_cvt <- function(
     ignore_required = FALSE,
     ignore_qc = FALSE,
     ignore_field_types = FALSE,
-    ignore_field_entries = TRUE
+    ignore_field_entries = FALSE
   ) {
 
   cvt_template_path <- "input/CvT_data_template_articles.xlsx"

@@ -1,1 +1,22 @@
 rules:
+- expr: 'if (!is.na(id)) as.numeric(gsub("QC_", "", id)) >= 0'
+  meta:
+    message: invalid_field_entry_id
+- expr: 'if (!is.na(document_type)) document_type %in% c("0", "1", "2", "3", "4")'
+  meta:
+    message: invalid_field_document_type
+- expr: 'if (!is.na(pmid)) as.numeric(pmid) >= 0'
+  meta:
+    message: invalid_field_entry_pmid
+- expr: 'if (!is.na(extracted)) extracted %in% c("0", "1", "2", "3", "4", "5", "6", "7")'
+  meta:
+    message: invalid_field_extracted
+- expr: 'if (!is.na(tk_params)) tk_params %in% c("0", "1")'
+  meta:
+    message: invalid_field_tk_params
+- expr: 'if (!is.na(effects_data)) effects_data %in% c("0", "1")'
+  meta:
+    message: invalid_field_effects_data
+- expr: 'if (!is.na(httk_data)) httk_data %in% c("0", "1")'
+  meta:
+    message: invalid_field_httk_data
