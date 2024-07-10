@@ -1,0 +1,25 @@
+rules:
+- expr: 'if (!is.na(id)) !is.na(as.numeric(gsub("QC_", "", id)))'
+  meta:
+    message: invalid_field_type_id
+- expr: 'if (!is.na(species)) is.na(as.numeric(species))'
+  meta:
+    message: invalid_field_type_species
+- expr: 'if (!is.na(age)) !is.na(as.numeric(gsub("[+/-.]", "", age)))'
+  meta:
+    message: invalid_field_type_age
+- expr: 'if (!is.na(age_units)) is.na(as.numeric(age_units))'
+  meta:
+    message: invalid_field_type_age_units
+- expr: 'if (!is.na(height)) !is.na(as.numeric(gsub("[+/-.]", "", height)))'
+  meta:
+    message: invalid_field_type_height
+- expr: 'if (!is.na(height_units)) is.na(as.numeric(height_units))'
+  meta:
+    message: invalid_field_type_height_units
+- expr: 'if (!is.na(weight)) !is.na(as.numeric(gsub("[+/-.]", "", weight)))'
+  meta:
+    message: invalid_field_type_weight
+- expr: 'if (!is.na(weight_units)) is.na(as.numeric(weight_units))'
+  meta:
+    message: invalid_field_type_weight_units

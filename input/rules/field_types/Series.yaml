@@ -1,0 +1,43 @@
+rules:
+- expr: 'if (!is.na(id)) !is.na(as.numeric(gsub("QC_", "", id)))'
+  meta:
+    message: invalid_field_type_id
+- expr: 'if (!is.na(analyte_casrn)) !is.na(as.numeric(gsub("-", "", analyte_casrn)))'
+  meta:
+    message: invalid_field_type_analyte_casrn
+- expr: 'if (!is.na(figure_type)) is.na(as.numeric(figure_type))'
+  meta:
+    message: invalid_field_type_figure_type
+- expr: 'if (!is.na(x_min)) !is.na(as.numeric(gsub("[.]", "", x_min)))'
+  meta:
+    message: invalid_field_type_x_min
+- expr: 'if (!is.na(x_max)) !is.na(as.numeric(gsub("[.]", "", x_max)))'
+  meta:
+    message: invalid_field_type_x_max
+- expr: 'if (!is.na(y_min)) !is.na(as.numeric(gsub("[.]", "", y_min)))'
+  meta:
+    message: invalid_field_type_y_min
+- expr: 'if (!is.na(y_max)) !is.na(as.numeric(gsub("[.]", "", y_max)))'
+  meta:
+    message: invalid_field_type_y_max
+- expr: 'if (!is.na(time_units)) is.na(as.numeric(time_units))'
+  meta:
+    message: invalid_field_type_time_units
+- expr: 'if (!is.na(log_conc_units)) !is.na(as.numeric(log_conc_units))'
+  meta:
+    message: invalid_field_type_log_conc_units
+- expr: 'if (!is.na(loq)) !is.na(as.numeric(gsub("[+/-.]", "", loq)))'
+  meta:
+    message: invalid_field_type_loq_units
+- expr: 'if (!is.na(radiolabeled)) !is.na(as.numeric(radiolabeled))'
+  meta:
+    message: invalid_field_type_radiolabeled
+- expr: 'if (!is.na(fk_study_id)) !is.na(as.numeric(gsub("QC_", "", fk_study_id)))'
+  meta:
+    message: invalid_field_type_fk_study_id
+- expr: 'if (!is.na(fk_subject_id)) !is.na(as.numeric(gsub("QC_", "", fk_subject_id)))'
+  meta:
+    message: invalid_field_type_fk_subject_id
+- expr: 'if (!is.na(conc_medium)) is.na(as.numeric(conc_medium))'
+  meta:
+    message: invalid_field_type_conc_medium
