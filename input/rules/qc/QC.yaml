@@ -8,12 +8,12 @@ rules:
 - expr: 'if (!is.na(qc_status)) qc_status %in% c("pass", "fail")'
   meta:
     message: Found qc_status other than "pass" or "fail".
-- expr: 'if (qc_status == "pass") qc_flags %in% c(NA, "modified", "new entry", "split entry, new")'
+- expr: 'if (qc_status == "pass") qc_flags %in% c("modified", "new entry", "split entry, new", "reset extraction")'
   meta:
     message: Found passing record with qc_flags other than "modified" or NA.
 - expr: 'if (qc_status == "fail") qc_flags %in% c("not suitable", "split entry, original")'
   meta:
     message: Found failed record with qc_flags other than "not suitable" or "split entry, original".
-- expr: 'if (is.na(qc_status)) qc_flags %in% c("new entry", "split entry, new")'
+- expr: 'if (is.na(qc_status)) qc_flags %in% c("new entry", "split entry, new", "reset extraction")'
   meta:
     message: Found new record qc_flags other than "new entry" or "split entry, new".

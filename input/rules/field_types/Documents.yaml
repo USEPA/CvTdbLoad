@@ -8,7 +8,7 @@ rules:
 - expr: 'if (!is.na(pmid)) !is.na(as.numeric(pmid))'
   meta:
     message: invalid_field_type_pmid
-- expr: 'if (!is.na(extracted)) !is.na(as.numeric(extracted))'
+- expr: 'if (!is.na(extracted)) !is.na(as.numeric(gsub("[, ]", "", extracted)))'
   meta:
     message: invalid_field_type_extracted
 - expr: 'if (!is.na(tk_params)) !is.na(as.numeric(tk_params))'

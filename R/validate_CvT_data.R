@@ -1,6 +1,7 @@
 #' @export
 validate_cvt <- function(
     clowder_file_id = NULL,
+    clowder_api_key=NULL,
     file_path = NULL,
     db_identifier = NULL,
     df = NULL,
@@ -32,7 +33,7 @@ validate_cvt <- function(
   }
   else if (!is.null(clowder_file_id)) {
     doc_sheet_list <- load_file_from_api(url = paste0("https://clowder.edap-cluster.com/api/files/",clowder_file_id,"/blob"),
-                                        headers = c(`X-API-Key` = apiKey),
+                                        headers = c(`X-API-Key` = clowder_api_key),
                                         mode = "wb",
                                         file_type = "xlsx")
     f <- clowder_file_id
