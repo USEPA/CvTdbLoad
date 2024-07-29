@@ -14,9 +14,9 @@ rules:
 - expr: '!is.na(figure_type)'
   meta:
     message: NA_in_required_field_figure_type
-# - expr: 'exists_any(if (!is_unique(figure_name)) !is.na(figure_series_identifier))'
-#   meta:
-#     message: NA_in_required_field_figure_series_identifier
+- expr: 'if (!is_unique(figure_name)) !is.na(figure_series_identifier)'
+  meta:
+    message: NA_in_required_field_figure_series_identifier
 - expr: '!is.na(time_units)'
   meta:
     message: NA_in_required_field_time_units

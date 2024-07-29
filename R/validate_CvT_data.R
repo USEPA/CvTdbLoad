@@ -12,7 +12,8 @@ validate_cvt <- function(
     ignore_required = FALSE,
     ignore_qc = FALSE,
     ignore_field_types = FALSE,
-    ignore_field_entries = FALSE
+    ignore_field_entries = FALSE,
+    ignore_field_uniqueness = FALSE
   ) {
 
   cvt_template_path <- "input/CvT_data_template_articles.xlsx"
@@ -90,7 +91,13 @@ validate_cvt <- function(
     valid_field_entries <- TRUE
   }
 
-  document_validity <- all(sheets_present, sheets_nonempty, valid_required_fields, valid_qc_fields, valid_field_types, valid_field_entries)
+  if (!ignore_field_uniqueness) {
+    valid_field_uniqueness <- validate_field_uniqueness(df=doc_sheet_list, f=f, log_path=log_path)
+  } else {
+    valid_field_uniqueness <- TRUE
+  }
+
+  document_validity <- all(sheets_present, sheets_nonempty, valid_required_fields, valid_qc_fields, valid_field_types, valid_field_entries, valid_field_uniqueness)
   
   message(paste0("Document validity: ", document_validity, ". Output location: ", log_path, "."))
   return (document_validity)

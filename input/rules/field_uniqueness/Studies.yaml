@@ -1,0 +1,4 @@
+rules:
+- expr: 'is_unique(id)'
+  meta:
+    message: duplicate_in_field_id
