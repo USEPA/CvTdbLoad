@@ -1,4 +1,4 @@
-validate_qc_fields <- function(df, f, log_path) {
+validate_qc_fields <- function(df, f, log_path, verbose=FALSE) {
   validation <- TRUE # False if an invalid condition was encountered
   rules <- validate::validator(.file=paste0("input/rules/qc/QC.yaml"))
   
@@ -30,6 +30,11 @@ validate_qc_fields <- function(df, f, log_path) {
       m <- validate::meta(rules[fails$name[i]])$message
       message(paste0(sheet_name, ": ", m))
       log_CvT_doc_load(f=f, m=m, log_path=log_path)
+    }
+
+    # If the verbose parameter is enabled, print extra information about the failing entries
+    if (verbose && nrow(fails) > 0) {
+      print(validate::violating(df[[sheet]], out))
     }
   }
   

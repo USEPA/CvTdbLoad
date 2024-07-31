@@ -15,7 +15,7 @@
 #'  [validator][validate::validator]
 #' @rdname check_required_fields_new
 #' @export 
-validate_required_fields <- function(df, f, log_path){
+validate_required_fields <- function(df, f, log_path, verbose=FALSE){
   validation <- TRUE # False if an invalid condition was encountered
   # Get reference document id's from studies, used for document id check
   ref_ids <- df$Studies$fk_reference_document_id
@@ -42,6 +42,11 @@ validate_required_fields <- function(df, f, log_path){
       message(paste0(sheet, ": ", m))
       log_CvT_doc_load(f=f, m=m, log_path=log_path)
       validation <- FALSE
+    }
+
+    # If the verbose parameter is enabled, print extra information about the failing entries
+    if (verbose && nrow(fails) > 0) {
+      print(validate::violating(df[[sheet]], out))
     }
   }
 

@@ -15,7 +15,7 @@
 #'  [validator][validate::validator]
 #' @rdname validate_field_uniqueness
 #' @export 
-validate_field_uniqueness <- function(df, f, log_path){
+validate_field_uniqueness <- function(df, f, log_path, verbose=FALSE){
   validation <- TRUE # False if an invalid condition was encountered
   
   # Loop through each sheet
@@ -37,6 +37,11 @@ validate_field_uniqueness <- function(df, f, log_path){
       message(paste0(sheet, ": ", m))
       log_CvT_doc_load(f=f, m=m, log_path=log_path)
       validation <- FALSE
+    }
+
+    # If the verbose parameter is enabled, print extra information about the failing entries
+    if (verbose && nrow(fails) > 0) {
+      print(validate::violating(df[[sheet]], out))
     }
   }
 

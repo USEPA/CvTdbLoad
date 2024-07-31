@@ -13,7 +13,8 @@ validate_cvt <- function(
     ignore_qc = FALSE,
     ignore_field_types = FALSE,
     ignore_field_entries = FALSE,
-    ignore_field_uniqueness = FALSE
+    ignore_field_uniqueness = FALSE,
+    verbose=FALSE
   ) {
 
   cvt_template_path <- "input/CvT_data_template_articles.xlsx"
@@ -68,31 +69,31 @@ validate_cvt <- function(
   }
 
   if (!ignore_required) {
-    valid_required_fields <- validate_required_fields(df=doc_sheet_list, f=f, log_path=log_path)
+    valid_required_fields <- validate_required_fields(df=doc_sheet_list, f=f, log_path=log_path, verbose=verbose)
   } else {
     valid_required_fields <- TRUE
   }
 
   if (!ignore_qc) {
-    valid_qc_fields <- validate_qc_fields(df=doc_sheet_list, f=f, log_path=log_path)
+    valid_qc_fields <- validate_qc_fields(df=doc_sheet_list, f=f, log_path=log_path, verbose=verbose)
   } else {
     valid_qc_fields <- TRUE
   }
 
   if (!ignore_field_types) {
-    valid_field_types <- validate_field_types(df=doc_sheet_list, f=f, log_path=log_path)
+    valid_field_types <- validate_field_types(df=doc_sheet_list, f=f, log_path=log_path, verbose=verbose)
   } else {
     valid_field_types <- TRUE
   }
 
   if (!ignore_field_entries) {
-    valid_field_entries <- validate_field_entries(df=doc_sheet_list, f=f, log_path=log_path)
+    valid_field_entries <- validate_field_entries(df=doc_sheet_list, f=f, log_path=log_path, verbose=verbose)
   } else {
     valid_field_entries <- TRUE
   }
 
   if (!ignore_field_uniqueness) {
-    valid_field_uniqueness <- validate_field_uniqueness(df=doc_sheet_list, f=f, log_path=log_path)
+    valid_field_uniqueness <- validate_field_uniqueness(df=doc_sheet_list, f=f, log_path=log_path, verbose=verbose)
   } else {
     valid_field_uniqueness <- TRUE
   }
