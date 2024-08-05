@@ -19,14 +19,14 @@ tmp_load_cvt <- function(){
   loaded_jira_docs = db_query_cvt(paste0("SELECT clowder_template_id FROM cvt.documents ",
                                          "WHERE jira_ticket IS NOT NULL"))
   # Pull dataset ticket templates and filter to those not loaded
-  to_load = pull_clowder_files_to_load(dsID, baseurl, apiKey, curation_set_tag=cvt_dataset) %>%
+  to_load = pull_clowder_files_to_load(dsID, baseurl, apiKey, curation_set_tag=cvt_dataset, metadata_filter_tag="cvt_to_load") %>%
     dplyr::filter(!clowder_id %in% loaded_jira_docs$clowder_template_id)
   
   # Only process if Clowder File records pulled
   if(nrow(to_load)){
     # Load inputs for needed load
     cvt_template = get_cvt_template("input/CvT_data_template_articles.xlsx")
-    tbl_field_list = db_query_cvt("SELECT table_name, column_name FROM information_schema.columns WHERE table_schema='cvt'")
+    tbl_field_list = db_query_cvt(paste0("SELECT table_name, column_name FROM information_schema.columns WHERE table_schema='", schema,"'"))
     clowder_file_list = clowder_get_dataset_files(dsID=doc_dsID, baseurl=baseurl, apiKey=apiKey)
     # Loop through Clowder files to load
     for(i in seq_len(nrow(to_load))){

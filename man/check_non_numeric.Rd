@@ -4,7 +4,7 @@
 \alias{check_non_numeric}
 \title{check_non_numeric}
 \usage{
-check_non_numeric(x, f, col)
+check_non_numeric(x, f, col, log_path)
 }
 \arguments{
 \item{x}{PARAM_DESCRIPTION}
@@ -12,6 +12,8 @@ check_non_numeric(x, f, col)
 \item{f}{PARAM_DESCRIPTION}
 
 \item{col}{PARAM_DESCRIPTION}
+
+\item{log_path}{File path where to save the log file.}
 }
 \value{
 OUTPUT_DESCRIPTION

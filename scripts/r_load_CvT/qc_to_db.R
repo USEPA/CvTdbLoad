@@ -4,23 +4,37 @@ qc_to_db <- function(files, schema) {
   load_doc_sheet_only = FALSE
   apiKey = Sys.getenv("apiKey")
   baseurl = Sys.getenv("baseurl")
-  dsID = Sys.getenv("file_dsID")
+  dsID = Sys.getenv("qc_dsID")
   doc_dsID = Sys.getenv("doc_dsID")
-  # cvt_dataset = "inhalation"
+  qc_dataset = "CVT_dermal"
   schema = "cvt"
   log_path = "output/load_required_fields_log.xlsx"
   load_mode = "QC"
   
-  tbl_field_list = db_query_cvt("SELECT table_name, column_name FROM information_schema.columns WHERE table_schema='cvt'")
+  
+  loaded_jira_docs = db_query_cvt(paste0("SELECT clowder_template_id FROM cvt.documents ",
+                                         "WHERE qc_jira_ticket IS NOT NULL"))
+  # Pull dataset ticket templates and filter to those not loaded
+  to_load = pull_clowder_files_to_load(dsID, baseurl, apiKey, curation_set_tag=qc_dataset, metadata_filter_tag=NULL) %>%
+    dplyr::filter(!clowder_id %in% loaded_jira_docs$clowder_template_id)
+  
+  # Load inputs for needed load
+  cvt_template = get_cvt_template("input/CvT_data_template_articles.xlsx")
+  tbl_field_list = db_query_cvt(paste0("SELECT table_name, column_name FROM information_schema.columns WHERE table_schema='", schema,"'"))
   clowder_file_list = clowder_get_dataset_files(dsID=doc_dsID, baseurl=baseurl, apiKey=apiKey)
   
-  for (f in files) {
-    
+  # Loop through Clowder files to load
+  for(i in seq_len(nrow(to_load))){
+    message("Pushing file (", i, "/", nrow(to_load),"): ", toString(to_load[i,c("jira_ticket", "filename")]), "...", Sys.time())
+    f = to_load$filename[i]
     #############################################################################################
     ### Start of generic logic used for both Load and QC
     ### TODO Make generic function for these overall steps between Load and QC
     #############################################################################################
-    doc_sheet_list <- load_sheet_group(fileName = f, template_path = "input/qc_template.xlsx")
+    doc_sheet_list = load_file_from_api(url = paste0(baseurl,"/api/files/",to_load$clowder_id[i],"/blob"),
+                                        headers = c(`X-API-Key` = apiKey),
+                                        mode = "wb",
+                                        file_type = "xlsx")
     
     if (!validate_cvt(df=doc_sheet_list, df_identifier = f, log_path=log_path)) {
       stop("Validation failed, exiting.")
@@ -68,7 +82,6 @@ qc_to_db <- function(files, schema) {
     # Set boolean to update doc db information
     update_doc_in_db = TRUE
     
-    # TODO Add QC Jira provenance fields to database
     # Add Clowder data provenance
     doc_sheet_list$Documents = doc_sheet_list$Documents %>%
       dplyr::mutate(qc_jira_ticket = to_load$jira_ticket[i],
@@ -104,18 +117,22 @@ qc_to_db <- function(files, schema) {
                         fk_id = as.character(id))
         
         tmp2 = doc_sheet_list[[sheet]] %>%
-          dplyr::filter(!id %in% tmp1$id) %>%
-          dplyr::select(id) %>%
-          dplyr::mutate(id = id %>%
-                          gsub("QC_", "", .) %>%
-                          as.numeric()) %>%
-          dplyr::arrange(id) %>%
-          dplyr::mutate(
-            id = paste0("QC_", id),
-            sheet = !!sheet,
-            fk_id = as.character(seq(n_id, (n_id + dplyr::n() - 1)))
-          )  
-        return(dplyr::bind_rows(tmp1, tmp2))
+          dplyr::filter(!id %in% tmp1$id)
+        if(nrow(tmp2)){
+          tmp2 = tmp2 %>%
+            dplyr::select(id) %>%
+            dplyr::mutate(id = id %>%
+                            gsub("QC_", "", .) %>%
+                            as.numeric()) %>%
+            dplyr::arrange(id) %>%
+            dplyr::mutate(
+              id = paste0("QC_", id),
+              sheet = !!sheet,
+              fk_id = as.character(seq(n_id, (n_id + dplyr::n() - 1)))
+            )
+          return(dplyr::bind_rows(tmp1, tmp2))
+        }
+        return(tmp1)
       } else {
         # TODO Handle case for load and case of documents fk_ column with previous database matches
         if(sheet == "Documents"){
@@ -132,8 +149,6 @@ qc_to_db <- function(files, schema) {
       
     }) %>%
       dplyr::bind_rows()
-    
-    
     
     #############################################################################################
     ### End of generic logic used for both Load and QC

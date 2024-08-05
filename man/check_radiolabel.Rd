@@ -4,12 +4,14 @@
 \alias{check_radiolabel}
 \title{check_radiolabel}
 \usage{
-check_radiolabel(raw, f)
+check_radiolabel(raw, f, log_path)
 }
 \arguments{
 \item{raw}{PARAM_DESCRIPTION}
 
 \item{f}{PARAM_DESCRIPTION}
+
+\item{log_path}{File path where to save the log file.}
 }
 \value{
 OUTPUT_DESCRIPTION

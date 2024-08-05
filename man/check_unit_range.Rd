@@ -4,7 +4,7 @@
 \alias{check_unit_range}
 \title{FUNCTION_TITLE}
 \usage{
-check_unit_range(x, f, col, estimated)
+check_unit_range(x, f, col, estimated, log_path)
 }
 \arguments{
 \item{x}{Input list of datasets being normalized}
@@ -14,6 +14,8 @@ check_unit_range(x, f, col, estimated)
 \item{col}{The column being checked/normalized}
 
 \item{estimated}{The column for *_estimated flags (0, 1, 2) #'}
+
+\item{log_path}{File path where to save the log file.}
 }
 \value{
 Modified version of the input \code{x} parameter

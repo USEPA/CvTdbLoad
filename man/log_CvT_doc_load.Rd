@@ -4,14 +4,24 @@
 \alias{log_CvT_doc_load}
 \title{log_CvT_doc_load}
 \usage{
-log_CvT_doc_load(f, m = NULL, reset = FALSE)
+log_CvT_doc_load(
+  f,
+  m = NULL,
+  reset = FALSE,
+  val = NULL,
+  log_path = "output/template_normalization_log.xlsx"
+)
 }
 \arguments{
-\item{f}{PARAM_DESCRIPTION}
+\item{f}{Filename to flag.}
 
-\item{m}{PARAM_DESCRIPTION, Default: NULL}
+\item{m}{Log field name, Default: NULL}
 
-\item{reset}{PARAM_DESCRIPTION, Default: FALSE}
+\item{reset}{Boolean to reset a row's flags, Default: FALSE}
+
+\item{val}{Custom field value. Default: NULL}
+
+\item{log_path}{File path where to save the log file. Default "output/template_normalization_log.xlsx"}
 }
 \value{
 OUTPUT_DESCRIPTION

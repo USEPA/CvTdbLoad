@@ -4,12 +4,14 @@
 \alias{normalize_CvT_data}
 \title{FUNCTION_TITLE}
 \usage{
-normalize_CvT_data(df, f)
+normalize_CvT_data(df, f, log_path)
 }
 \arguments{
 \item{df}{PARAM_DESCRIPTION}
 
 \item{f}{PARAM_DESCRIPTION}
+
+\item{log_path}{File path where to save the log file.}
 }
 \value{
 OUTPUT_DESCRIPTION

@@ -4,7 +4,7 @@
 \alias{normalize_species}
 \title{normalize_species}
 \usage{
-normalize_species(x)
+normalize_species(x, log_path)
 }
 \arguments{
 \item{x}{PARAM_DESCRIPTION}

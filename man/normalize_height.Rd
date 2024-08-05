@@ -4,12 +4,14 @@
 \alias{normalize_height}
 \title{FUNCTION_TITLE}
 \usage{
-normalize_height(raw, f)
+normalize_height(raw, f, log_path, debug = FALSE)
 }
 \arguments{
 \item{raw}{PARAM_DESCRIPTION}
 
 \item{f}{PARAM_DESCRIPTION}
+
+\item{log_path}{File path where to save the log file.}
 }
 \value{
 Normalized version of the input \code{raw} parameter.
@@ -32,5 +34,5 @@ if(interactive()){
 }
 }
 \seealso{
-\link[dplyr:mutate]{mutate}, \link[dplyr:filter]{filter}, \link[dplyr:bind]{bind_rows}, \link[dplyr:arrange]{arrange}
+\link[dplyr:mutate]{mutate}, \link[dplyr:filter]{filter}, \link[dplyr:bind_rows]{bind_rows}, \link[dplyr:arrange]{arrange}
 }

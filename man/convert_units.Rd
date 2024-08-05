@@ -4,7 +4,14 @@
 \alias{convert_units}
 \title{FUNCTION_TITLE}
 \usage{
-convert_units(x, num, units, desired, MW = NA, overwrite_units = FALSE)
+convert_units(
+  x,
+  num,
+  units,
+  desired,
+  conv_factor = NA,
+  overwrite_units = FALSE
+)
 }
 \arguments{
 \item{x}{Input dataframe to convert}
@@ -15,7 +22,7 @@ convert_units(x, num, units, desired, MW = NA, overwrite_units = FALSE)
 
 \item{desired}{Desired units to convert the input value into}
 
-\item{MW}{Molecular weight of the input chemical (if applicable)}
+\item{conv_factor}{Conversion factor to use (such as Molecular weight, tissue Density, etc.)}
 
 \item{overwrite_units}{Boolean to overwrite the 'units' with desired units.}
 }

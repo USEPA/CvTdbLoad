@@ -4,7 +4,7 @@
 \alias{check_unit_ci}
 \title{FUNCTION_TITLE}
 \usage{
-check_unit_ci(x, f, col, estimated)
+check_unit_ci(x, f, col, estimated, log_path)
 }
 \arguments{
 \item{x}{Input list of datasets being normalized}

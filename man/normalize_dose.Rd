@@ -4,12 +4,14 @@
 \alias{normalize_dose}
 \title{FUNCTION_TITLE}
 \usage{
-normalize_dose(raw, f)
+normalize_dose(raw, f, log_path, debug = FALSE)
 }
 \arguments{
 \item{raw}{A dataframe of weight information to normalize}
 
-\item{f}{The file name of the template being processed. Used for error logging. #'}
+\item{f}{The file name of the template being processed. Used for error logging.}
+
+\item{log_path}{File path where to save the log file.}
 }
 \value{
 Normalized version of the input \code{raw} parameter.
@@ -30,6 +32,6 @@ if(interactive()){
 }
 }
 \seealso{
-\link[dplyr:filter]{filter}, \link[dplyr:mutate]{mutate}, \link[dplyr:bind]{bind_rows}, \link[dplyr:arrange]{arrange}, \link[dplyr:select]{select}
+\link[dplyr:filter]{filter}, \link[dplyr:mutate]{mutate}, \link[dplyr:bind_rows]{bind_rows}, \link[dplyr:arrange]{arrange}, \link[dplyr:select]{select}
 \link[httk:get_physchem_param]{get_physchem_param}
 }

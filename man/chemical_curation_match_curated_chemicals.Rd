@@ -28,5 +28,5 @@ if(interactive()){
 }
 }
 \seealso{
-\link[dplyr:filter]{filter}, \link[dplyr:mutate]{mutate}, \link[dplyr:mutate-joins]{left_join}, \link[dplyr:distinct]{distinct}, \link[dplyr:bind]{bind_rows}, \link[dplyr:select]{select}, \link[dplyr:arrange]{arrange}
+\link[dplyr:filter]{filter}, \link[dplyr:mutate]{mutate}, \link[dplyr:mutate-joins]{left_join}, \link[dplyr:distinct]{distinct}, \link[dplyr:bind_rows]{bind_rows}, \link[dplyr:select]{select}, \link[dplyr:arrange]{arrange}
 }
