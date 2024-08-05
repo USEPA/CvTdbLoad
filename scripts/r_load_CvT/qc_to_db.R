@@ -114,7 +114,8 @@ qc_to_db <- function(files, schema) {
           dplyr::select(id) %>%
           dplyr::filter(!grepl("QC", id)) %>%
           dplyr::mutate(sheet = !!sheet,
-                        fk_id = as.character(id))
+                        fk_id = as.character(id),
+                        id = as.character(id))
         
         tmp2 = doc_sheet_list[[sheet]] %>%
           dplyr::filter(!id %in% tmp1$id)
@@ -163,6 +164,13 @@ qc_to_db <- function(files, schema) {
         )
     }
     
+    # Get created_by as Documents "qc_reviewer_lanid" for all add and update processes
+    qc_user = doc_sheet_list$Documents$qc_reviewer_lanid %>% 
+      # Remove NA values
+      .[!is.na(.)] %>%
+      unique() %>%
+      toString()
+    
     # Set QC qc_push_category to determine database action by status and flags
     doc_sheet_list = lapply(doc_sheet_list, function(sheet){
       sheet %>%
@@ -173,13 +181,13 @@ qc_to_db <- function(files, schema) {
             qc_flags == "modified" ~ "Update",
             qc_flags == "new entry" | grepl("split entry", qc_flags) ~ "Add",
             TRUE ~ "Pass"
-          )
+          ),
+          # Set created_by
+          created_by = qc_user
         )
     }) %T>% {
       names(.) <- names(doc_sheet_list)
     }
-    
-    # TODO Set created_by as Documents "qc_reviewer_lanid" for all add and update processes
     
     # TODO Ensure connections between split entry records are clear/captured
     # before deleting parent record (i.e. qc_notes establish the parent ID)
@@ -193,12 +201,13 @@ qc_to_db <- function(files, schema) {
                        tbl_name = sheet_name)
     }
     
+    # TODO use the fk_map to replace all foreign keys as needed before ADD and Update
+    
     # TODO Consider taking Add outside of loop and having subset doc_sheet_list of
     # all records that need to be added - process linearly as if they're a new template load
     # Then match back local ID linkages for records that need them
     # Add these new rows to the database
-    qc_add_record(df = doc_sheet_list[[sheet_name]] %>%
-                    dplyr::filter(qc_push_category == "Add"),
+    qc_add_record(df = purrr::map(doc_sheet_list, function(df){ dplyr::filter(df, qc_push_category == "Add")}),
                   tbl_field_list=tbl_field_list, 
                   load_doc_sheet_only=load_doc_sheet_only)
     
@@ -211,10 +220,9 @@ qc_to_db <- function(files, schema) {
       # Update unchanged records to qc_status = "pass"
       db_update_tbl(df = doc_sheet_list[[sheet_name]] %>%
                       dplyr::filter(qc_push_category == "Pass") %>%
-                      dplyr::select(id) %>%
+                      dplyr::select(id, created_by) %>%
                       dplyr::mutate(qc_status = "pass",
-                                    qc_notes = "QC pass without changes") %>%
-                      dplyr::select(dplyr::any_of(tbl_fields)), 
+                                    qc_notes = "QC pass without changes"),
                     tblName = sheet_name)
       
       # TODO Append updated ID values to doc_sheet_list for foreign key 
