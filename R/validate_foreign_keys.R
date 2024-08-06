@@ -1,5 +1,5 @@
-#' @title Check required fields validator
-#' @description Function to check if processed document is missing required fields.
+#' @title Check foreign keys validator
+#' @description Function to check if processed document's foreign keys match to a value in their respective sheets.
 #' @param df List of dataframes for the sheets within an extraction template
 #' @param f Filename for flagging purposes
 #' @param log_path File path where to save the log file. Default "output/template_normalization_log.xlsx"
@@ -13,21 +13,26 @@
 #' }
 #' @seealso 
 #'  [validator][validate::validator]
-#' @rdname check_required_fields_new
+#' @rdname validate_foreign_keys
 #' @export 
-validate_required_fields <- function(df, f, log_path, verbose=FALSE){
+validate_foreign_keys <- function(df, f, log_path, verbose=FALSE){
   validation <- TRUE # False if an invalid condition was encountered
+
+  # Get present id's within relevant sheets
+  study_ids <- df$Studies$id[!is.na(df$Studies$id)]
+  subject_ids <- df$Subjects$id[!is.na(df$Subjects$id)]
+  series_ids <- df$Series$id[!is.na(df$Series$id)]
   
   # Loop through each sheet
-  for (sheet in names(df)) {
+  for (sheet in c("Series", "Conc_Time_Values")) {
     # If the document is a qc_document, and it has a fail status, no need to validate
     if("qc_status" %in% names(df[[sheet]])) {
       df[[sheet]] <- df[[sheet]] %>% dplyr::filter(qc_status != "fail")
     }
     
     # Pull rules from the respective YAML, and store failing validation checks
-    rules <- validate::validator(.file=paste0("input/rules/required/", sheet,".yaml"))
-    out <- validate::confront(df[[sheet]], rules)
+    rules <- validate::validator(.file=paste0("input/rules/foreign_keys/", sheet,".yaml"))
+    out <- validate::confront(df[[sheet]], rules, ref=list(study_ids=study_ids, subject_ids=subject_ids, series_ids=series_ids))
     fails <- validate::summary(out) %>% 
       dplyr::filter(fails > 0)
     
