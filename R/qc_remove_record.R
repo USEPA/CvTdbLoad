@@ -9,7 +9,6 @@ qc_remove_record <- function(df, tbl_name){
   
   # Set defaults
   del_ids = list(documents = NULL,
-                 documents_lineage = NULL,
                  studies = NULL,
                  subjects = NULL,
                  series = NULL,
@@ -20,22 +19,21 @@ qc_remove_record <- function(df, tbl_name){
   switch(tbl_name,
          "Documents" = {
            del_ids$documents = df$id
-           del_ids$studies = db_query_cvt(paste0("SELECT id FROM cvt.studies WHERE fk_extraction_document_id IN (", toString(docs_rm), ")"))$id
-           del_ids$documents_lineage = db_query_cvt(paste0("SELECT fk_doc_id, fk_parent_doc_id FROM cvt.documents_lineage WHERE fk_doc_id IN (", toString(docs_rm), ") ",
-                                                           "OR fk_parent_doc_id IN (", toString(docs_rm), ")"))$id
-           del_ids$series = db_query_cvt(paste0("SELECT id from cvt.series WHERE fk_study_id in (", toString(studies_rm), ")"))$id
-           del_ids$conc_time_values = db_query_cvt(paste0("SELECT id from cvt.conc_time_values WHERE fk_series_id in (", toString(series_rm), ")"))$id
+           del_ids$studies = db_query_cvt(paste0("SELECT distinct id FROM cvt.studies WHERE fk_extraction_document_id IN (", toString(del_ids$documents), ")"))$id
+           del_ids$series = db_query_cvt(paste0("SELECT distinct id from cvt.series WHERE fk_study_id in (", toString(del_ids$studies), ")"))$id
+           del_ids$subjects = db_query_cvt(paste0("SELECT distinct fk_subject_id as id from cvt.series WHERE fk_study_id in (", toString(del_ids$studies), ")"))$id
+           del_ids$conc_time_values = db_query_cvt(paste0("SELECT distinct id from cvt.conc_time_values WHERE fk_series_id in (", toString(del_ids$series), ")"))$id
          }, "Studies" = {
            del_ids$studies = df$id
-           del_ids$series = db_query_cvt(paste0("SELECT id from cvt.series WHERE fk_study_id in (", toString(studies_rm), ")"))$id
-           del_ids$conc_time_values = db_query_cvt(paste0("SELECT id from cvt.conc_time_values WHERE fk_series_id in (", toString(series_rm), ")"))$id
+           del_ids$series = db_query_cvt(paste0("SELECT distinct id from cvt.series WHERE fk_study_id in (", toString(del_ids$studies), ")"))$id
+           del_ids$conc_time_values = db_query_cvt(paste0("SELECT distinct id from cvt.conc_time_values WHERE fk_series_id in (", toString(del_ids$series), ")"))$id
          }, "Subjects" = {
            del_ids$subjects = df$id
-           del_ids$series = db_query_cvt(paste0("SELECT id from cvt.series WHERE fk_subject_id in (", toString(subjects_rm), ")"))$id
-           del_ids$conc_time_values = db_query_cvt(paste0("SELECT id from cvt.conc_time_values WHERE fk_series_id in (", toString(series_rm), ")"))$id
+           del_ids$series = db_query_cvt(paste0("SELECT distinct id from cvt.series WHERE fk_subject_id in (", toString(del_ids$subjects), ")"))$id
+           del_ids$conc_time_values = db_query_cvt(paste0("SELECT distinct id from cvt.conc_time_values WHERE fk_series_id in (", toString(del_ids$series), ")"))$id
          }, "Series" = {
            del_ids$series = df$id
-           del_ids$conc_time_values = db_query_cvt(paste0("SELECT id from cvt.conc_time_values WHERE fk_series_id in (", toString(series_rm), ")"))$id
+           del_ids$conc_time_values = db_query_cvt(paste0("SELECT distinct id from cvt.conc_time_values WHERE fk_series_id in (", toString(del_ids$series), ")"))$id
          }, "Conc_Time_Values" = {
            del_ids$conc_time_values = df$id
          })
@@ -61,10 +59,10 @@ qc_remove_record <- function(df, tbl_name){
     
     # Update database entry twice:
     # once to audit old record
-    # db_update_tbl(df = df, tblName = del_tbl)
+    db_update_tbl(df = df, tblName = del_tbl)
     # twice to audit QC'd record
-    # db_update_tbl(df = df, tblName = del_tbl)
+    db_update_tbl(df = df, tblName = del_tbl)
     # Delete database entries
-    # db_query_cvt(paste0("DELETE FROM cvt.", del_tbl, " WHERE id IN (", toString(df$id), ")"))
+    db_query_cvt(paste0("DELETE FROM cvt.", del_tbl, " WHERE id IN (", toString(df$id), ")"))
   }
 }

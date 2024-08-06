@@ -97,7 +97,8 @@ qc_to_db <- function(schema = 'cvt',
                                                     apiKey=apiKey,
                                                     clowder_file_list=clowder_file_list)  
     }
-    
+
+################################################################################    
     # get/set ID values and foreign key relations between sheets
     # Account for whether it is a load vs. QC based on "QC_"
     tbl_id_list <- get_next_tbl_id(schema)
@@ -318,8 +319,8 @@ qc_to_db <- function(schema = 'cvt',
                       dplyr::mutate(qc_status = "pass") %>%
                       dplyr::select(dplyr::any_of(tbl_fields)), 
                     tblName = sheet_name)
-      
-      # TODO: Run normalization of updated/added records
     }
+    
+    # TODO: Run normalization of updated/added records
   }
 }
