@@ -12,11 +12,11 @@ qc_to_db <- function(schema = 'cvt',
   doc_dsID = Sys.getenv("doc_dsID")
   load_mode = "QC"
   
-  loaded_jira_docs = db_query_cvt(paste0("SELECT clowder_template_id FROM cvt.documents ",
+  loaded_jira_docs = db_query_cvt(paste0("SELECT qc_clowder_template_id FROM cvt.documents ",
                                          "WHERE qc_jira_ticket IS NOT NULL"))
   # Pull dataset ticket templates and filter to those not loaded
   to_load = pull_clowder_files_to_load(dsID, baseurl, apiKey, curation_set_tag=qc_dataset, metadata_filter_tag=NULL) %>%
-    dplyr::filter(!clowder_id %in% loaded_jira_docs$clowder_template_id)
+    dplyr::filter(!clowder_id %in% loaded_jira_docs$qc_clowder_template_id)
   
   # Load inputs for needed load
   cvt_template = get_cvt_template("input/CvT_data_template_articles.xlsx")
@@ -253,6 +253,7 @@ qc_to_db <- function(schema = 'cvt',
     # before deleting parent record (i.e. qc_notes establish the parent ID)
     
     # Delete/remove records in specific order to handle cascade needs due to foreign key connections
+    message("Removing records...")
     for(sheet_name in c("Conc_Time_Values", "Series", "Subjects", "Studies", "Documents")){
       # Remove these ids from the database
       qc_remove_record(df = doc_sheet_list[[sheet_name]] %>%
@@ -281,7 +282,7 @@ qc_to_db <- function(schema = 'cvt',
       )) %>%
       cbind(., temp_doc) %>%
       # Remove versioning, handled by database audit triggers
-      dplyr::select(-rec_create_dt, -version, -created_by) %>%
+      dplyr::select(-rec_create_dt, -version) %>%
       # Order columns by database table order
       dplyr::select(id, any_of(tbl_fields), document_type)
     
@@ -293,6 +294,9 @@ qc_to_db <- function(schema = 'cvt',
     # Remove entries already in database that were updated
     doc_sheet_list$Documents = doc_sheet_list$Documents[is.na(doc_sheet_list$Documents$fk_document_id)]
     
+    doc_sheet_list = doc_sheet_list %>%
+      purrr::compact()
+    
 ################################################################################    
     # Filter only to records that are "Add"
     qc_add_record(df = purrr::map(doc_sheet_list, function(df){ dplyr::filter(df, qc_push_category == "Add")}),
@@ -300,25 +304,41 @@ qc_to_db <- function(schema = 'cvt',
                   load_doc_sheet_only=load_doc_sheet_only)
     
     
-    # Interate through each sheet and qc_push_category to perform specific actions in the database
-    for (sheet_name in names(doc_sheet_list)) {
-      
-      tbl_fields = tbl_field_list$column_name[tbl_field_list$table_name == tolower(sheet_name)]
-      
-      # Update unchanged records to qc_status = "pass"
-      db_update_tbl(df = doc_sheet_list[[sheet_name]] %>%
-                      dplyr::filter(qc_push_category == "Pass") %>%
-                      dplyr::select(id, created_by) %>%
-                      dplyr::mutate(qc_status = "pass",
-                                    qc_notes = "QC pass without changes"),
-                    tblName = sheet_name)
-      
-      # Update unchanged records to qc_status = "pass"
-      db_update_tbl(df = doc_sheet_list[[sheet_name]] %>%
-                      dplyr::filter(qc_push_category == "Update") %>%
-                      dplyr::mutate(qc_status = "pass") %>%
-                      dplyr::select(dplyr::any_of(tbl_fields)), 
-                    tblName = sheet_name)
+    # Select and iterate through "Pass" QC Category record updates
+    df = purrr::map(doc_sheet_list, function(df){ dplyr::filter(df, qc_push_category == "Pass")}) %>%
+      .[sapply(., function(x) dim(x)[1]) > 0]
+    
+    if(length(df)){
+      for(sheet_name in names(df)){
+        message("...pushing 'Pass' records for ", sheet_name, " sheet")
+        tbl_fields = tbl_field_list$column_name[tbl_field_list$table_name == tolower(sheet_name)]
+        
+        # Update unchanged records to qc_status = "pass"
+        db_update_tbl(df = doc_sheet_list[[sheet_name]] %>%
+                        dplyr::filter(qc_push_category == "Pass") %>%
+                        dplyr::select(id, created_by) %>%
+                        dplyr::mutate(qc_status = "pass",
+                                      qc_notes = "QC pass without changes"),
+                      tblName = sheet_name)  
+      }
+    }
+    
+    # Select and iterate through "Pass" QC Category record updates
+    df = purrr::map(doc_sheet_list, function(df){ dplyr::filter(df, qc_push_category == "Update")}) %>%
+      .[sapply(., function(x) dim(x)[1]) > 0]
+    
+    if(length(df)){
+      for(sheet_name in names(df)){
+        message("...pushing 'Update' records for ", sheet_name, " sheet")
+        tbl_fields = tbl_field_list$column_name[tbl_field_list$table_name == tolower(sheet_name)]
+        
+        # Update unchanged records to qc_status = "pass"
+        db_update_tbl(df = doc_sheet_list[[sheet_name]] %>%
+                        dplyr::filter(qc_push_category == "Update") %>%
+                        dplyr::mutate(qc_status = "pass") %>%
+                        dplyr::select(dplyr::any_of(tbl_fields)), 
+                      tblName = sheet_name)
+      }
     }
     
     # TODO: Run normalization of updated/added records

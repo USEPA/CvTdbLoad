@@ -7,6 +7,11 @@
 #' @return None.
 qc_remove_record <- function(df, tbl_name){
   
+  if(!nrow(df)){
+    message("...no records to remove for ", tbl_name, " sheet...")
+    return()
+  }
+  
   # Set defaults
   del_ids = list(documents = NULL,
                  studies = NULL,
@@ -57,6 +62,7 @@ qc_remove_record <- function(df, tbl_name){
       db_query_cvt(paste0("DELETE FROM cvt.", del_tbl, " WHERE fk_parent_doc_id IN (", toString(df$id), ")"))
     }
     
+    message("...removing records for ", tbl_name, " sheet")
     # Update database entry twice:
     # once to audit old record
     db_update_tbl(df = df, tblName = del_tbl)

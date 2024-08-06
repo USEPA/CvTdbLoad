@@ -14,6 +14,12 @@ qc_add_record <- function(df, tbl_field_list, load_doc_sheet_only, col_exclude){
     df[[s]] = df[[s]][!sapply(df[[s]], function(x) all(is.na(x)))]
   }) %T>% {
     names(.) <- names(df)
+  } %>% 
+    purrr::compact()
+  
+  if(!length(df)){
+    message("...no records to add for QC template...")
+    return()
   }
   
   # Adapted from push_CvT_templates_orig_values.R
@@ -79,6 +85,7 @@ qc_add_record <- function(df, tbl_field_list, load_doc_sheet_only, col_exclude){
       # Get table fields
       tbl_fields = tbl_field_list$column_name[tbl_field_list$table_name == tolower(sheet)] %>%
         .[!. %in% col_exclude]
+      message("...pushing records for ", sheet, " sheet")
       db_push_rs = db_push_tbl_to_db(dat=df[[sheet]] %>%
                                        dplyr::select(dplyr::any_of(tbl_fields)),
                                      tblName=sheet,
