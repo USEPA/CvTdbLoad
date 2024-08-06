@@ -14,6 +14,7 @@ validate_cvt <- function(
     ignore_field_types = FALSE,
     ignore_field_entries = FALSE,
     ignore_field_uniqueness = FALSE,
+    ignore_foreign_keys = FALSE,
     verbose=FALSE
   ) {
 
@@ -98,7 +99,13 @@ validate_cvt <- function(
     valid_field_uniqueness <- TRUE
   }
 
-  document_validity <- all(sheets_present, sheets_nonempty, valid_required_fields, valid_qc_fields, valid_field_types, valid_field_entries, valid_field_uniqueness)
+  if (!ignore_foreign_keys) {
+    valid_foreign_keys <- validate_foreign_keys(df=doc_sheet_list, f=f, log_path=log_path, verbose=verbose)
+  } else {
+    valid_foreign_keys <- TRUE
+  }
+
+  document_validity <- all(sheets_present, sheets_nonempty, valid_required_fields, valid_qc_fields, valid_field_types, valid_field_entries, valid_field_uniqueness, valid_foreign_keys)
   
   message(paste0("Document validity: ", document_validity, ". Output location: ", log_path, "."))
   return (document_validity)

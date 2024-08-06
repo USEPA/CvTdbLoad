@@ -1,0 +1,4 @@
+rules:
+- expr: 'fk_series_id %in% series_ids'
+  meta:
+    message: fk_series_id_not_in_series_sheet
