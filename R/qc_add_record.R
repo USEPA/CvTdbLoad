@@ -1,74 +1,103 @@
 #' @title qc_add_record
 #' @description Function to add record from QC template 
 #' @param df Input dataframe of field values to add to database table
-#' @param tbl_name Name of table the records are from
+#' @param tbl_field_list Dataframe of CvT tables and fields
+#' @param load_doc_sheet_only Boolean whether just to add document sheet only
+#' @param col_exclude List of columns to exclude from database pushes
 #' @export
 #' @return Modified version of input df with mapped new database ID values
-qc_add_record <- function(df, tbl_field_list, load_doc_sheet_only){
+qc_add_record <- function(df, tbl_field_list, load_doc_sheet_only, col_exclude){
+  
+  # Remove empty rows and columns (all NA values)
+  df = lapply(names(df), function(s){
+    df[[s]] = df[[s]][!apply(is.na(df[[s]]), 1, all),]
+    df[[s]] = df[[s]][!sapply(df[[s]], function(x) all(is.na(x)))]
+  }) %T>% {
+    names(.) <- names(df)
+  }
   
   # TODO Finish adapting from push_CvT_templates_orig_values.R
-  
-  message("...pushing to Documents table")
-  # Get documents table fields
-  tbl_fields = tbl_field_list$column_name[tbl_field_list$table_name == "documents"] %>%
-    .[!. %in% col_exclude]
-  browser()
-  db_push_rs = db_push_tbl_to_db(dat = df %>%
-                                   # Filter out reference documents that are already in CvTDB
-                                   dplyr::filter(!(document_type == 2 & !is.na(fk_document_id))) %>%
-                                   dplyr::select(dplyr::any_of(tbl_fields)),
-                                 tblName="documents",
-                                 overwrite=FALSE, 
-                                 append=TRUE) 
-  if(is.null(db_push_rs) || is.na(db_push_rs)){
-    message("Issue pushing documents table.")
-    browser()
-  }
-  # Match back new document records
-  doc_sheet_list$Documents = match_cvt_doc_to_db_doc(df = df %>%
-                                                       dplyr::select(-fk_document_id))
-  
-  # Check if any did not match to previously pushed document entry
-  if(any(is.na(df$fk_document_id))){
-    message("Error mapping to pushed document entry...")
-    browser()
-  }
-  
-  # Push Document Lineage Linkages
-  doc_lineage = df %>%
-    dplyr::select(fk_doc_id = fk_document_id, 
-                  relationship_type = document_type)
-  # Add parent doc (document_type == 1)
-  doc_lineage$fk_parent_doc_id = doc_lineage$fk_doc_id[doc_lineage$relationship_type == 1]
-  doc_lineage = doc_lineage %>%
-    dplyr::filter(fk_parent_doc_id != fk_doc_id) %>%
-    dplyr::mutate(relationship_type = dplyr::case_when(
-      relationship_type == 2 ~ "Reference Document",
-      relationship_type == 3 ~ "Supplemental Document",
-      relationship_type == 4 ~ "Study Methods Document",
-      TRUE ~ as.character(relationship_type)
-    ))
-  
-  message("...pushing to Document Lineage table")
-  browser()
-  db_push_tbl_to_db(dat=doc_lineage,
-                    tblName="documents_lineage",
-                    overwrite=FALSE, 
-                    append=TRUE)
-  
-  if(load_doc_sheet_only){
-    # Export loaded template log
-    output_dir = file.path("output", "Document Loading", cvt_dataset)
-    if(!dir.exists(output_dir)) dir.create(output_dir, recursive = TRUE)
+  if(nrow(df$Documents)){
+    message("...pushing to Documents table")
     
-    # Write export file  
-    writexl::write_xlsx(doc_sheet_list, path=paste0(output_dir,"/", 
-                                                    basename(to_load$filename[i]) %>% gsub(".xlsx", "", .), 
-                                                    "_loaded_", format(Sys.time(), "%Y%m%d"), 
-                                                    ".xlsx"))
-    message("Finished load of document sheet only...")
-    return(df)
+    ### Default extracted to 3 if submitted as NA
+    doc_sheet_list$Documents$extracted[is.na(doc_sheet_list$Documents$extracted)] = 3
+    
+    # Get documents table fields
+    tbl_fields = tbl_field_list$column_name[tbl_field_list$table_name == "documents"] %>%
+      .[!. %in% col_exclude]
+    browser()
+    db_push_rs = db_push_tbl_to_db(dat = df %>%
+                                     # Filter out reference documents that are already in CvTDB
+                                     dplyr::filter(!(document_type == 2 & !is.na(fk_document_id))) %>%
+                                     dplyr::select(dplyr::any_of(tbl_fields)),
+                                   tblName="documents",
+                                   overwrite=FALSE, 
+                                   append=TRUE) 
+    if(is.null(db_push_rs) || is.na(db_push_rs)){
+      message("Issue pushing documents table.")
+      browser()
+    }
+    # Match back new document records
+    doc_sheet_list$Documents = match_cvt_doc_to_db_doc(df = df %>%
+                                                         dplyr::select(-fk_document_id))
+    
+    # Check if any did not match to previously pushed document entry
+    if(any(is.na(df$Documents$fk_document_id))){
+      message("Error mapping to pushed document entry...")
+      browser()
+    }
+    
+    # Push Document Lineage Linkages
+    doc_lineage = df %>%
+      dplyr::select(fk_doc_id = fk_document_id, 
+                    relationship_type = document_type)
+    # Add parent doc (document_type == 1)
+    doc_lineage$fk_parent_doc_id = doc_lineage$fk_doc_id[doc_lineage$relationship_type == 1]
+    doc_lineage = doc_lineage %>%
+      dplyr::filter(fk_parent_doc_id != fk_doc_id) %>%
+      dplyr::mutate(relationship_type = dplyr::case_when(
+        relationship_type == 2 ~ "Reference Document",
+        relationship_type == 3 ~ "Supplemental Document",
+        relationship_type == 4 ~ "Study Methods Document",
+        TRUE ~ as.character(relationship_type)
+      ))
+    
+    message("...pushing to Document Lineage table")
+    browser()
+    db_push_tbl_to_db(dat=doc_lineage,
+                      tblName="documents_lineage",
+                      overwrite=FALSE, 
+                      append=TRUE)
+    
+    # If true, only load documents sheet and return
+    if(load_doc_sheet_only) return()
   }
   
-  return(df)
+  # Push sheets
+  for(sheet in names(df)[!names(df) %in% c("Documents")]){
+    if(nrow(df[[sheet]])){
+      
+      if(sheet == "Studies"){
+        # Set extraction document ID
+        df$Studies$fk_extraction_document_id = df$Documents$fk_document_id[df$Documents$document_type == 1]
+      }
+      
+      # Get Studies table fields
+      tbl_fields = tbl_field_list$column_name[tbl_field_list$table_name == tolower(sheet)] %>%
+        .[!. %in% col_exclude]
+      # names(doc_sheet_list$Studies)[!names(doc_sheet_list$Studies) %in% tbl_fields]
+      browser()
+      db_push_rs = db_push_tbl_to_db(dat=df[[sheet]] %>%
+                                       dplyr::select(dplyr::any_of(tbl_fields)),
+                                     tblName=sheet,
+                                     overwrite=FALSE, 
+                                     append=TRUE)
+      if(is.null(db_push_rs) || is.na(db_push_rs)){
+        message("Issue pushing ",sheet," table.")
+        browser()
+      }
+    }
+  }
+  
 }

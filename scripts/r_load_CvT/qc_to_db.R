@@ -12,7 +12,6 @@ qc_to_db <- function(schema = 'cvt',
   doc_dsID = Sys.getenv("doc_dsID")
   load_mode = "QC"
   
-  
   loaded_jira_docs = db_query_cvt(paste0("SELECT clowder_template_id FROM cvt.documents ",
                                          "WHERE qc_jira_ticket IS NOT NULL"))
   # Pull dataset ticket templates and filter to those not loaded
@@ -36,6 +35,9 @@ qc_to_db <- function(schema = 'cvt',
                                         headers = c(`X-API-Key` = apiKey),
                                         mode = "wb",
                                         file_type = "xlsx")
+    
+    # Select Template Sheets (remove any excess sheets)
+    doc_sheet_list = doc_sheet_list[names(cvt_template)[names(cvt_template) %in% names(doc_sheet_list)]]
     
     if (!validate_cvt(df=doc_sheet_list, df_identifier = f, log_path=log_path)) {
       stop("Validation failed, exiting.")
@@ -78,11 +80,6 @@ qc_to_db <- function(schema = 'cvt',
     # Match to document records in CvTdb, if available
     doc_sheet_list$Documents = match_cvt_doc_to_db_doc(df = doc_sheet_list$Documents)
     
-    # Skipped push_CvT_templates_orig_values.R logic to check if doc entries already exist because for QC they will
-    
-    # Set boolean to update doc db information
-    update_doc_in_db = TRUE
-    
     # Add Clowder data provenance
     doc_sheet_list$Documents = doc_sheet_list$Documents %>%
       dplyr::mutate(qc_jira_ticket = to_load$jira_ticket[i],
@@ -101,10 +98,7 @@ qc_to_db <- function(schema = 'cvt',
                                                     clowder_file_list=clowder_file_list)  
     }
     
-    # TODO Add logic for update_doc_in_db from push_CvT_templates_orig_values.R
-    # Reconcile combining/updating document entries that exist in the database
-    
-    # TODO Add logic to get/set ID values and foreign key relations between sheets
+    # get/set ID values and foreign key relations between sheets
     # Account for whether it is a load vs. QC based on "QC_"
     tbl_id_list <- get_next_tbl_id(schema)
     fk_map = lapply(names(doc_sheet_list), function(sheet){
@@ -148,7 +142,6 @@ qc_to_db <- function(schema = 'cvt',
             )  
         }
       }
-      
     }) %>%
       dplyr::bind_rows() %>%
       # Filter out those that do not change (mainly for QC load_mode)
@@ -188,6 +181,22 @@ qc_to_db <- function(schema = 'cvt',
           )) %>%
           dplyr::select(-dplyr::any_of(c(fk_list[2]))) %>%
           dplyr::rename(!!fk_list[2] := fk_id)
+      }
+    }
+    
+    # Check all foreign key fields. Must be a numeric value (not NA)
+    for(sheet in names(doc_sheet_list)){
+      tmp = doc_sheet_list[[sheet]] %>%
+        dplyr::select(dplyr::starts_with("fk_")) %>%
+        # Exclude optional foreign keys
+        dplyr::select(-dplyr::any_of(c("fk_reference_document_id"))) %>%
+        # Set to numeric, producing NA's where not numeric
+        dplyr::mutate(dplyr::across(dplyr::everything(), as.numeric))
+      if(nrow(tmp)){
+        # Compare dataframe without NA values versus original
+        if(nrow(na.omit(tmp)) != nrow(tmp)){
+          stop("Foreign key missing in ", sheet, " sheet")
+        }
       }
     }
     
@@ -251,12 +260,40 @@ qc_to_db <- function(schema = 'cvt',
                        tbl_name = sheet_name)
     }
     
-    # TODO use the fk_map to replace all foreign keys as needed before ADD and Update
+################################################################################    
+    # If document already present, merge field values
+    # Do this after qc_remove_record so that any removed cases are ignored
+    # Get documents table fields
+    tbl_fields = tbl_field_list$column_name[tbl_field_list$table_name == "documents"] %>%
+      .[!. %in% col_exclude]
+    doc_in_db = db_query_cvt(paste0("SELECT * FROM cvt.documents where id = ",
+                                    doc_sheet_list$Documents$fk_document_id[!is.na(doc_sheet_list$Documents$fk_document_id)]))
+    temp_doc = doc_sheet_list$Documents %>%
+      # Filter out NA fields (to be filled by database document fields)
+      .[ , colSums(is.na(.)) < nrow(.)] %>%
+      dplyr::select(-id, -fk_document_id)
     
-    # TODO Consider taking Add outside of loop and having subset doc_sheet_list of
-    # all records that need to be added - process linearly as if they're a new template load
-    # Then match back local ID linkages for records that need them
-    # Add these new rows to the database
+    # Combine fields from template with fields from document entry
+    doc_in_db = doc_in_db %>%
+      dplyr::select(any_of(
+        names(doc_in_db)[!names(doc_in_db) %in% names(temp_doc)]
+      )) %>%
+      cbind(., temp_doc) %>%
+      # Remove versioning, handled by database audit triggers
+      dplyr::select(-rec_create_dt, -version, -created_by) %>%
+      # Order columns by database table order
+      dplyr::select(id, any_of(tbl_fields), document_type)
+    
+    # Update database entry for document
+    db_update_tbl(df=doc_in_db %>%
+                    dplyr::select(-document_type),
+                  tblName = "documents")
+    
+    # Remove entries already in database that were updated
+    doc_sheet_list$Documents = doc_sheet_list$Documents[is.na(doc_sheet_list$Documents$fk_document_id)]
+    
+################################################################################    
+    # Filter only to records that are "Add"
     qc_add_record(df = purrr::map(doc_sheet_list, function(df){ dplyr::filter(df, qc_push_category == "Add")}),
                   tbl_field_list=tbl_field_list, 
                   load_doc_sheet_only=load_doc_sheet_only)
@@ -275,10 +312,6 @@ qc_to_db <- function(schema = 'cvt',
                                     qc_notes = "QC pass without changes"),
                     tblName = sheet_name)
       
-      # TODO Append updated ID values to doc_sheet_list for foreign key 
-      # substitutions of QC_# values
-      
-      # TODO: Add check/select for only fields in database table
       # Update unchanged records to qc_status = "pass"
       db_update_tbl(df = doc_sheet_list[[sheet_name]] %>%
                       dplyr::filter(qc_push_category == "Update") %>%
