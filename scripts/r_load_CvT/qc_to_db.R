@@ -1,14 +1,15 @@
-qc_to_db <- function(files, schema) {
-  col_exclude = c()
-  log_path <- "output/qc_to_db_log.xlsx"
+qc_to_db <- function(schema = 'cvt',
+                     log_path = "output/qc_to_db_log.xlsx",
+                     qc_dataset = "CVT_dermal",
+                     col_exclude = c()
+                     ) {
+  
+  # Set default variables
   load_doc_sheet_only = FALSE
   apiKey = Sys.getenv("apiKey")
   baseurl = Sys.getenv("baseurl")
   dsID = Sys.getenv("qc_dsID")
   doc_dsID = Sys.getenv("doc_dsID")
-  qc_dataset = "CVT_dermal"
-  schema = "cvt"
-  log_path = "output/load_required_fields_log.xlsx"
   load_mode = "QC"
   
   
@@ -149,7 +150,46 @@ qc_to_db <- function(files, schema) {
       }
       
     }) %>%
-      dplyr::bind_rows()
+      dplyr::bind_rows() %>%
+      # Filter out those that do not change (mainly for QC load_mode)
+      dplyr::filter(id != fk_id)
+    
+    for(sheet in unique(fk_map$sheet)){
+      key_map = fk_map %>%
+        dplyr::filter(sheet == !!sheet) %>%
+        dplyr::select(-sheet)
+      
+      # Map id to fk_id from fk_map for sheet
+      doc_sheet_list[[sheet]] = doc_sheet_list[[sheet]] %>%
+        dplyr::left_join(key_map,
+                         by = "id") %>%
+        dplyr::mutate(fk_id = dplyr::case_when(
+          is.na(fk_id) ~ id,
+          TRUE ~ fk_id
+        )) %>%
+        dplyr::select(-id) %>%
+        dplyr::rename(id = fk_id)
+      
+      # Create foreign_key table-field pair map
+      fk_list = switch(sheet,
+                       "Documents" = c("Studies", "fk_reference_document"),
+                       "Studies" = c("Series", "fk_study_id"),
+                       "Subjects" = c("Series", "fk_subject_id"),
+                       "Series" = c("Conc_Time_Values", "fk_series_id"))
+      
+      # Map foreign key fields with table-field pair
+      if(!is.null(fk_list)){
+        doc_sheet_list[[fk_list[1]]] = doc_sheet_list[[fk_list[1]]] %>%
+          dplyr::left_join(key_map,
+                           by = dplyr::join_by(!!fk_list[2] == id)) %>%
+          dplyr::mutate(fk_id = dplyr::case_when(
+            is.na(fk_id) ~ !!rlang::sym(fk_list[2]),
+            TRUE ~ fk_id
+          )) %>%
+          dplyr::select(-dplyr::any_of(c(fk_list[2]))) %>%
+          dplyr::rename(!!fk_list[2] := fk_id)
+      }
+    }
     
     #############################################################################################
     ### End of generic logic used for both Load and QC
@@ -188,6 +228,16 @@ qc_to_db <- function(files, schema) {
     }) %T>% {
       names(.) <- names(doc_sheet_list)
     }
+    
+    # Export prepped QC load template before pushing results (helps with restarting/checking)
+    output_dir = file.path("output", "Document QC Export", qc_dataset)
+    if(!dir.exists(output_dir)) dir.create(output_dir, recursive = TRUE)
+    
+    # Write export file  
+    writexl::write_xlsx(doc_sheet_list, path=paste0(output_dir,"/", 
+                                                    basename(to_load$filename[i]) %>% gsub(".xlsx", "", .), 
+                                                    "_loaded_", format(Sys.time(), "%Y%m%d"), 
+                                                    ".xlsx"))
     
     # TODO Ensure connections between split entry records are clear/captured
     # before deleting parent record (i.e. qc_notes establish the parent ID)
