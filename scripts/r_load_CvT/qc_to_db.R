@@ -2,8 +2,7 @@ qc_to_db <- function(schema = 'cvt',
                      log_path = "output/qc_to_db_log.xlsx",
                      qc_dataset = "CVT_dermal",
                      col_exclude = c()
-                     ) {
-  
+) {
   # Set default variables
   load_doc_sheet_only = FALSE
   apiKey = Sys.getenv("apiKey")
@@ -80,6 +79,10 @@ qc_to_db <- function(schema = 'cvt',
     # Match to document records in CvTdb, if available
     doc_sheet_list$Documents = match_cvt_doc_to_db_doc(df = doc_sheet_list$Documents)
     
+    # Handle case where a "New" record already has an entry in the documents table
+    # Map to existing Document ID
+    doc_sheet_list$Documents$id[!is.na(doc_sheet_list$Documents$fk_document_id)] = doc_sheet_list$Documents$fk_document_id[!is.na(doc_sheet_list$Documents$fk_document_id)] 
+    
     # Add Clowder data provenance
     doc_sheet_list$Documents = doc_sheet_list$Documents %>%
       dplyr::mutate(qc_jira_ticket = to_load$jira_ticket[i],
@@ -97,8 +100,8 @@ qc_to_db <- function(schema = 'cvt',
                                                     apiKey=apiKey,
                                                     clowder_file_list=clowder_file_list)  
     }
-
-################################################################################    
+    
+    ################################################################################    
     # get/set ID values and foreign key relations between sheets
     # Account for whether it is a load vs. QC based on "QC_"
     tbl_id_list <- get_next_tbl_id(schema)
@@ -166,7 +169,7 @@ qc_to_db <- function(schema = 'cvt',
       
       # Create foreign_key table-field pair map
       fk_list = switch(sheet,
-                       "Documents" = c("Studies", "fk_reference_document"),
+                       "Documents" = c("Studies", "fk_reference_document_id"),
                        "Studies" = c("Series", "fk_study_id"),
                        "Subjects" = c("Series", "fk_subject_id"),
                        "Series" = c("Conc_Time_Values", "fk_series_id"))
@@ -190,7 +193,7 @@ qc_to_db <- function(schema = 'cvt',
       tmp = doc_sheet_list[[sheet]] %>%
         dplyr::select(dplyr::starts_with("fk_")) %>%
         # Exclude optional foreign keys
-        dplyr::select(-dplyr::any_of(c("fk_reference_document_id"))) %>%
+        dplyr::select(-dplyr::any_of(c("fk_reference_document_id", "fk_document_id"))) %>%
         # Set to numeric, producing NA's where not numeric
         dplyr::mutate(dplyr::across(dplyr::everything(), as.numeric))
       if(nrow(tmp)){
@@ -262,15 +265,18 @@ qc_to_db <- function(schema = 'cvt',
                        tbl_name = sheet_name)
     }
     
-################################################################################    
+    ################################################################################    
     # If document already present, merge field values
     # Do this after qc_remove_record so that any removed cases are ignored
     # Get documents table fields
     tbl_fields = tbl_field_list$column_name[tbl_field_list$table_name == "documents"] %>%
       .[!. %in% col_exclude]
-    doc_in_db = db_query_cvt(paste0("SELECT * FROM cvt.documents where id = ",
-                                    doc_sheet_list$Documents$fk_document_id[!is.na(doc_sheet_list$Documents$fk_document_id)]))
+    doc_in_db = db_query_cvt(paste0("SELECT * FROM cvt.documents where id in (",
+                                    toString(doc_sheet_list$Documents$fk_document_id[!is.na(doc_sheet_list$Documents$fk_document_id)]),
+                                    ")"
+    ))
     temp_doc = doc_sheet_list$Documents %>%
+      dplyr::filter(fk_document_id %in% doc_in_db$id) %>%
       # Filter out NA fields (to be filled by database document fields)
       .[ , colSums(is.na(.)) < nrow(.)] %>%
       dplyr::select(-id, -fk_document_id)
@@ -280,7 +286,7 @@ qc_to_db <- function(schema = 'cvt',
       dplyr::select(any_of(
         names(doc_in_db)[!names(doc_in_db) %in% names(temp_doc)]
       )) %>%
-      cbind(., temp_doc) %>%
+      dplyr::bind_cols(temp_doc) %>%
       # Remove versioning, handled by database audit triggers
       dplyr::select(-rec_create_dt, -version) %>%
       # Order columns by database table order
@@ -290,20 +296,12 @@ qc_to_db <- function(schema = 'cvt',
     db_update_tbl(df=doc_in_db %>%
                     dplyr::select(-document_type),
                   tblName = "documents")
-    
-    # Remove entries already in database that were updated
-    doc_sheet_list$Documents = doc_sheet_list$Documents[is.na(doc_sheet_list$Documents$fk_document_id)]
-    
-    doc_sheet_list = doc_sheet_list %>%
-      purrr::compact()
-    
-################################################################################    
+    ################################################################################    
     # Filter only to records that are "Add"
-    qc_add_record(df = purrr::map(doc_sheet_list, function(df){ dplyr::filter(df, qc_push_category == "Add")}),
+    qc_add_record(df = doc_sheet_list,
                   tbl_field_list=tbl_field_list, 
                   load_doc_sheet_only=load_doc_sheet_only,
                   col_exclude=col_exclude)
-    
     
     # Select and iterate through "Pass" QC Category record updates
     df = purrr::map(doc_sheet_list, function(df){ dplyr::filter(df, qc_push_category == "Pass")}) %>%

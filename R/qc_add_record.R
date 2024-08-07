@@ -28,14 +28,13 @@ qc_add_record <- function(df, tbl_field_list, load_doc_sheet_only, col_exclude){
       message("...pushing to Documents table")
       
       ### Default extracted to 3 if submitted as NA
-      doc_sheet_list$Documents$extracted[is.na(doc_sheet_list$Documents$extracted)] = 3
+      df$Documents$extracted[is.na(df$Documents$extracted)] = 3
       
       # Get documents table fields
       tbl_fields = tbl_field_list$column_name[tbl_field_list$table_name == "documents"] %>%
         .[!. %in% col_exclude]
-      db_push_rs = db_push_tbl_to_db(dat = df %>%
-                                       # Filter out reference documents that are already in CvTDB
-                                       dplyr::filter(!(document_type == 2 & !is.na(fk_document_id))) %>%
+      db_push_rs = db_push_tbl_to_db(dat = df$Documents %>%
+                                       dplyr::filter(is.na(fk_document_id)) %>%
                                        dplyr::select(dplyr::any_of(tbl_fields)),
                                      tblName="documents",
                                      overwrite=FALSE, 
@@ -46,15 +45,28 @@ qc_add_record <- function(df, tbl_field_list, load_doc_sheet_only, col_exclude){
       }
       
       # Push Document Lineage Linkages
-      doc_lineage = df %>%
-        dplyr::select(fk_doc_id = fk_document_id, 
+      doc_lineage = df$Documents %>%
+        dplyr::select(fk_doc_id = id, 
                       relationship_type = document_type)
+      
       # Add parent doc (document_type == 1)
       doc_lineage$fk_parent_doc_id = doc_lineage$fk_doc_id[doc_lineage$relationship_type == 1]
+      
+      # Pull existing doc lineage
+      existing_lineage = db_query_cvt(paste0("SELECT CONCAT(fk_parent_doc_id, '_', fk_doc_id) as lineage_key ",
+                                             "FROM cvt.documents_lineage ",
+                                             "WHERE fk_parent_doc_id in (", toString(unique(doc_lineage$fk_parent_doc_id)), 
+                                             ") OR fk_doc_id in (" , toString(unique(doc_lineage$fk_doc_id)), ")"))
+      
       doc_lineage = doc_lineage %>%
-        dplyr::filter(fk_parent_doc_id != fk_doc_id)
+        dplyr::mutate(lineage_key = paste0(fk_parent_doc_id, "_", fk_doc_id)) %>%
+        dplyr::filter(fk_parent_doc_id != fk_doc_id,
+                      # Filter out already existing doc lineage linkages
+                      !lineage_key %in% existing_lineage$lineage_key) %>%
+        dplyr::select(-lineage_key)
       
       if(nrow(doc_lineage)){
+        # Prep and filter doc lineage
         doc_lineage = doc_lineage %>%
           dplyr::mutate(relationship_type = dplyr::case_when(
             relationship_type == 2 ~ "Reference Document",
@@ -77,8 +89,11 @@ qc_add_record <- function(df, tbl_field_list, load_doc_sheet_only, col_exclude){
   
   # Push sheets
   for(sheet in names(df)[!names(df) %in% c("Documents")]){
+    # Filter to only those that have "Add" qc_push_category
+    df[[sheet]] = df[[sheet]] %>%
+      dplyr::filter(qc_push_category == "Add")
+    
     if(nrow(df[[sheet]])){
-      
       if(sheet == "Studies"){
         # Set extraction document ID
         df$Studies$fk_extraction_document_id = df$Documents$fk_document_id[df$Documents$document_type == 1]
