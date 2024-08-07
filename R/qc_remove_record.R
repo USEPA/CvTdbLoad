@@ -3,9 +3,10 @@
 #' for needed cascade of removal for foreign key table connections 
 #' @param df Input dataframe of id, qc_notes, and qc_flags for records to remove
 #' @param tbl_name Name of table the records are from
+#' @param reset_extraction Boolean whether to reset_extraction or remove whole record. Defaul FALSE.
 #' @export
 #' @return None.
-qc_remove_record <- function(df, tbl_name){
+qc_remove_record <- function(df, tbl_name, reset_extraction = FALSE){
   
   if(!nrow(df)){
     message("...no records to remove for ", tbl_name, " sheet...")
@@ -47,22 +48,29 @@ qc_remove_record <- function(df, tbl_name){
   del_ids = del_ids %>%
     purrr::compact()
   
-  for(del_tbl in names(del_ids)){
+  for(del_tbl in rev(names(del_ids))){
     
     # If not from the provided df table, set generic message for cascade removal qc_notes/flags
     if(del_tbl != tolower(tbl_name)){
       df = data.frame(id = del_ids[[del_tbl]]) %>% 
-        dplyr::mutate(qc_notes = paste0('Removed due to foreign key association to removed record in ', tbl_name, ' table'),
-                      qc_flags = paste0('Removed due to foreign key association to removed record in ', tbl_name, ' table'))
+        dplyr::mutate(qc_notes = paste0('Removed due to foreign key association to removed record in ', tbl_name, 
+                                        ' table (', toString(del_ids[[tolower(tbl_name)]]), ")"),
+                      qc_flags = paste0('Removed due to foreign key association to removed record in ', tbl_name, 
+                                        ' table (', toString(del_ids[[tolower(tbl_name)]]), ")"))
+    }
+    
+    # Skip deleting document records if just resetting extraction
+    if(reset_extraction & del_tbl == "documents"){
+      next
     }
     
     # Specical case for documents_lineage
-    if(del_tbl == "documents_lineage"){
-      db_query_cvt(paste0("DELETE FROM cvt.", del_tbl, " WHERE fk_doc_id IN (", toString(df$id), ")"))
-      db_query_cvt(paste0("DELETE FROM cvt.", del_tbl, " WHERE fk_parent_doc_id IN (", toString(df$id), ")"))
+    if(del_tbl == "documents"){
+      db_query_cvt(paste0("DELETE FROM cvt.documents_lineage WHERE fk_doc_id IN (", toString(df$id), ")"))
+      db_query_cvt(paste0("DELETE FROM cvt.documents_lineage WHERE fk_parent_doc_id IN (", toString(df$id), ")"))
     }
     
-    message("...removing records for ", tbl_name, " sheet")
+    message("...removing records for ", del_tbl, " sheet")
     # Update database entry twice:
     # once to audit old record
     db_update_tbl(df = df, tblName = del_tbl)

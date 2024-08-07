@@ -18,6 +18,11 @@
 validate_foreign_keys <- function(df, f, log_path, verbose=FALSE){
   validation <- TRUE # False if an invalid condition was encountered
 
+  # Skip case of only having documents sheet
+  if(length(names(df)) == 1 && names(df) == c("Documents")){
+    return (validation)
+  }
+  
   # Get present id's within relevant sheets
   study_ids <- df$Studies$id[!is.na(df$Studies$id)]
   subject_ids <- df$Subjects$id[!is.na(df$Subjects$id)]

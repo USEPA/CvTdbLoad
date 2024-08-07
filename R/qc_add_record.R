@@ -5,7 +5,7 @@
 #' @param load_doc_sheet_only Boolean whether just to add document sheet only
 #' @param col_exclude List of columns to exclude from database pushes
 #' @export
-#' @return Modified version of input df with mapped new database ID values
+#' @return None, SQL statements are submitted
 qc_add_record <- function(df, tbl_field_list, load_doc_sheet_only, col_exclude){
   
   # Remove empty rows and columns (all NA values)

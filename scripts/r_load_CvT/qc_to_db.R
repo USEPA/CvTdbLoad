@@ -233,7 +233,12 @@ qc_to_db <- function(schema = 'cvt',
             qc_status == "fail" ~ "Remove",
             qc_flags == "modified" ~ "Update",
             qc_flags == "new entry" | grepl("split entry", qc_flags) ~ "Add",
+            qc_flags == "reset extraction" ~ "reset extraction",
             TRUE ~ "Pass"
+          ),
+          qc_status = dplyr::case_when(
+            qc_push_category == "reset extraction" ~ NA,
+            TRUE ~ qc_status
           ),
           # Set created_by
           created_by = qc_user
@@ -255,14 +260,17 @@ qc_to_db <- function(schema = 'cvt',
     # TODO Ensure connections between split entry records are clear/captured
     # before deleting parent record (i.e. qc_notes establish the parent ID)
     
-    # Delete/remove records in specific order to handle cascade needs due to foreign key connections
-    message("Removing records...")
-    for(sheet_name in c("Conc_Time_Values", "Series", "Subjects", "Studies", "Documents")){
-      # Remove these ids from the database
-      qc_remove_record(df = doc_sheet_list[[sheet_name]] %>%
-                         dplyr::filter(qc_push_category == "Remove") %>%
-                         dplyr::select(id, qc_notes, qc_flags),
-                       tbl_name = sheet_name)
+    # Remove if not loading doc sheet only
+    if(!load_doc_sheet_only){
+      # Delete/remove records in specific order to handle cascade needs due to foreign key connections
+      message("Removing records...")
+      for(sheet_name in c("Conc_Time_Values", "Series", "Subjects", "Studies", "Documents")){
+        # Remove these ids from the database
+        qc_remove_record(df = doc_sheet_list[[sheet_name]] %>%
+                           dplyr::filter(qc_push_category == "Remove") %>%
+                           dplyr::select(id, qc_notes, qc_flags),
+                         tbl_name = sheet_name)
+      } 
     }
     
     ################################################################################    
@@ -322,7 +330,7 @@ qc_to_db <- function(schema = 'cvt',
       }
     }
     
-    # Select and iterate through "Pass" QC Category record updates
+    # Select and iterate through "Update" QC Category record updates
     df = purrr::map(doc_sheet_list, function(df){ dplyr::filter(df, qc_push_category == "Update")}) %>%
       .[sapply(., function(x) dim(x)[1]) > 0]
     
@@ -338,6 +346,17 @@ qc_to_db <- function(schema = 'cvt',
                         dplyr::select(dplyr::any_of(tbl_fields)), 
                       tblName = sheet_name)
       }
+    }
+    
+    # Select and iterate through "reset" QC Category record updates
+    df = purrr::map(doc_sheet_list, function(df){ dplyr::filter(df, qc_push_category == "reset extraction")}) %>%
+      .[sapply(., function(x) dim(x)[1]) > 0]
+    
+    if(length(df)){
+      qc_remove_record(df = df$Documents %>%
+                         dplyr::select(id, qc_notes, qc_flags),
+                       tbl_name = "Documents",
+                       reset_extraction = TRUE)
     }
     
     # TODO: Run normalization of updated/added records
