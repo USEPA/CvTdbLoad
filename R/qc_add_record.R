@@ -23,54 +23,56 @@ qc_add_record <- function(df, tbl_field_list, load_doc_sheet_only, col_exclude){
   }
   
   # Adapted from push_CvT_templates_orig_values.R
-  if(nrow(df$Documents)){
-    message("...pushing to Documents table")
-    
-    ### Default extracted to 3 if submitted as NA
-    doc_sheet_list$Documents$extracted[is.na(doc_sheet_list$Documents$extracted)] = 3
-    
-    # Get documents table fields
-    tbl_fields = tbl_field_list$column_name[tbl_field_list$table_name == "documents"] %>%
-      .[!. %in% col_exclude]
-    db_push_rs = db_push_tbl_to_db(dat = df %>%
-                                     # Filter out reference documents that are already in CvTDB
-                                     dplyr::filter(!(document_type == 2 & !is.na(fk_document_id))) %>%
-                                     dplyr::select(dplyr::any_of(tbl_fields)),
-                                   tblName="documents",
-                                   overwrite=FALSE, 
-                                   append=TRUE) 
-    if(is.null(db_push_rs) || is.na(db_push_rs)){
-      message("Issue pushing documents table.")
-      browser()
-    }
-    
-    # Push Document Lineage Linkages
-    doc_lineage = df %>%
-      dplyr::select(fk_doc_id = fk_document_id, 
-                    relationship_type = document_type)
-    # Add parent doc (document_type == 1)
-    doc_lineage$fk_parent_doc_id = doc_lineage$fk_doc_id[doc_lineage$relationship_type == 1]
-    doc_lineage = doc_lineage %>%
-      dplyr::filter(fk_parent_doc_id != fk_doc_id)
-    
-    if(nrow(doc_lineage)){
-      doc_lineage = doc_lineage %>%
-        dplyr::mutate(relationship_type = dplyr::case_when(
-          relationship_type == 2 ~ "Reference Document",
-          relationship_type == 3 ~ "Supplemental Document",
-          relationship_type == 4 ~ "Study Methods Document",
-          TRUE ~ as.character(relationship_type)
-        ))
+  if("Documents" %in% names(df)){
+    if(nrow(df$Documents)){
+      message("...pushing to Documents table")
       
-      message("...pushing to Document Lineage table")
-      db_push_tbl_to_db(dat=doc_lineage,
-                        tblName="documents_lineage",
-                        overwrite=FALSE, 
-                        append=TRUE)
+      ### Default extracted to 3 if submitted as NA
+      doc_sheet_list$Documents$extracted[is.na(doc_sheet_list$Documents$extracted)] = 3
+      
+      # Get documents table fields
+      tbl_fields = tbl_field_list$column_name[tbl_field_list$table_name == "documents"] %>%
+        .[!. %in% col_exclude]
+      db_push_rs = db_push_tbl_to_db(dat = df %>%
+                                       # Filter out reference documents that are already in CvTDB
+                                       dplyr::filter(!(document_type == 2 & !is.na(fk_document_id))) %>%
+                                       dplyr::select(dplyr::any_of(tbl_fields)),
+                                     tblName="documents",
+                                     overwrite=FALSE, 
+                                     append=TRUE) 
+      if(is.null(db_push_rs) || is.na(db_push_rs)){
+        message("Issue pushing documents table.")
+        browser()
+      }
+      
+      # Push Document Lineage Linkages
+      doc_lineage = df %>%
+        dplyr::select(fk_doc_id = fk_document_id, 
+                      relationship_type = document_type)
+      # Add parent doc (document_type == 1)
+      doc_lineage$fk_parent_doc_id = doc_lineage$fk_doc_id[doc_lineage$relationship_type == 1]
+      doc_lineage = doc_lineage %>%
+        dplyr::filter(fk_parent_doc_id != fk_doc_id)
+      
+      if(nrow(doc_lineage)){
+        doc_lineage = doc_lineage %>%
+          dplyr::mutate(relationship_type = dplyr::case_when(
+            relationship_type == 2 ~ "Reference Document",
+            relationship_type == 3 ~ "Supplemental Document",
+            relationship_type == 4 ~ "Study Methods Document",
+            TRUE ~ as.character(relationship_type)
+          ))
+        
+        message("...pushing to Document Lineage table")
+        db_push_tbl_to_db(dat=doc_lineage,
+                          tblName="documents_lineage",
+                          overwrite=FALSE, 
+                          append=TRUE)
+      }
+      
+      # If true, only load documents sheet and return
+      if(load_doc_sheet_only) return() 
     }
-    
-    # If true, only load documents sheet and return
-    if(load_doc_sheet_only) return()
   }
   
   # Push sheets
@@ -88,7 +90,7 @@ qc_add_record <- function(df, tbl_field_list, load_doc_sheet_only, col_exclude){
       message("...pushing records for ", sheet, " sheet")
       db_push_rs = db_push_tbl_to_db(dat=df[[sheet]] %>%
                                        dplyr::select(dplyr::any_of(tbl_fields)),
-                                     tblName=sheet,
+                                     tblName=tolower(sheet),
                                      overwrite=FALSE, 
                                      append=TRUE)
       if(is.null(db_push_rs) || is.na(db_push_rs)){

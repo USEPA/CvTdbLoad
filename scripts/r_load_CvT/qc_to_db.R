@@ -301,7 +301,8 @@ qc_to_db <- function(schema = 'cvt',
     # Filter only to records that are "Add"
     qc_add_record(df = purrr::map(doc_sheet_list, function(df){ dplyr::filter(df, qc_push_category == "Add")}),
                   tbl_field_list=tbl_field_list, 
-                  load_doc_sheet_only=load_doc_sheet_only)
+                  load_doc_sheet_only=load_doc_sheet_only,
+                  col_exclude=col_exclude)
     
     
     # Select and iterate through "Pass" QC Category record updates
