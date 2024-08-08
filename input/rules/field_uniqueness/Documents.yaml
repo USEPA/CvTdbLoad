@@ -11,6 +11,6 @@ rules:
 - expr: 'is_unique(doi[!is.na(doi)])'
   meta:
     message: duplicate_in_field_doi
-- expr: 'is_unique(clowder_file_id)'
+- expr: 'is_unique(clowder_file_id[!is.na(clowder_file_id)])'
   meta:
     message: duplicate_in_field_clowder_file_id
