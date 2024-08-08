@@ -32,6 +32,7 @@ qc_to_db <- function(schema = 'cvt',
   
   # Loop through Clowder files to load
   for(i in seq_len(nrow(to_load))){
+    load_doc_sheet_only = FALSE
     message("Pushing file (", i, "/", nrow(to_load),"): ", toString(to_load[i,c("jira_ticket", "filename")]), "...", Sys.time())
     f = to_load$filename[i]
     #############################################################################################
