@@ -22,7 +22,7 @@ validate_field_uniqueness <- function(df, f, log_path, verbose=FALSE){
   for (sheet in names(df)) {
     # If the document is a qc_document, and it has a fail status, no need to validate
     if("qc_status" %in% names(df[[sheet]])) {
-      df[[sheet]] <- df[[sheet]] %>% dplyr::filter(qc_status != "fail")
+      df[[sheet]] <- df[[sheet]] %>% dplyr::filter(!qc_status %in% "fail")
     }
     
     # Pull rules from the respective YAML, and store failing validation checks

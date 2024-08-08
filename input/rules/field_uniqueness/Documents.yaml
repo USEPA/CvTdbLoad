@@ -2,3 +2,15 @@ rules:
 - expr: 'is_unique(id)'
   meta:
     message: duplicate_in_field_id
+- expr: 'is_unique(pmid[!is.na(pmid)])'
+  meta:
+    message: duplicate_in_field_pmid
+- expr: 'is_unique(other_study_identifier[!is.na(other_study_identifier)])'
+  meta:
+    message: duplicate_in_field_other_study_identifier
+- expr: 'is_unique(doi[!is.na(doi)])'
+  meta:
+    message: duplicate_in_field_doi
+- expr: 'is_unique(clowder_file_id)'
+  meta:
+    message: duplicate_in_field_clowder_file_id
