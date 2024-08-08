@@ -44,10 +44,10 @@ rules:
 - expr: 'if (!is.na(clipped_fur)) !is.na(as.numeric(clipped_fur))'
   meta:
     message: invalid_field_type_dermal_dose_clipped_fur
-- expr: 'if (!is.na(aerosol_particle_diameter_mean)) !is.na(as.numeric(gsub("[.]", "", aerosol_particle_diameter_mean)))'
+- expr: 'if (!is.na(aerosol_particle_diameter_mean)) !is.na(as.numeric(gsub("[+/-.]", "", aerosol_particle_diameter_mean)))'
   meta:
     message: invalid_field_type_aerosol_particle_diameter_mean
-- expr: 'if (!is.na(aerosol_particle_diameter_sd)) !is.na(as.numeric(gsub("[.]", "", aerosol_particle_diameter_sd)))'
+- expr: 'if (!is.na(aerosol_particle_diameter_sd)) !is.na(as.numeric(gsub("[+/-.]", "", aerosol_particle_diameter_sd)))'
   meta:
     message: invalid_field_type_aerosol_particle_diameter_sd
 - expr: 'if (!is.na(aerosol_particle_density)) !is.na(as.numeric(gsub("[+/-.]", "", aerosol_particle_density)))'

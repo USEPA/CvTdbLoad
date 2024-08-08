@@ -1,10 +1,10 @@
 rules:
 - expr: 'if(is.na(qc_status)) !is.na(qc_flags)'
   meta:
-    message: Found row missing both qc_status and qc_flags.
+    message: Found row missing qc_flags.
 - expr: 'if(is.na(qc_flags)) !is.na(qc_status)'
   meta:
-    message: Found row missing both qc_status and qc_flags.
+    message: Found row missing qc_status.
 - expr: 'if (!is.na(qc_status)) qc_status %in% c("pass", "fail")'
   meta:
     message: Found qc_status other than "pass" or "fail".

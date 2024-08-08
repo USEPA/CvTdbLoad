@@ -27,7 +27,7 @@ validate_qc_fields <- function(df, f, log_path, verbose=FALSE) {
 
     # If the verbose parameter is enabled, print extra information about the failing entries
     if (verbose && nrow(fails) > 0) {
-      print(validate::violating(df[[sheet]], out))
+      print(validate::violating(df[[sheet_name]], out))
     }
   }
   
