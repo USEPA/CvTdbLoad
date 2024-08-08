@@ -86,6 +86,11 @@ get_dict_update_ids <- function(sheet_list, schema){
             c("id") %T>% {names(.) <- paste0("fk_", gsub("_dict", "", dict_tbl), "_id")}
           )
         
+        old_id_field = names(dict)[grepl("fk_", names(dict))]
+        
+        # Remove old dictionary fk_ ID column before adding new (in case new values were added)
+        sheet[, old_id_field[old_id_field %in% names(sheet)]] = NULL
+        
         # Rejoin to match foreign key values
         sheet_list[[sheet_n]] = sheet %>%
           dplyr::mutate(dplyr::across(dplyr::any_of(dict_col), ~as.character(.))) %>%

@@ -15,7 +15,8 @@ qc_to_db <- function(schema = 'cvt',
                                          "WHERE qc_jira_ticket IS NOT NULL"))
   # Pull dataset ticket templates and filter to those not loaded
   to_load = pull_clowder_files_to_load(dsID, baseurl, apiKey, curation_set_tag=qc_dataset, metadata_filter_tag=NULL) %>%
-    dplyr::filter(!clowder_id %in% loaded_jira_docs$qc_clowder_template_id)
+    dplyr::filter(!clowder_id %in% loaded_jira_docs$qc_clowder_template_id,
+                  grepl("_final\\.xlsx", filename))
   
   # Load inputs for needed load
   cvt_template = get_cvt_template("input/CvT_data_template_articles.xlsx")
@@ -70,10 +71,19 @@ qc_to_db <- function(schema = 'cvt',
     
     if(!load_doc_sheet_only){
       # Rename foreign key fields as needed
-      doc_sheet_list$Studies = doc_sheet_list$Studies %>%
-        dplyr::rename(fk_dosed_chemical_id=fk_chemicals_id)
-      doc_sheet_list$Series = doc_sheet_list$Series %>%
-        dplyr::rename(fk_analyzed_chemical_id=fk_chemicals_id)  
+      if("fk_chemicals_id" %in% names(doc_sheet_list$Studies) & !"fk_dosed_chemical_id" %in% names(doc_sheet_list$Studies)){
+        doc_sheet_list$Studies = doc_sheet_list$Studies %>%
+          dplyr::rename(fk_dosed_chemical_id=fk_chemicals_id)  
+      } else {
+        doc_sheet_list$Studies$fk_chemicals_id = NULL
+      }
+      
+      if("fk_chemicals_id" %in% names(doc_sheet_list$Studies) & !"fk_analyzed_chemical_id" %in% names(doc_sheet_list$Studies)){
+        doc_sheet_list$Series = doc_sheet_list$Series %>%
+          dplyr::rename(fk_analyzed_chemical_id=fk_chemicals_id)  
+      } else {
+        doc_sheet_list$Series$fk_chemicals_id = NULL
+      }
     }
     
     # Match to document records in CvTdb, if available
