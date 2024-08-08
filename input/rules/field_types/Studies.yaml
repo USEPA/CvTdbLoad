@@ -1,5 +1,5 @@
 rules:
-- expr: 'if (!is.na(id)) !is.na(as.numeric(id))'
+- expr: 'if (!is.na(id)) !is.na(as.numeric(gsub("QC_", "", id)))'
   meta:
     message: invalid_field_type_id
 - expr: 'if (!is.na(fk_reference_document_id)) !is.na(as.numeric(gsub("QC_", "", fk_reference_document_id)))'
