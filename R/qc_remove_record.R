@@ -68,6 +68,44 @@ qc_remove_record <- function(df, tbl_name, reset_extraction = FALSE){
     if(del_tbl == "documents"){
       db_query_cvt(paste0("DELETE FROM cvt.documents_lineage WHERE fk_doc_id IN (", toString(df$id), ")"))
       db_query_cvt(paste0("DELETE FROM cvt.documents_lineage WHERE fk_parent_doc_id IN (", toString(df$id), ")"))
+    } else if (del_tbl == "studies"){
+      tk_df = db_query_cvt(paste0("SELECT id, fk_study_id FROM cvt.tk_parameters WHERE fk_study_id IN (", toString(del_ids[[tolower(tbl_name)]]), ")"))
+      
+      if(nrow(tk_df)){
+        tk_df = tk_df %>%
+          dplyr::mutate(qc_notes = paste0('Removed due to foreign key association to removed record in ', del_tbl, 
+                                          ' table (', fk_study_id, ")"),
+                        qc_flags = paste0('Removed due to foreign key association to removed record in ', del_tbl, 
+                                          ' table (', fk_study_id, ")"))
+        # Update database entry twice:
+        # once to audit old record
+        db_update_tbl(df = tk_df, tblName = "tk_parameters")
+        # twice to audit QC'd record
+        db_update_tbl(df = tk_df, tblName = "tk_parameters")
+        # Delete database entries
+        db_query_cvt(paste0("DELETE FROM cvt.tk_parameters WHERE id IN (", toString(tk_df$id), ")"))
+        # tk_parameters
+        # tk_parameters_studies     
+      }
+    } else if (del_tbl == "series"){
+      tk_df = db_query_cvt(paste0("SELECT id, fk_series_id FROM cvt.tk_parameters WHERE fk_series_id IN (", toString(del_ids[[tolower(tbl_name)]]), ")"))
+      
+      if(nrow(tk_df)){
+        tk_df = tk_df %>%
+          dplyr::mutate(qc_notes = paste0('Removed due to foreign key association to removed record in ', del_tbl, 
+                                          ' table (', fk_series_id, ")"),
+                        qc_flags = paste0('Removed due to foreign key association to removed record in ', del_tbl, 
+                                          ' table (', fk_series_id, ")"))
+        # Update database entry twice:
+        # once to audit old record
+        db_update_tbl(df = tk_df, tblName = "tk_parameters")
+        # twice to audit QC'd record
+        db_update_tbl(df = tk_df, tblName = "tk_parameters")
+        # Delete database entries
+        db_query_cvt(paste0("DELETE FROM cvt.tk_parameters WHERE id IN (", toString(tk_df$id), ")"))
+        # tk_parameters
+        # tk_parameters_series  
+      }
     }
     
     message("...removing records for ", del_tbl, " sheet")

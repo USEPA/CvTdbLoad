@@ -1,6 +1,6 @@
 qc_to_db <- function(schema = 'cvt',
                      log_path = "output/qc_to_db_log.xlsx",
-                     qc_dataset = "CVT_dermal",
+                     qc_dataset = NULL,
                      col_exclude = c()
 ) {
   # Set default variables
@@ -18,6 +18,13 @@ qc_to_db <- function(schema = 'cvt',
     dplyr::filter(!clowder_id %in% loaded_jira_docs$qc_clowder_template_id,
                   grepl("_final\\.xlsx", filename))
   
+  #Check for duplicates in ticket. Each ticket should only have 1 final
+  dups = to_load %>%
+    dplyr::filter(duplicated(jira_ticket))
+  if(nrow(dups)){
+    stop("Duplicate 'final' QC templates found for tickets: ", toString(dups$jira_ticket))
+  }
+    
   # Load inputs for needed load
   cvt_template = get_cvt_template("input/CvT_data_template_articles.xlsx")
   tbl_field_list = db_query_cvt(paste0("SELECT table_name, column_name FROM information_schema.columns WHERE table_schema='", schema,"'"))
@@ -70,19 +77,18 @@ qc_to_db <- function(schema = 'cvt',
     doc_sheet_list = get_dict_update_ids(sheet_list=doc_sheet_list, schema = schema)
     
     if(!load_doc_sheet_only){
-      # Rename foreign key fields as needed
-      if("fk_chemicals_id" %in% names(doc_sheet_list$Studies) & !"fk_dosed_chemical_id" %in% names(doc_sheet_list$Studies)){
-        doc_sheet_list$Studies = doc_sheet_list$Studies %>%
-          dplyr::rename(fk_dosed_chemical_id=fk_chemicals_id)  
-      } else {
-        doc_sheet_list$Studies$fk_chemicals_id = NULL
-      }
+      # Rename/remove foreign key fields to remap chemical ID fields
+      doc_sheet_list$Studies$fk_dosed_chemical_id = NULL
+      doc_sheet_list$Studies = doc_sheet_list$Studies %>%
+        dplyr::rename(fk_dosed_chemical_id=fk_chemicals_id)  
       
-      if("fk_chemicals_id" %in% names(doc_sheet_list$Studies) & !"fk_analyzed_chemical_id" %in% names(doc_sheet_list$Studies)){
-        doc_sheet_list$Series = doc_sheet_list$Series %>%
-          dplyr::rename(fk_analyzed_chemical_id=fk_chemicals_id)  
-      } else {
-        doc_sheet_list$Series$fk_chemicals_id = NULL
+      doc_sheet_list$Series$fk_analyzed_chemical_id = NULL
+      doc_sheet_list$Series = doc_sheet_list$Series %>%
+        dplyr::rename(fk_analyzed_chemical_id=fk_chemicals_id)  
+      
+      # Remove extraneous chemical ID field
+      if("fk_test_chemical_id" %in% names(doc_sheet_list$Series)){
+        doc_sheet_list$Series$fk_test_chemical_id = NULL
       }
     }
     
@@ -101,6 +107,8 @@ qc_to_db <- function(schema = 'cvt',
     # Add field if not present
     if(!"clowder_file_id" %in% names(doc_sheet_list$Documents)){
       doc_sheet_list$Documents$clowder_file_id = as.character(NA)
+    } else {
+      doc_sheet_list$Documents$clowder_file_id = as.character(doc_sheet_list$Documents$clowder_file_id)
     }
     # Match to Clowder documents where clowder_file_id is NA
     if(any(is.na(doc_sheet_list$Documents$clowder_file_id))){
@@ -236,16 +244,18 @@ qc_to_db <- function(schema = 'cvt',
     
     # Set QC qc_push_category to determine database action by status and flags
     doc_sheet_list = lapply(doc_sheet_list, function(sheet){
-      sheet %>%
+      tmp = sheet %>%
         # Categorize each record based on 4 conditions of remove, update, add, or ignore
         dplyr::mutate(
           qc_push_category = dplyr::case_when(
-            qc_status == "fail" ~ "Remove",
-            qc_flags == "modified" ~ "Update",
-            qc_flags == "new entry" | grepl("split entry", qc_flags) ~ "Add",
-            qc_flags == "reset extraction" ~ "reset extraction",
+            # Using %in% due to NA entries
+            qc_status %in% c("fail") ~ "Remove",
+            qc_flags %in% c("modified") ~ "Update",
+            qc_flags %in% c("new entry") | grepl("split entry", qc_flags) ~ "Add",
+            qc_flags %in% c("reset extraction") ~ "reset extraction",
             TRUE ~ "Pass"
           ),
+          # Reset document qc_status for reset extraction
           qc_status = dplyr::case_when(
             qc_push_category == "reset extraction" ~ NA,
             TRUE ~ qc_status
@@ -253,12 +263,21 @@ qc_to_db <- function(schema = 'cvt',
           # Set created_by
           created_by = qc_user
         )
+    
+      # Flag case where a qc_push_category was not explicitly handled
+      if(any(!tmp$qc_flags[!tmp$qc_status %in% c("fail")] %in% c("modified", "new entry", "reset extraction"))){
+        message("Unhandled qc_flag for qc_push_category: ")
+        cat(paste0("- ", unique(tmp$qc_flags[!tmp$qc_flags %in% c("modified", "new entry", "reset extraction")])), sep="\n")
+        browser()
+      }
+        
+      return(tmp)
     }) %T>% {
       names(.) <- names(doc_sheet_list)
     }
     
     # Export prepped QC load template before pushing results (helps with restarting/checking)
-    output_dir = file.path("output", "Document QC Export", qc_dataset)
+    output_dir = file.path("output", "Document QC Export", to_load$curation_set_tag[i])
     if(!dir.exists(output_dir)) dir.create(output_dir, recursive = TRUE)
     
     # Write export file  
@@ -350,7 +369,7 @@ qc_to_db <- function(schema = 'cvt',
         tbl_fields = tbl_field_list$column_name[tbl_field_list$table_name == tolower(sheet_name)]
         
         # Update unchanged records to qc_status = "pass"
-        db_update_tbl(df = doc_sheet_list[[sheet_name]] %>%
+        db_update_tbl(df = df[[sheet_name]] %>%
                         dplyr::filter(qc_push_category == "Update") %>%
                         dplyr::mutate(qc_status = "pass") %>%
                         dplyr::select(dplyr::any_of(tbl_fields)), 
@@ -363,6 +382,7 @@ qc_to_db <- function(schema = 'cvt',
       .[sapply(., function(x) dim(x)[1]) > 0]
     
     if(length(df)){
+      # Only need to use Documents sheet
       qc_remove_record(df = df$Documents %>%
                          dplyr::select(id, qc_notes, qc_flags),
                        tbl_name = "Documents",
