@@ -108,7 +108,7 @@ qc_remove_record <- function(df, tbl_name, reset_extraction = FALSE){
       }
     }
     
-    message("...removing records for ", del_tbl, " sheet")
+    message("...removing records for ", del_tbl, " table based on sheet ", tbl_name)
     # Update database entry twice:
     # once to audit old record
     db_update_tbl(df = df, tblName = del_tbl)

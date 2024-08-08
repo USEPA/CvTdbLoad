@@ -286,22 +286,6 @@ qc_to_db <- function(schema = 'cvt',
                                                     "_loaded_", format(Sys.time(), "%Y%m%d"), 
                                                     ".xlsx"))
     
-    # TODO Ensure connections between split entry records are clear/captured
-    # before deleting parent record (i.e. qc_notes establish the parent ID)
-    
-    # Remove if not loading doc sheet only
-    if(!load_doc_sheet_only){
-      # Delete/remove records in specific order to handle cascade needs due to foreign key connections
-      message("Removing records...")
-      for(sheet_name in c("Conc_Time_Values", "Series", "Subjects", "Studies", "Documents")){
-        # Remove these ids from the database
-        qc_remove_record(df = doc_sheet_list[[sheet_name]] %>%
-                           dplyr::filter(qc_push_category == "Remove") %>%
-                           dplyr::select(id, qc_notes, qc_flags),
-                         tbl_name = sheet_name)
-      } 
-    }
-    
     ################################################################################    
     # If document already present, merge field values
     # Do this after qc_remove_record so that any removed cases are ignored
@@ -376,6 +360,21 @@ qc_to_db <- function(schema = 'cvt',
                       tblName = sheet_name)
       }
     }
+    
+    # Remove if not loading doc sheet only
+    # Perform after Update so can remove records with foreign key connections that have been updated
+    if(!load_doc_sheet_only){
+      # Delete/remove records in specific order to handle cascade needs due to foreign key connections
+      message("Removing records...")
+      for(sheet_name in c("Conc_Time_Values", "Series", "Subjects", "Studies", "Documents")){
+        # Remove these ids from the database
+        qc_remove_record(df = doc_sheet_list[[sheet_name]] %>%
+                           dplyr::filter(qc_push_category == "Remove") %>%
+                           dplyr::select(id, qc_notes, qc_flags),
+                         tbl_name = sheet_name)
+      } 
+    }
+    
     
     # Select and iterate through "reset" QC Category record updates
     df = purrr::map(doc_sheet_list, function(df){ dplyr::filter(df, qc_push_category == "reset extraction")}) %>%
