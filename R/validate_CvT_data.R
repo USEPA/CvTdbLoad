@@ -51,6 +51,18 @@ validate_cvt <- function(
   } else {
     stop("Must include a valid parameter. Either a clowder_file_id, file_path, db_identifier, or df.")
   }
+
+  if (!ignore_qc) {
+    # Convert qc_fields to lowercase for standardization
+    for (sheet_name in names(doc_sheet_list)) {
+      # Convert all fields to lower
+      doc_sheet_list[[sheet_name]] <- doc_sheet_list[[sheet_name]] %>%
+        dplyr::mutate(
+          qc_status = tolower(qc_status),
+          qc_flags = tolower(qc_flags)
+        )
+    }
+  }
   
   # Run all desired validations
   if (!ignore_present) {

@@ -12,13 +12,6 @@ validate_qc_fields <- function(df, f, log_path, verbose=FALSE) {
       return (FALSE)
     }
     
-    # Convert all fields to lower
-    df[[sheet_name]] <- df[[sheet_name]] %>%
-      dplyr::mutate(
-        qc_status = tolower(qc_status),
-        qc_flags = tolower(qc_flags)
-      )
-    
     # Pull rules from the respective YAML, and store failing validation checks
     out <- validate::confront(df[[sheet_name]], rules)
     fails <- validate::summary(out) %>% 
