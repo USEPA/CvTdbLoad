@@ -195,15 +195,17 @@ qc_to_db <- function(schema = 'cvt',
       
       # Map foreign key fields with table-field pair
       if(!is.null(fk_list)){
-        doc_sheet_list[[fk_list[1]]] = doc_sheet_list[[fk_list[1]]] %>%
-          dplyr::left_join(key_map,
-                           by = dplyr::join_by(!!fk_list[2] == id)) %>%
-          dplyr::mutate(fk_id = dplyr::case_when(
-            is.na(fk_id) ~ !!rlang::sym(fk_list[2]),
-            TRUE ~ fk_id
-          )) %>%
-          dplyr::select(-dplyr::any_of(c(fk_list[2]))) %>%
-          dplyr::rename(!!fk_list[2] := fk_id)
+        if(fk_list[1] %in% names(doc_sheet_list)){
+          doc_sheet_list[[fk_list[1]]] = doc_sheet_list[[fk_list[1]]] %>%
+            dplyr::left_join(key_map,
+                             by = dplyr::join_by(!!fk_list[2] == id)) %>%
+            dplyr::mutate(fk_id = dplyr::case_when(
+              is.na(fk_id) ~ !!rlang::sym(fk_list[2]),
+              TRUE ~ fk_id
+            )) %>%
+            dplyr::select(-dplyr::any_of(c(fk_list[2]))) %>%
+            dplyr::rename(!!fk_list[2] := fk_id) 
+        }
       }
     }
     
@@ -254,7 +256,8 @@ qc_to_db <- function(schema = 'cvt',
             qc_flags %in% c("modified") ~ "Update",
             qc_flags %in% c("new entry") | grepl("split entry", qc_flags) ~ "Add",
             qc_flags %in% c("reset extraction") ~ "reset extraction",
-            TRUE ~ "Pass"
+            is.na(qc_flags) & qc_status %in% "pass" ~ "Pass",
+            TRUE ~ NA
           ),
           # Reset document qc_status for reset extraction
           qc_status = dplyr::case_when(
@@ -266,7 +269,7 @@ qc_to_db <- function(schema = 'cvt',
         )
     
       # Flag case where a qc_push_category was not explicitly handled
-      if(any(!tmp$qc_flags[!tmp$qc_status %in% c("fail")] %in% c("modified", "new entry", "reset extraction"))){
+      if(any(is.na(tmp$qc_push_category))){
         message("Unhandled qc_flag for qc_push_category: ")
         cat(paste0("- ", unique(tmp$qc_flags[!tmp$qc_flags %in% c("modified", "new entry", "reset extraction")])), sep="\n")
         browser()
@@ -301,14 +304,17 @@ qc_to_db <- function(schema = 'cvt',
       dplyr::filter(fk_document_id %in% doc_in_db$id) %>%
       # Filter out NA fields (to be filled by database document fields)
       .[ , colSums(is.na(.)) < nrow(.)] %>%
-      dplyr::select(-id, -fk_document_id)
+      dplyr::select(-fk_document_id) %>%
+      dplyr::mutate(id = as.numeric(id))
     
     # Combine fields from template with fields from document entry
     doc_in_db = doc_in_db %>%
       dplyr::select(any_of(
-        names(doc_in_db)[!names(doc_in_db) %in% names(temp_doc)]
+        names(doc_in_db)[!names(doc_in_db) %in% names(temp_doc)[!names(temp_doc) %in% "id"]]
       )) %>%
-      dplyr::bind_cols(temp_doc) %>%
+      dplyr::left_join(temp_doc,
+                       by="id") %>%
+      # dplyr::bind_cols(temp_doc) %>%
       # Remove versioning, handled by database audit triggers
       dplyr::select(-rec_create_dt, -version) %>%
       # Order columns by database table order
@@ -384,6 +390,8 @@ qc_to_db <- function(schema = 'cvt',
     if(length(df)){
       # Only need to use Documents sheet
       qc_remove_record(df = df$Documents %>%
+                         # Only delete the extraction document of the template
+                         dplyr::filter(document_type == 1) %>%
                          dplyr::select(id, qc_notes, qc_flags),
                        tbl_name = "Documents",
                        reset_extraction = TRUE)
