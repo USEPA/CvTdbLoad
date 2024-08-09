@@ -184,7 +184,8 @@ qc_to_db <- function(schema = 'cvt',
           TRUE ~ fk_id
         )) %>%
         dplyr::select(-id) %>%
-        dplyr::rename(id = fk_id)
+        dplyr::rename(id = fk_id) %>%
+        dplyr::mutate(id = as.numeric(id))
       
       # Create foreign_key table-field pair map
       fk_list = switch(sheet,
@@ -197,6 +198,7 @@ qc_to_db <- function(schema = 'cvt',
       if(!is.null(fk_list)){
         if(fk_list[1] %in% names(doc_sheet_list)){
           doc_sheet_list[[fk_list[1]]] = doc_sheet_list[[fk_list[1]]] %>%
+            dplyr::mutate(!!fk_list[2] := as.character(!!rlang::sym(fk_list[2]))) %>%
             dplyr::left_join(key_map,
                              by = dplyr::join_by(!!fk_list[2] == id)) %>%
             dplyr::mutate(fk_id = dplyr::case_when(
