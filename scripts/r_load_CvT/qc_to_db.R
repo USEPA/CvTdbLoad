@@ -100,6 +100,10 @@ qc_to_db <- function(schema = 'cvt',
     # Map to existing Document ID
     doc_sheet_list$Documents$id[!is.na(doc_sheet_list$Documents$fk_document_id)] = doc_sheet_list$Documents$fk_document_id[!is.na(doc_sheet_list$Documents$fk_document_id)] 
     
+    if(!"qc_jira_ticket" %in% names(doc_sheet_list$Documents)){
+      doc_sheet_list$Documents$qc_jira_ticket = NA
+    }
+    
     # Add Clowder data provenance for extraction document
     doc_sheet_list$Documents = doc_sheet_list$Documents %>%
       dplyr::mutate(
@@ -390,10 +394,19 @@ qc_to_db <- function(schema = 'cvt',
       # Delete/remove records in specific order to handle cascade needs due to foreign key connections
       message("Removing records...")
       for(sheet_name in c("Conc_Time_Values", "Series", "Subjects", "Studies", "Documents")){
-        # Remove these ids from the database
-        qc_remove_record(df = doc_sheet_list[[sheet_name]] %>%
-                           dplyr::filter(qc_push_category == "Remove") %>%
-                           dplyr::select(id, qc_notes, qc_flags),
+        # Remove these ids from the database. For Documents, only delete extraction document associations
+        if(sheet_name == "Documents"){
+          df = doc_sheet_list[[sheet_name]] %>%
+            dplyr::filter(qc_push_category == "Remove",
+                          document_type == 1
+                          ) %>%
+            dplyr::select(id, qc_notes, qc_flags)
+        } else {
+          df = doc_sheet_list[[sheet_name]] %>%
+            dplyr::filter(qc_push_category == "Remove") %>%
+            dplyr::select(id, qc_notes, qc_flags)
+        }
+        qc_remove_record(df = df,
                          tbl_name = sheet_name)
       } 
     }
