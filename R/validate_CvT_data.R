@@ -15,6 +15,7 @@ validate_cvt <- function(
     ignore_field_entries = FALSE,
     ignore_field_uniqueness = FALSE,
     ignore_foreign_keys = FALSE,
+    ignore_expected_fields = FALSE,
     verbose=FALSE
   ) {
 
@@ -77,6 +78,12 @@ validate_cvt <- function(
     sheets_nonempty <- TRUE
   }
 
+  if (!ignore_expected_fields | all(is.na(file_path), is.na(f))) {
+    valid_expected_fields <- validate_expected_fields(df=doc_sheet_list, f=f, log_path=log_path, template_path=template_path, verbose=verbose)
+  } else {
+    valid_expected_fields <- TRUE
+  }
+
   if (!ignore_required) {
     valid_required_fields <- validate_required_fields(df=doc_sheet_list, f=f, log_path=log_path, verbose=verbose)
   } else {
@@ -113,7 +120,7 @@ validate_cvt <- function(
     valid_foreign_keys <- TRUE
   }
 
-  document_validity <- all(sheets_present, sheets_nonempty, valid_required_fields, valid_qc_fields, valid_field_types, valid_field_entries, valid_field_uniqueness, valid_foreign_keys)
+  document_validity <- all(sheets_present, sheets_nonempty, valid_expected_fields, valid_required_fields, valid_qc_fields, valid_field_types, valid_field_entries, valid_field_uniqueness, valid_foreign_keys)
   
   message(paste0("Document validity: ", document_validity, ". Output location: ", log_path, "."))
   return (document_validity)
