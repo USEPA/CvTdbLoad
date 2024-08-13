@@ -27,9 +27,6 @@ qc_add_record <- function(df, tbl_field_list, load_doc_sheet_only, col_exclude){
     if(nrow(df$Documents)){
       message("...pushing to Documents table")
       
-      ### Default extracted to 3 if submitted as NA
-      df$Documents$extracted[is.na(df$Documents$extracted)] = 3
-      
       # Get documents table fields
       tbl_fields = tbl_field_list$column_name[tbl_field_list$table_name == "documents"] %>%
         .[!. %in% col_exclude]
