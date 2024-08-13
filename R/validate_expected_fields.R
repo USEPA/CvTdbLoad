@@ -25,7 +25,7 @@ validate_expected_fields <- function(df, f, log_path, template_path, verbose=FAL
 
   # Loop through each sheet
   for (sheet in names(df)) {
-    template_fields <- names(readxl::read_excel(f, sheet=sheet, .name_repair="minimal"))
+    template_fields <- names(df[[sheet]])
     expected_fields <- names(readxl::read_excel(template_path, sheet=sheet))
 
     # Check that no field_names are duplicated
