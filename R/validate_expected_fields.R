@@ -42,7 +42,7 @@ validate_expected_fields <- function(df, f, log_path, template_path, verbose=FAL
 
     # Check that all field names in the curated template exist in the blank template
     if (!all(template_fields %in% expected_fields)) {
-      m <- "Found extraneous template field names."
+      m <- "Found duplicated or extraneous template field names."
       message(paste0(sheet, ": ", m))
       log_CvT_doc_load(f=f, m=m, log_path=log_path)
       validation <- FALSE       

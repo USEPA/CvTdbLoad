@@ -78,7 +78,7 @@ validate_cvt <- function(
     sheets_nonempty <- TRUE
   }
 
-  if (!ignore_expected_fields | all(is.na(file_path), is.na(f))) {
+  if (!ignore_expected_fields) {
     valid_expected_fields <- validate_expected_fields(df=doc_sheet_list, f=f, log_path=log_path, template_path=template_path, verbose=verbose)
   } else {
     valid_expected_fields <- TRUE
