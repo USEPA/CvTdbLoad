@@ -4,7 +4,13 @@
 \alias{clowder_match_docs}
 \title{FUNCTION_TITLE}
 \usage{
-clowder_match_docs(df = NULL, dsID = NULL, apiKey = NULL)
+clowder_match_docs(
+  df = NULL,
+  dsID = NULL,
+  baseurl = NULL,
+  apiKey = NULL,
+  clowder_file_list = NULL
+)
 }
 \arguments{
 \item{df}{Input template document's sheet for mapping}
@@ -12,6 +18,8 @@ clowder_match_docs(df = NULL, dsID = NULL, apiKey = NULL)
 \item{dsID}{Clowder dataset ID to pull from.}
 
 \item{apiKey}{API key to access Clowder repo}
+
+\item{clowder_file_list}{Opitonal input list of Clowder files from clowder_get_dataset_files().}
 }
 \value{
 OUTPUT_DESCRIPTION

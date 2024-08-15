@@ -1,0 +1,19 @@
+rules:
+- expr: 'if (!is.na(id)) as.numeric(gsub("QC_", "", id)) >= 0'
+  meta:
+    message: invalid_field_entry_id
+- expr: 'if (!is.na(conc_cumulative)) conc_cumulative %in% c("0", "1")'
+  meta:
+    message: invalid_field_conc_cumulative
+- expr: 'if (!is.na(log_conc_units)) log_conc_units %in% c("0", "1")'
+  meta:
+    message: invalid_field_log_conc_units
+- expr: 'if (!is.na(radiolabeled)) radiolabeled %in% c("0", "1")'
+  meta:
+    message: invalid_field_radiolabeled
+- expr: 'if (!is.na(fk_study_id)) as.numeric(gsub("QC_", "", fk_study_id)) >= 0'
+  meta:
+    message: invalid_field_fk_study_id
+- expr: 'if (!is.na(fk_subject_id)) as.numeric(gsub("QC_", "", fk_subject_id)) >= 0'
+  meta:
+    message: invalid_field_entry_fk_subject_id

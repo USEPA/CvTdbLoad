@@ -4,12 +4,14 @@
 \alias{normalize_time}
 \title{normalize_time}
 \usage{
-normalize_time(raw, f)
+normalize_time(raw, f, log_path, debug = FALSE)
 }
 \arguments{
 \item{raw}{PARAM_DESCRIPTION}
 
 \item{f}{PARAM_DESCRIPTION}
+
+\item{log_path}{File path where to save the log file.}
 }
 \value{
 OUTPUT_DESCRIPTION
@@ -28,5 +30,5 @@ if(interactive()){
 }
 }
 \seealso{
-\link[dplyr:mutate]{mutate}, \link[dplyr:bind]{bind_rows}, \link[dplyr:arrange]{arrange}
+\link[dplyr:mutate]{mutate}, \link[dplyr:bind_rows]{bind_rows}, \link[dplyr:arrange]{arrange}
 }

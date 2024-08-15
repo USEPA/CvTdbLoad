@@ -4,7 +4,7 @@
 \alias{check_missing_units}
 \title{FUNCTION_TITLE}
 \usage{
-check_missing_units(x, f, units_col)
+check_missing_units(x, f, units_col, log_path, flag = TRUE)
 }
 \arguments{
 \item{x}{Input list of datasets being normalized}
@@ -12,6 +12,10 @@ check_missing_units(x, f, units_col)
 \item{f}{Filename for flagging purposes}
 
 \item{units_col}{The units column to check #'}
+
+\item{log_path}{File path where to save the log file.}
+
+\item{flag}{Whether to log a flag for the missing column #'}
 }
 \value{
 Modified version of the input \code{x} parameter

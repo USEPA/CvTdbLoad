@@ -4,7 +4,7 @@
 \alias{normalize_conc}
 \title{FUNCTION_TITLE}
 \usage{
-normalize_conc(raw, f)
+normalize_conc(raw, f, log_path, debug = FALSE)
 }
 \arguments{
 \item{raw}{A dataframe of weight information to normalize}
@@ -28,6 +28,6 @@ if(interactive()){
 }
 }
 \seealso{
-\link[dplyr:mutate]{mutate}, \link[dplyr:filter]{filter}, \link[dplyr:across]{across}, \link[dplyr:bind]{bind_rows}, \link[dplyr:arrange]{arrange}
-\link[httk:get_physchem_param]{get_physchem_param}
+\link[dplyr:mutate]{mutate}, \link[dplyr:filter]{filter}, \link[dplyr:across]{across}, \link[dplyr:bind_rows]{bind_rows}, \link[dplyr:arrange]{arrange}
+\link[httr:POST]{POST}
 }

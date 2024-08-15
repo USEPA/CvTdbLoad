@@ -1,0 +1,28 @@
+rules:
+- expr: 'if (!is.na(id)) !is.na(as.numeric(gsub("QC_", "", id)))'
+  meta:
+    message: invalid_field_type_id
+- expr: 'if (!is.na(document_type)) !is.na(as.numeric(document_type))'
+  meta:
+    message: invalid_field_type_document_type
+- expr: 'if (!is.na(pmid)) !is.na(as.numeric(pmid))'
+  meta:
+    message: invalid_field_type_pmid
+- expr: 'if (!is.na(extracted)) !is.na(as.numeric(gsub("[;, ]", "", extracted)))'
+  meta:
+    message: invalid_field_type_extracted
+- expr: 'if (!is.na(tk_params)) !is.na(as.numeric(tk_params))'
+  meta:
+    message: invalid_field_type_tk_params
+- expr: 'if (!is.na(effects_data)) !is.na(as.numeric(effects_data))'
+  meta:
+    message: invalid_field_type_effects_data
+- expr: 'if (!is.na(httk_data)) !is.na(as.numeric(httk_data))'
+  meta:
+    message: invalid_field_type_httk_data
+- expr: 'if (!is.na(first_author)) is.na(as.numeric(first_author))'
+  meta:
+    message: invalid_field_type_first_author
+- expr: 'if (!is.na(year)) !is.na(as.numeric(year))'
+  meta:
+    message: invalid_field_type_year

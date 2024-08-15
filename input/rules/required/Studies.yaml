@@ -2,9 +2,6 @@ rules:
 - expr: '!is.na(id)'
   meta:
     message: NA_in_required_field_id
-- expr: 'is_unique(id)'
-  meta:
-    message: id_field_not_unique
 - expr: '!is.na(test_substance_name)'
   meta:
     message: NA_in_required_field_test_substance_name
@@ -26,6 +23,9 @@ rules:
 - expr: 'exists_any(if (!is.na(administration_term) & !administration_term %in% c("NR")) !is.na(administration_term_units))'
   meta:
     message: missing_administration_term_units_pair
+- expr: 'exists_any(if (administration_route %in% c("inhalation", "dermal") | administration_method %in% c("infusion")) !is.na(dose_duration))'
+  meta:
+    message: missing_dose_duration
 - expr: 'exists_any(if (!is.na(dose_duration) & !dose_duration %in% c("NR")) !is.na(dose_duration_units))'
   meta:
     message: missing_dose_duration_units_pair

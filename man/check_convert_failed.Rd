@@ -4,7 +4,7 @@
 \alias{check_convert_failed}
 \title{check_convert_failed}
 \usage{
-check_convert_failed(x, f, col)
+check_convert_failed(x, f, col, log_path, id_col = "id")
 }
 \arguments{
 \item{x}{PARAM_DESCRIPTION}
@@ -12,6 +12,10 @@ check_convert_failed(x, f, col)
 \item{f}{PARAM_DESCRIPTION}
 
 \item{col}{PARAM_DESCRIPTION}
+
+\item{log_path}{File path where to save the log file.}
+
+\item{id_col}{Column to use to log index value}
 }
 \value{
 OUTPUT_DESCRIPTION

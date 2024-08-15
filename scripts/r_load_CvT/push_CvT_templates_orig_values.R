@@ -19,14 +19,14 @@ tmp_load_cvt <- function(){
   loaded_jira_docs = db_query_cvt(paste0("SELECT clowder_template_id FROM cvt.documents ",
                                          "WHERE jira_ticket IS NOT NULL"))
   # Pull dataset ticket templates and filter to those not loaded
-  to_load = pull_clowder_files_to_load(dsID, baseurl, apiKey, curation_set_tag=cvt_dataset) %>%
+  to_load = pull_clowder_files_to_load(dsID, baseurl, apiKey, curation_set_tag=cvt_dataset, metadata_filter_tag="cvt_to_load") %>%
     dplyr::filter(!clowder_id %in% loaded_jira_docs$clowder_template_id)
   
   # Only process if Clowder File records pulled
   if(nrow(to_load)){
     # Load inputs for needed load
     cvt_template = get_cvt_template("input/CvT_data_template_articles.xlsx")
-    tbl_field_list = db_query_cvt("SELECT table_name, column_name FROM information_schema.columns WHERE table_schema='cvt'")
+    tbl_field_list = db_query_cvt(paste0("SELECT table_name, column_name FROM information_schema.columns WHERE table_schema='", schema,"'"))
     clowder_file_list = clowder_get_dataset_files(dsID=doc_dsID, baseurl=baseurl, apiKey=apiKey)
     # Loop through Clowder files to load
     for(i in seq_len(nrow(to_load))){
@@ -171,59 +171,53 @@ tmp_load_cvt <- function(){
                                                       clowder_file_list=clowder_file_list)  
       }
       
-      # If document already present, but without associations, remove old record and append new
-      if(update_doc_in_db){
-        # Get documents table fields
-        tbl_fields = tbl_field_list$column_name[tbl_field_list$table_name == "documents"] %>%
-          .[!. %in% col_exclude]
-        doc_in_db = db_query_cvt(paste0("SELECT * FROM cvt.documents where id = ",
-                                        doc_sheet_list$Documents$fk_document_id[doc_sheet_list$Documents$document_type == 1]))
-        temp_doc = doc_sheet_list$Documents %>%
-          # Filter out NA fields (to be filled by database document fields)
-          .[ , colSums(is.na(.)) < nrow(.)] %>%
-          dplyr::select(-id, -fk_document_id)
-        
-        # Combine fields from template with fields from document entry
-        doc_in_db = doc_in_db %>%
-          dplyr::select(any_of(
-            names(doc_in_db)[!names(doc_in_db) %in% names(temp_doc)]
-          )) %>%
-          cbind(., temp_doc) %>%
-          # Remove versioning, handled by database audit triggers
-          dplyr::select(-rec_create_dt, -version, -created_by) %>%
-          # Order columns by database table order
-          dplyr::select(id, any_of(tbl_fields), document_type)
-        
-        # Update database entry for document
-        db_update_tbl(df=doc_in_db %>%
-                        dplyr::select(-document_type),
-                      tblName = "documents")
-        
-        # Match back new document records
-        doc_sheet_list$Documents = doc_in_db %>%
-          dplyr::mutate(fk_document_id = id)
-        
-      } else {
-        message("...pushing to Documents table")
-        # Get documents table fields
-        tbl_fields = tbl_field_list$column_name[tbl_field_list$table_name == "documents"] %>%
-          .[!. %in% col_exclude]
+      # If document already present, but without associations, merge field values
+      # Get documents table fields
+      tbl_fields = tbl_field_list$column_name[tbl_field_list$table_name == "documents"] %>%
+        .[!. %in% col_exclude]
+      doc_in_db = db_query_cvt(paste0("SELECT * FROM cvt.documents where id = ",
+                                      doc_sheet_list$Documents$fk_document_id[!is.na(doc_sheet_list$Documents$fk_document_id)]))
+      temp_doc = doc_sheet_list$Documents %>%
+        # Filter out NA fields (to be filled by database document fields)
+        .[ , colSums(is.na(.)) < nrow(.)] %>%
+        dplyr::select(-id, -fk_document_id)
+      
+      # Combine fields from template with fields from document entry
+      doc_in_db = doc_in_db %>%
+        dplyr::select(any_of(
+          names(doc_in_db)[!names(doc_in_db) %in% names(temp_doc)]
+        )) %>%
+        cbind(., temp_doc) %>%
+        # Remove versioning, handled by database audit triggers
+        dplyr::select(-rec_create_dt, -version, -created_by) %>%
+        # Order columns by database table order
+        dplyr::select(id, any_of(tbl_fields), document_type)
+      
+      # Update database entry for document
+      db_update_tbl(df=doc_in_db %>%
+                      dplyr::select(-document_type),
+                    tblName = "documents")
+      
+      # Remove entries already in database that were updated
+      doc_sheet_list$Documents = doc_sheet_list$Documents[is.na(doc_sheet_list$Documents$fk_document_id)]
+      
+      message("...pushing to Documents table")
+      # Get documents table fields
+      tbl_fields = tbl_field_list$column_name[tbl_field_list$table_name == "documents"] %>%
+        .[!. %in% col_exclude]
+      browser()
+      db_push_rs = db_push_tbl_to_db(dat=doc_sheet_list$Documents %>%
+                                       dplyr::select(dplyr::any_of(tbl_fields)),
+                                     tblName="documents",
+                                     overwrite=FALSE, 
+                                     append=TRUE) 
+      if(is.null(db_push_rs) || is.na(db_push_rs)){
+        message("Issue pushing documents table.")
         browser()
-        db_push_rs = db_push_tbl_to_db(dat=doc_sheet_list$Documents %>%
-                                         # Filter out reference documents that are already in CvTDB
-                                         dplyr::filter(!(document_type == 2 & !is.na(fk_document_id))) %>%
-                                         dplyr::select(dplyr::any_of(tbl_fields)),
-                                       tblName="documents",
-                                       overwrite=FALSE, 
-                                       append=TRUE) 
-        if(is.null(db_push_rs) || is.na(db_push_rs)){
-          message("Issue pushing documents table.")
-          browser()
-        }
-        # Match back new document records
-        doc_sheet_list$Documents = match_cvt_doc_to_db_doc(df = doc_sheet_list$Documents %>%
-                                                             dplyr::select(-fk_document_id))
       }
+      # Match back new document records
+      doc_sheet_list$Documents = match_cvt_doc_to_db_doc(df = doc_sheet_list$Documents %>%
+                                                           dplyr::select(-fk_document_id))
       
       # Check if any did not match to previously pushed document entry
       if(any(is.na(doc_sheet_list$Documents$fk_document_id))){

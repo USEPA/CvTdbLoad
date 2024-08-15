@@ -32,6 +32,6 @@ if(interactive()){
 }
 }
 \seealso{
-\link[dplyr:filter]{filter}, \link[dplyr:mutate]{mutate}, \link[dplyr:across]{across}, \link[dplyr:bind]{bind_rows}
+\link[dplyr:filter]{filter}, \link[dplyr:mutate]{mutate}, \link[dplyr:across]{across}, \link[dplyr:bind_rows]{bind_rows}
 \link[tidyr:reexports]{all_of}
 }

@@ -4,7 +4,7 @@
 \alias{check_missing}
 \title{FUNCTION_TITLE}
 \usage{
-check_missing(x, miss_col, f, flag = FALSE)
+check_missing(x, miss_col, f, flag = TRUE, log_path)
 }
 \arguments{
 \item{x}{Input list of datasets being normalized}
@@ -14,6 +14,8 @@ check_missing(x, miss_col, f, flag = FALSE)
 \item{f}{Filename for flagging purposes}
 
 \item{flag}{Whether to log a flag for the missing column #'}
+
+\item{log_path}{File path where to save the log file.}
 }
 \value{
 Modified version of the input \code{x} parameter

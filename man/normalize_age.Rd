@@ -4,12 +4,14 @@
 \alias{normalize_age}
 \title{normalize_age}
 \usage{
-normalize_age(raw, f)
+normalize_age(raw, f, log_path, debug = FALSE)
 }
 \arguments{
 \item{raw}{PARAM_DESCRIPTION}
 
 \item{f}{PARAM_DESCRIPTION}
+
+\item{log_path}{File path where to save the log file.}
 }
 \value{
 OUTPUT_DESCRIPTION
@@ -29,5 +31,5 @@ if(interactive()){
 }
 \seealso{
 \link[readxl:read_excel]{read_xlsx}
-\link[dplyr:mutate]{mutate}, \link[dplyr:filter]{filter}, \link[dplyr:select]{select}, \link[dplyr:bind]{bind_rows}, \link[dplyr:rename]{rename}, \link[dplyr:arrange]{arrange}
+\link[dplyr:mutate]{mutate}, \link[dplyr:filter]{filter}, \link[dplyr:select]{select}, \link[dplyr:bind_rows]{bind_rows}, \link[dplyr:rename]{rename}, \link[dplyr:arrange]{arrange}
 }

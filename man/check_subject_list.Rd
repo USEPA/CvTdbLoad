@@ -4,7 +4,7 @@
 \alias{check_subject_list}
 \title{FUNCTION_TITLE}
 \usage{
-check_subject_list(x, f, col)
+check_subject_list(x, f, col, log_path)
 }
 \arguments{
 \item{x}{Input list of datasets being normalized}
@@ -12,6 +12,8 @@ check_subject_list(x, f, col)
 \item{f}{Filename for flagging purposes}
 
 \item{col}{The column being checked/normalized #'}
+
+\item{log_path}{File path where to save the log file.}
 }
 \value{
 Modified version of the input \code{x} parameter

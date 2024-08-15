@@ -4,7 +4,7 @@
 \alias{norm_extrapolate}
 \title{FUNCTION_TITLE}
 \usage{
-norm_extrapolate(x, f, extrap_type)
+norm_extrapolate(x, f, extrap_type, log_path)
 }
 \arguments{
 \item{x}{Input list of datasets being normalized}
@@ -12,6 +12,8 @@ norm_extrapolate(x, f, extrap_type)
 \item{f}{Filename for flagging purposes}
 
 \item{extrap_type}{The type of extrapolation being performed (weight is the only accepted form at this time). #'}
+
+\item{log_path}{File path where to save the log file.}
 }
 \value{
 Modified version of the input \code{x} parameter

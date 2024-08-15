@@ -1,0 +1,4 @@
+rules:
+- expr: 'if (!is.na(id)) as.numeric(gsub("QC_", "", id)) >= 0'
+  meta:
+    message: invalid_field_entry_id
