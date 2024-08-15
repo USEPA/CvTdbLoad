@@ -22,7 +22,7 @@ init.audit.table <- function(db_schema){
     unlist() %>% 
     unname() %>%
     # Ignore those like audit, chemicals, dictionary, tk_parameters_* linker tables
-    .[!grepl("audit|dict|chemical|parameters_", .)]
+    .[!grepl("audit|dict|chemical|parameters_|lineage", .)]
   
   # Drop increment trigger function
   db_query_cvt(query=audit_sql$drop_bu_source_trigger_function)
