@@ -11,11 +11,12 @@ qc_to_db <- function(schema = 'cvt',
   doc_dsID = Sys.getenv("doc_dsID")
   load_mode = "QC"
   
-  loaded_jira_docs = db_query_cvt(paste0("SELECT qc_clowder_template_id FROM cvt.documents ",
+  loaded_jira_docs = db_query_cvt(paste0("SELECT qc_clowder_template_id, qc_jira_ticket FROM cvt.documents ",
                                          "WHERE qc_jira_ticket IS NOT NULL"))
   # Pull dataset ticket templates and filter to those not loaded
   to_load = pull_clowder_files_to_load(dsID, baseurl, apiKey, curation_set_tag=qc_dataset, metadata_filter_tag=NULL) %>%
     dplyr::filter(!clowder_id %in% loaded_jira_docs$qc_clowder_template_id,
+                  !jira_ticket %in% loaded_jira_docs$qc_jira_ticket,
                   grepl("_final\\.xlsx", filename))
   
   #Check for duplicates in ticket. Each ticket should only have 1 final
@@ -421,7 +422,7 @@ qc_to_db <- function(schema = 'cvt',
       qc_remove_record(df = df$Documents %>%
                          # Only delete the extraction document of the template
                          dplyr::filter(document_type == 1) %>%
-                         dplyr::select(id, qc_notes, qc_flags),
+                         dplyr::select(id, qc_set_tag, qc_jira_ticket, qc_clowder_template_id, qc_notes, qc_flags),
                        tbl_name = "Documents",
                        reset_extraction = TRUE)
     }
