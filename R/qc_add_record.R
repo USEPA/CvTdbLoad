@@ -31,7 +31,7 @@ qc_add_record <- function(df, tbl_field_list, load_doc_sheet_only, col_exclude){
       tbl_fields = tbl_field_list$column_name[tbl_field_list$table_name == "documents"] %>%
         .[!. %in% col_exclude]
       
-      if(!"fk_document_id" %in% df$Documents) df$Documents$fk_document_id = NA
+      if(!"fk_document_id" %in% names(df$Documents)) df$Documents$fk_document_id = NA
       
       db_push_rs = db_push_tbl_to_db(dat = df$Documents %>%
                                        dplyr::filter(is.na(fk_document_id)) %>%

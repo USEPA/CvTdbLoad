@@ -130,6 +130,11 @@ load_cvt_templates_to_db <- function(
       
       # Match to document records in CvTdb, if available
       doc_sheet_list$Documents = match_cvt_doc_to_db_doc(df = doc_sheet_list$Documents)
+      doc_sheet_list$Documents = doc_sheet_list$Documents %>%
+        dplyr::mutate(qc_push_category = dplyr::case_when(
+          is.na(fk_document_id) ~ "Add",
+          TRUE ~ "Update"
+        ))
       
       ###########################################################################
       ### Push Documents Sheet to CvT
@@ -281,7 +286,8 @@ load_cvt_templates_to_db <- function(
         sheet %>%
           # Categorize each record based on 4 conditions of remove, update, add, or ignore
           dplyr::mutate(
-            qc_push_category = "Add"
+            is.na(qc_push_category) = "Add",
+            TRUE ~ qc_push_category
           ) %>%
           return()
       }) %T>% {
@@ -343,6 +349,7 @@ load_cvt_templates_to_db <- function(
       }
       ################################################################################    
       # Filter only to records that are "Add"
+      # Select and iterate through "Pass" QC Category record updates
       qc_add_record(df = doc_sheet_list,
                     tbl_field_list=tbl_field_list, 
                     load_doc_sheet_only=load_doc_sheet_only,
