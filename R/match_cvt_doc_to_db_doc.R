@@ -25,7 +25,11 @@ match_cvt_doc_to_db_doc <- function(df=NULL){
       next
     }
     tmp = db_query_cvt(paste0("SELECT id as fk_document_id, ", level," FROM cvt.documents where ", 
-                              level, " in ('", where_clause[[level]],"')")) %>%
+                              level, " in ('", where_clause[[level]] %>%
+                                # Escape single quotation prime symbol with double
+                                # so SQL query works
+                                gsub("'", "''", .),
+                              "')")) %>%
       dplyr::mutate(across(any_of(level), ~as.character(.)))
     
     doc_list[[level]] = df %>%
