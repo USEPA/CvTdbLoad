@@ -77,6 +77,9 @@ get_unhandled_normalize_log <- function(f="debug_file", log_path="output/debug_l
       # Remove unneeded list items
       .[names(.)[!names(.) %in% c("missing", "missing_units", "ci", "split_subject", 
                                   "unit_range", "conversion", "non_numeric", "convert_ready")]]
+    
+    conv = convert_get_conversion_factor(conv_factor=NA)
+    units_col = columns[grepl("units", columns)]
     # Add flag name
     summary_list[[normalization_name]] = lapply(names(summary), function(sn){
       summary[[sn]] %>%
@@ -85,7 +88,9 @@ get_unhandled_normalize_log <- function(f="debug_file", log_path="output/debug_l
         tidyr::separate_rows(id, sep = ", ")
     }) %>%
       dplyr::bind_rows() %>%
-      dplyr::distinct()
+      dplyr::distinct() %>%
+      # Dynamic filtering of units columns
+      dplyr::filter(! .[[units_col]] %in% names(conv))
   }
   
   # Output XLSX from dataframe list

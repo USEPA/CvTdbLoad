@@ -77,6 +77,12 @@ normalize_conc <- function(raw, f, log_path, debug = FALSE){
   if(nrow(out$percentage)){
     log_CvT_doc_load(f=f, m="conc_conversion_needed_percentage", log_path=log_path, val=out$percentage$id)
   }
+  # Invalid units list
+  out$invalid_units = out$raw %>% dplyr::filter(grepl("ms peak area", conc_units_original))
+  out$raw = out$raw %>% dplyr::filter(!tempID %in% out$invalid_units$tempID)
+  if(nrow(out$invalid_units)){
+    log_CvT_doc_load(f=f, m="conc_invalid_units", log_path=log_path, val=out$invalid_units$id)
+  }
   #Radioactive units flag
   out$radioactive = out$raw %>% dplyr::filter(grepl("MBq|bq/", conc_units_original))
   out$raw = out$raw %>% dplyr::filter(!tempID %in% out$radioactive$tempID)
