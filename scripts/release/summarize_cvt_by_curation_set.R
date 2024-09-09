@@ -152,5 +152,5 @@ get_cvt_curation_qc_stats <- function(){
     dplyr::bind_rows() %T>% 
     View("CvT Summary")
   
-  writexl::write_xlsx(curation_tag_summary, paste0("output/release/cvtdb_qc_stats_", Sys.Date(), ".xlsx"))
+  writexl::write_xlsx(qc_tag_summary, paste0("output/release/cvtdb_qc_stats_", Sys.Date(), ".xlsx"))
 }
