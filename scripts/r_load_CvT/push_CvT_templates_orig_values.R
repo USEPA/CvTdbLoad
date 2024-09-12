@@ -151,11 +151,11 @@ load_cvt_templates_to_db <- function(
             TRUE ~ jira_ticket),
           curation_set_tag = dplyr::case_when(
             document_type == 1 ~ to_load$curation_set_tag[i],
-            TRUE ~ jira_ticket
+            TRUE ~ NA
           ),
           clowder_template_id = dplyr::case_when(
             document_type == 1 ~ to_load$clowder_id[i],
-            TRUE ~ jira_ticket
+            TRUE ~ NA
           ))
       
       # Add field if not present
@@ -284,11 +284,8 @@ load_cvt_templates_to_db <- function(
       # Set QC qc_push_category to determine database action by status and flags
       doc_sheet_list = lapply(doc_sheet_list, function(sheet){
         sheet %>%
-          # Categorize each record based on 4 conditions of remove, update, add, or ignore
-          dplyr::mutate(
-            is.na(qc_push_category) = "Add",
-            TRUE ~ qc_push_category
-          ) %>%
+          # Add tag to add records to database
+          dplyr::mutate(qc_push_category = "Add") %>%
           return()
       }) %T>% {
         names(.) <- names(doc_sheet_list)
