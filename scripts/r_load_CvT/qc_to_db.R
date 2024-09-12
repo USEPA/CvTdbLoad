@@ -187,6 +187,26 @@ qc_to_db <- function(schema = 'cvt',
       # Filter out those that do not change (mainly for QC load_mode)
       dplyr::filter(id != fk_id)
     
+    # Update fk_map with Document entries that already exist
+    fk_doc_id_exists = doc_sheet_list$Documents %>%
+      dplyr::select(id, fk_id = fk_document_id) %>%
+      dplyr::filter(!is.na(fk_id)) %>%
+      dplyr::mutate(sheet = "Documents"# ,
+                    # id = as.numeric(id)
+                    ) %>%
+      dplyr::bind_rows()
+    
+    # Add fk_map entries that are new
+    fk_doc_id_exists = fk_doc_id_exists %>%
+      dplyr::bind_rows(fk_map %>%
+                         dplyr::filter(sheet == "Documents",
+                                       !id %in% fk_doc_id_exists$id))
+    
+    # Filter out auto-generated and fill in existing
+    fk_map = fk_map %>%
+      dplyr::filter(sheet != "Documents") %>%
+      dplyr::bind_rows(fk_doc_id_exists)
+    
     for(sheet in unique(fk_map$sheet)){
       key_map = fk_map %>%
         dplyr::filter(sheet == !!sheet) %>%

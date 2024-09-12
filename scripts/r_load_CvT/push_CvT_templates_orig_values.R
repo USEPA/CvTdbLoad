@@ -212,13 +212,33 @@ load_cvt_templates_to_db <- function(
           tmp = doc_sheet_list[[sheet]] %>%
             dplyr::select(id) %>%
             dplyr::mutate(sheet = !!sheet,
-                          fk_id = seq(n_id, (n_id + dplyr::n() - 1))
+                          fk_id = seq(n_id, (n_id + dplyr::n() - 1)),
+                          id = as.numeric(id)
             )
         }
       }) %>%
         dplyr::bind_rows() %>%
         # Filter out those that do not change (mainly for QC load_mode)
         dplyr::filter(id != fk_id)
+      
+      # Update fk_map with Document entries that already exist
+      fk_doc_id_exists = doc_sheet_list$Documents %>%
+        dplyr::select(id, fk_id = fk_document_id) %>%
+        dplyr::filter(!is.na(fk_id)) %>%
+        dplyr::mutate(sheet = "Documents",
+                      id = as.numeric(id)) %>%
+        dplyr::bind_rows()
+      
+      # Add fk_map entries that are new
+      fk_doc_id_exists = fk_doc_id_exists %>%
+        dplyr::bind_rows(fk_map %>%
+                           dplyr::filter(sheet == "Documents",
+                                         !id %in% fk_doc_id_exists$id))
+      
+      # Filter out auto-generated and fill in existing
+      fk_map = fk_map %>%
+        dplyr::filter(sheet != "Documents") %>%
+        dplyr::bind_rows(fk_doc_id_exists)
       
       for(sheet in unique(fk_map$sheet)){
         key_map = fk_map %>%
@@ -227,6 +247,7 @@ load_cvt_templates_to_db <- function(
         
         # Map id to fk_id from fk_map for sheet
         doc_sheet_list[[sheet]] = doc_sheet_list[[sheet]] %>%
+          dplyr::mutate(id = as.numeric(id)) %>%
           dplyr::left_join(key_map,
                            by = "id") %>%
           dplyr::mutate(fk_id = dplyr::case_when(
@@ -301,9 +322,6 @@ load_cvt_templates_to_db <- function(
                                                       "_loaded_", format(Sys.time(), "%Y%m%d"), 
                                                       ".xlsx"))
       
-################################################################################
-### TODO Continue editing/merging with qc_to_db here
-################################################################################
       ################################################################################    
       # If document already present, merge field values
       if(!all(is.na(doc_sheet_list$Documents$fk_document_id))){
@@ -327,6 +345,7 @@ load_cvt_templates_to_db <- function(
           
           # Combine fields from template with fields from document entry
           doc_in_db_push = doc_in_db %>%
+            dplyr::filter(id %in% !!id) %>%
             dplyr::select(any_of(
               names(doc_in_db)[!names(doc_in_db) %in% names(temp_doc)[!names(temp_doc) %in% "id"]]
             )) %>%
