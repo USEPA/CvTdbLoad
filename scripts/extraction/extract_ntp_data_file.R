@@ -71,7 +71,8 @@ extract_ntp_data_file <- function(filepath,
   
   # Remove intro sheet
   in_dat = in_dat %>%
-    purrr::list_modify("Intro" = NULL)
+    purrr::list_modify("Intro" = NULL) %>%
+    purrr::compact()
 
   in_dat = lapply(in_dat, function(s){
     s %>%
