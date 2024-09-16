@@ -9,7 +9,7 @@ match_cvt_doc_to_db_doc <- function(df=NULL){
       dplyr::distinct() %>%
       dplyr::pull() %>%
       stringr::str_squish() %>%
-      unique() %>% paste0(collapse="', '")
+      unique()
   }) %T>% { names(.) <- check_list }
   #Pull all document data
   #input = db_query_cvt("SELECT * FROM cvt.documents")
@@ -20,12 +20,17 @@ match_cvt_doc_to_db_doc <- function(df=NULL){
     dplyr::mutate(across(any_of(check_list), ~as.character(.)))
   
   for(level in check_list){#Check each level, then filter out matched and to those missing a level entry
-    if(!stringr::str_length(where_clause[[level]])){
+    if(!length(where_clause[[level]])){
       #No level filter found, skip
       next
     }
     tmp = db_query_cvt(paste0("SELECT id as fk_document_id, ", level," FROM cvt.documents where ", 
-                              level, " in ('", where_clause[[level]],"')")) %>%
+                              level, " in ('", where_clause[[level]] %>%
+                                # Escape single quotation prime symbol with double
+                                # so SQL query works
+                                gsub("'", "''", .) %>%
+                                paste0(collapse="', '"),
+                              "')")) %>%
       dplyr::mutate(across(any_of(level), ~as.character(.)))
     
     doc_list[[level]] = df %>%

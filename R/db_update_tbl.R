@@ -12,11 +12,11 @@
 #'  }
 #' }
 #' @seealso 
-#'  [dbWriteTable][RPostgreSQL::dbWriteTable], [dbClearResult][RPostgreSQL::dbClearResult], [dbDisconnect][RPostgreSQL::dbDisconnect]
+#'  [dbWriteTable][DBI::dbWriteTable], [dbClearResult][DBI::dbClearResult], [dbDisconnect][DBI::dbDisconnect]
 #'  [dbSendStatement][DBI::dbSendStatement]
 #' @rdname db_push_to_CvT
 #' @export 
-#' @importFrom RPostgreSQL dbWriteTable dbClearResult dbDisconnect
+#' @importFrom DBI dbWriteTable dbClearResult dbDisconnect
 #' @importFrom DBI dbSendStatement
 db_update_tbl <- function(df=NULL, tblName=NULL){
   # Check input params
@@ -39,7 +39,7 @@ db_update_tbl <- function(df=NULL, tblName=NULL){
     # DBI Issues with schema references
     # https://github.com/r-dbi/odbc/issues/140
     DBI::dbExecute(con, "SET search_path = cvt")
-    RPostgreSQL::dbWriteTable(con, value = df, name="z_updated_df", append=TRUE, row.names=FALSE)  
+    DBI::dbWriteTable(con, value = df, name="z_updated_df", append=TRUE, row.names=FALSE)  
     # 
     # updateQuery = paste0("UPDATE cvt.", tblName, " a INNER JOIN cvt.z_updated_df b ",
     #                      "ON a.id = b.id SET ",
@@ -58,13 +58,13 @@ db_update_tbl <- function(df=NULL, tblName=NULL){
     )
     
     DBI::dbSendStatement(con, updateQuery) %T>% 
-      RPostgreSQL::dbClearResult()
+      DBI::dbClearResult()
     
     DBI::dbSendStatement(con, "DROP TABLE cvt.z_updated_df") %T>% 
-      RPostgreSQL::dbClearResult() #Drop temporary table
+      DBI::dbClearResult() #Drop temporary table
   },
   error=function(cond){ message("Error message: ", cond); return(NA) },
   warning=function(cond){ message("Warning message: ", cond); return(NULL) },
-  finally={ RPostgreSQL::dbDisconnect(con) }
+  finally={ DBI::dbDisconnect(con) }
   )
 }

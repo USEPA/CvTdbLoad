@@ -11,7 +11,7 @@ rules:
 - expr: '!is.na(figure_type)'
   meta:
     message: NA_in_required_field_figure_type
-- expr: 'if (!is_unique(figure_name)) !is.na(figure_series_identifier)'
+- expr: 'if (!is_unique(figure_name) && !tolower(figure_type) %in% c("table")) !is.na(figure_series_identifier)'
   meta:
     message: NA_in_required_field_figure_series_identifier
 - expr: '!is.na(time_units)'
@@ -20,10 +20,10 @@ rules:
 - expr: '!is.na(conc_units)'
   meta:
     message: NA_in_required_field_conc_units
-- expr: 'exists_any(if (!is.na(loq) & !loq %in% c("NR")) !is.na(loq_units))'
+- expr: 'exists_any(if (!is.na(loq) && !loq %in% c("NR")) !is.na(loq_units))'
   meta:
     message: missing_loq_units_pair
-- expr: 'exists_any(if (!is.na(lod) & !lod %in% c("NR")) !is.na(lod_units))'
+- expr: 'exists_any(if (!is.na(lod) && !lod %in% c("NR")) !is.na(lod_units))'
   meta:
     message: missing_lod_units_pair
 - expr: '!is.na(fk_study_id)'

@@ -2,6 +2,6 @@ rules:
 - expr: 'is_unique(id)'
   meta:
     message: duplicate_in_field_id
-- expr: 'is_unique(figure_name, figure_series_identifier)'
+- expr: 'is_unique(figure_name, figure_series_identifier) && !tolower(figure_type) %in% c("table")'
   meta:
     message: duplicate_in_field_figure_series_identifier

@@ -81,9 +81,9 @@ qc_remove_record <- function(df, tbl_name, reset_extraction = FALSE){
                                           ' table (', fk_study_id, ")"))
         # Update database entry twice:
         # once to audit old record
-        db_update_tbl(del_df = tk_df, tblName = "tk_parameters")
+        db_update_tbl(df = tk_df, tblName = "tk_parameters")
         # twice to audit QC'd record
-        db_update_tbl(del_df = tk_df, tblName = "tk_parameters")
+        db_update_tbl(df = tk_df, tblName = "tk_parameters")
         # Delete database entries
         db_query_cvt(paste0("DELETE FROM cvt.tk_parameters WHERE id IN (", toString(tk_df$id), ")"))
         # tk_parameters

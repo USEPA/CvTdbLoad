@@ -11,11 +11,12 @@ qc_to_db <- function(schema = 'cvt',
   doc_dsID = Sys.getenv("doc_dsID")
   load_mode = "QC"
   
-  loaded_jira_docs = db_query_cvt(paste0("SELECT qc_clowder_template_id FROM cvt.documents ",
+  loaded_jira_docs = db_query_cvt(paste0("SELECT qc_clowder_template_id, qc_jira_ticket FROM cvt.documents ",
                                          "WHERE qc_jira_ticket IS NOT NULL"))
   # Pull dataset ticket templates and filter to those not loaded
   to_load = pull_clowder_files_to_load(dsID, baseurl, apiKey, curation_set_tag=qc_dataset, metadata_filter_tag=NULL) %>%
     dplyr::filter(!clowder_id %in% loaded_jira_docs$qc_clowder_template_id,
+                  !jira_ticket %in% loaded_jira_docs$qc_jira_ticket,
                   grepl("_final\\.xlsx", filename))
   
   #Check for duplicates in ticket. Each ticket should only have 1 final
@@ -32,9 +33,11 @@ qc_to_db <- function(schema = 'cvt',
   
   # Loop through Clowder files to load
   for(i in seq_len(nrow(to_load))){
-    load_doc_sheet_only = FALSE
     message("Pushing file (", i, "/", nrow(to_load),"): ", toString(to_load[i,c("jira_ticket", "filename")]), "...", Sys.time())
+    # Filename
     f = to_load$filename[i]
+    # Boolean of whether to only load document sheet
+    load_doc_sheet_only = FALSE
     #############################################################################################
     ### Start of generic logic used for both Load and QC
     ### TODO Make generic function for these overall steps between Load and QC
@@ -47,7 +50,8 @@ qc_to_db <- function(schema = 'cvt',
     # Select Template Sheets (remove any excess sheets)
     doc_sheet_list = doc_sheet_list[names(cvt_template)[names(cvt_template) %in% names(doc_sheet_list)]]
     
-    if (!validate_cvt(df=doc_sheet_list, df_identifier = f, log_path=log_path)) {
+    # Validation using the QC template
+    if (!validate_cvt(df=doc_sheet_list, df_identifier = f, log_path=log_path, ignore_qc = FALSE)) {
       stop("Validation failed, exiting.")
     }
     
@@ -183,6 +187,26 @@ qc_to_db <- function(schema = 'cvt',
       # Filter out those that do not change (mainly for QC load_mode)
       dplyr::filter(id != fk_id)
     
+    # Update fk_map with Document entries that already exist
+    fk_doc_id_exists = doc_sheet_list$Documents %>%
+      dplyr::select(id, fk_id = fk_document_id) %>%
+      dplyr::filter(!is.na(fk_id)) %>%
+      dplyr::mutate(sheet = "Documents"# ,
+                    # id = as.numeric(id)
+                    ) %>%
+      dplyr::bind_rows()
+    
+    # Add fk_map entries that are new
+    fk_doc_id_exists = fk_doc_id_exists %>%
+      dplyr::bind_rows(fk_map %>%
+                         dplyr::filter(sheet == "Documents",
+                                       !id %in% fk_doc_id_exists$id))
+    
+    # Filter out auto-generated and fill in existing
+    fk_map = fk_map %>%
+      dplyr::filter(sheet != "Documents") %>%
+      dplyr::bind_rows(fk_doc_id_exists)
+    
     for(sheet in unique(fk_map$sheet)){
       key_map = fk_map %>%
         dplyr::filter(sheet == !!sheet) %>%
@@ -307,42 +331,44 @@ qc_to_db <- function(schema = 'cvt',
     
     ################################################################################    
     # If document already present, merge field values
-    # Do this after qc_remove_record so that any removed cases are ignored
-    # Get documents table fields
-    tbl_fields = tbl_field_list$column_name[tbl_field_list$table_name == "documents"] %>%
-      .[!. %in% col_exclude]
-    doc_in_db = db_query_cvt(paste0("SELECT * FROM cvt.documents where id in (",
-                                    toString(doc_sheet_list$Documents$fk_document_id[!is.na(doc_sheet_list$Documents$fk_document_id)]),
-                                    ")"
-    ))
-    
-    # Update document-by-document so only updates non-missing fields
-    # Doesn't overwrite database field with NA/NULL
-    for(id in doc_in_db$id){
-      temp_doc = doc_sheet_list$Documents %>%
-        dplyr::filter(fk_document_id %in% !!id) %>%
-        # Filter out NA fields (to be filled by database document fields)
-        .[ , colSums(is.na(.)) < nrow(.)] %>%
-        dplyr::select(-fk_document_id) %>%
-        dplyr::mutate(id = as.numeric(id))
+    if(!all(is.na(doc_sheet_list$Documents$fk_document_id))){
+      # Get documents table fields
+      tbl_fields = tbl_field_list$column_name[tbl_field_list$table_name == "documents"] %>%
+        .[!. %in% col_exclude]
+      doc_in_db = db_query_cvt(paste0("SELECT * FROM cvt.documents where id in (",
+                                      toString(doc_sheet_list$Documents$fk_document_id[!is.na(doc_sheet_list$Documents$fk_document_id)]),
+                                      ")"
+      ))
       
-      # Combine fields from template with fields from document entry
-      doc_in_db_push = doc_in_db %>%
-        dplyr::select(any_of(
-          names(doc_in_db)[!names(doc_in_db) %in% names(temp_doc)[!names(temp_doc) %in% "id"]]
-        )) %>%
-        dplyr::left_join(temp_doc,
-                         by="id") %>%
-        # dplyr::bind_cols(temp_doc) %>%
-        # Remove versioning, handled by database audit triggers
-        dplyr::select(-rec_create_dt, -version) %>%
-        # Order columns by database table order
-        dplyr::select(id, any_of(tbl_fields), document_type)
-      
-      # Update database entry for document
-      db_update_tbl(df=doc_in_db_push %>%
-                      dplyr::select(-document_type),
-                    tblName = "documents")
+      # Update document-by-document so only updates non-missing fields
+      # Doesn't overwrite database field with NA/NULL
+      for(id in doc_in_db$id){
+        temp_doc = doc_sheet_list$Documents %>%
+          dplyr::filter(fk_document_id %in% !!id) %>%
+          # Filter out NA fields (to be filled by database document fields)
+          .[ , colSums(is.na(.)) < nrow(.)] %>%
+          dplyr::select(-fk_document_id) %>%
+          dplyr::mutate(id = as.numeric(id))
+        
+        # Combine fields from template with fields from document entry
+        doc_in_db_push = doc_in_db %>%
+          dplyr::filter(id %in% !!id) %>%
+          dplyr::select(any_of(
+            names(doc_in_db)[!names(doc_in_db) %in% names(temp_doc)[!names(temp_doc) %in% "id"]]
+          )) %>%
+          dplyr::left_join(temp_doc,
+                           by="id") %>%
+          # dplyr::bind_cols(temp_doc) %>%
+          # Remove versioning, handled by database audit triggers
+          dplyr::select(-rec_create_dt, -version) %>%
+          # Order columns by database table order
+          dplyr::select(id, any_of(tbl_fields), document_type)
+        
+        # Update database entry for document
+        db_update_tbl(df=doc_in_db_push %>%
+                        dplyr::select(-document_type),
+                      tblName = "documents")
+      }
     }
     ################################################################################    
     # Filter only to records that are "Add"
@@ -421,7 +447,7 @@ qc_to_db <- function(schema = 'cvt',
       qc_remove_record(df = df$Documents %>%
                          # Only delete the extraction document of the template
                          dplyr::filter(document_type == 1) %>%
-                         dplyr::select(id, qc_notes, qc_flags),
+                         dplyr::select(id, qc_set_tag, qc_jira_ticket, qc_clowder_template_id, qc_notes, qc_flags),
                        tbl_name = "Documents",
                        reset_extraction = TRUE)
     }
