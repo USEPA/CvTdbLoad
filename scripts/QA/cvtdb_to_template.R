@@ -84,18 +84,28 @@ get_cvt_by_doc_id <- function(id){
   doc_data = db_query_cvt(paste0("SELECT * FROM cvt.documents WHERE ", 
                                  paste0(doc_filter, 
                                         collapse = " AND ")) %>% 
-                         stringr::str_squish())
+                         stringr::str_squish()) %>%
+    dplyr::mutate(document_type = "1")
   # Check if any records matched the input identifiers
   if(!nrow(doc_data)) return(NULL)
   cat("...getting document lineage data...\n")
-  doc_lineage = db_query_cvt(paste0("SELECT * FROM cvt.documents ",
-                                    "WHERE id IN (", 
+  doc_lineage = db_query_cvt(paste0("SELECT a.*, b.relationship_type as document_type FROM cvt.documents a ",
+                                    "LEFT JOIN cvt.documents_lineage b ON a.id = b.fk_doc_id ",
+                                    "WHERE a.id IN (", 
                                     "SELECT fk_doc_id FROM cvt.documents_lineage WHERE fk_parent_doc_id IN (",
                                     toString(doc_data$id), ")", 
                                     ")"))
+  
   if(nrow(doc_lineage)){
     doc_data = doc_data %>%
-      dplyr::bind_rows(doc_lineage) %>%
+      dplyr::bind_rows(doc_lineage %>%
+                         # Translate document_type back to numerics from SOP
+                         dplyr::mutate(document_type = dplyr::case_when(
+                           document_type == "Reference Document" ~ "2",
+                           document_type == "Supplemental Document" ~ "3",
+                           document_type == "Study Methods Document" ~ "4",
+                           TRUE ~ document_type
+                         ))) %>%
       dplyr::distinct()
   }
 
@@ -122,12 +132,18 @@ get_cvt_by_doc_id <- function(id){
          Conc_Time_Values = NULL) %>%
       return()
   }
-  cat("...getting reference document data...\n")
-  if(length(unique(study_data$fk_reference_document_id[!is.na(study_data$fk_reference_document_id)]))){
-    ref_doc_data = db_query_cvt(paste0("SELECT * FROM cvt.documents WHERE id in (", toString(unique(study_data$fk_reference_document_id[!is.na(study_data$fk_reference_document_id)])), ")"))  
+  
+  ref_doc_ids = unique(study_data$fk_reference_document_id[!is.na(study_data$fk_reference_document_id)]) %>%
+    .[!. %in% doc_data$id]
+  
+  # Pull additional ref documents not in documents_lineage (in case there are orphaned connections)
+  if(length(ref_doc_ids)){
+    cat("...getting reference document data...\n")
+    ref_doc_data = db_query_cvt(paste0("SELECT * FROM cvt.documents WHERE id in (", toString(ref_doc_ids), ")"))  
   } else {
     ref_doc_data = NULL
   }
+  
   cat("...getting series data...\n")
   series_data = db_query_cvt(paste0("SELECT a.*, ",
                                     "b.conc_medium_original, b.conc_medium_normalized ",

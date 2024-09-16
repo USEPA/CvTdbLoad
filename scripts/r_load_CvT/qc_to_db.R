@@ -352,6 +352,7 @@ qc_to_db <- function(schema = 'cvt',
         
         # Combine fields from template with fields from document entry
         doc_in_db_push = doc_in_db %>%
+          dplyr::filter(id %in% !!id) %>%
           dplyr::select(any_of(
             names(doc_in_db)[!names(doc_in_db) %in% names(temp_doc)[!names(temp_doc) %in% "id"]]
           )) %>%
