@@ -17,7 +17,7 @@ load_cvt_templates_to_db <- function(
   load_mode = "curation"
   
   # Query already loaded Jira tickets
-  loaded_jira_docs = db_query_cvt(paste0("SELECT clowder_template_id FROM cvt.documents ",
+  loaded_jira_docs = db_query_cvt(paste0("SELECT clowder_template_id, jira_ticket FROM cvt.documents ",
                                          "WHERE jira_ticket IS NOT NULL"))
   
   # Pull dataset ticket templates and filter to those not loaded
@@ -119,6 +119,9 @@ load_cvt_templates_to_db <- function(
           dplyr::rename(fk_dosed_chemical_id=fk_chemicals_id)
         doc_sheet_list$Series = doc_sheet_list$Series %>%
           dplyr::rename(fk_analyzed_chemical_id=fk_chemicals_id)  
+        # Add Conc_Time_Values id column for ID mapping
+        doc_sheet_list$Conc_Time_Values = doc_sheet_list$Conc_Time_Values %>%
+          dplyr::mutate(id = 1:dplyr::n())
       }
       
       ###########################################################################
@@ -174,10 +177,6 @@ load_cvt_templates_to_db <- function(
       ################################################################################    
       # get/set ID values and foreign key relations between sheets
       # Account for whether it is a load vs. QC based on "QC_"
-      
-      # Add Conc_Time_Values id column for ID mapping
-      doc_sheet_list$Conc_Time_Values = doc_sheet_list$Conc_Time_Values %>%
-        dplyr::mutate(id = 1:dplyr::n())
       
       tbl_id_list <- get_next_tbl_id(schema)
       fk_map = lapply(names(doc_sheet_list), function(sheet){
