@@ -24,12 +24,46 @@
 #' @example toxval.source_push_mapped_chemicals(source.index="cvtdb20240215", curated.path = "output/chemical_mapping/DSSTOX_1333", ignore.curation.dups=FALSE)
 #--------------------------------------------------------------------------------------
 toxval.source_push_mapped_chemicals <- function(source.index, curated.path,
-                                                ignore.curation.dups=TRUE){
+                                                ignore.curation.dups = FALSE){
   
-  message("Pushing mapped chemicals for chemical_source_index ToxVal", source.index)
+  message("Pushing mapped chemicals for chemical_source_index: ", source.index)
   # Map chemical information from curated files and select source.index
   out = map_curated_chemicals(source.index=source.index, curated.path=curated.path,
                               ignore.curation.dups=ignore.curation.dups) %>%
+    dplyr::group_by(chemical_id) %>%
+    dplyr::mutate(dplyr::across(dplyr::any_of(names(.)[!names(.) %in% c("chemical_id")]),
+                                # Ensure unique entries in alphabetic order
+                                # Collapse with unique delimiter
+                                ~paste0(sort(unique(.[!is.na(.)])), collapse="|::|") %>%
+                                  dplyr::na_if("NA") %>%
+                                  dplyr::na_if("")
+    )) %>%
+    dplyr::ungroup() %>%
+    dplyr::distinct()
+  
+  # Check De-duping collapse (only expect flags field to collapse)
+  dup_collapsed_fields = lapply(names(out), function(f){
+    if(sum(stringr::str_detect(out[[f]], '\\|::\\|'), na.rm = TRUE) > 0){
+      return(f)
+    }
+  }) %>%
+    purrr::compact() %>%
+    unlist()
+  
+  # Error if any other field collapsed besides flags
+  if(any(names(out)[!names(out) %in% c("flags")] %in% dup_collapsed_fields)){
+    message("Duplicate entries found/collapsed beyond 'flags' field...need to resolve...")
+    browser()
+    stop("Duplicate entries found/collapsed beyond 'flags' field...need to resolve...")
+  }
+  
+  out = out %>%
+    # Replace unique delimiter with standard delimiter after checking passed
+    dplyr::mutate(flags = flags %>%
+                    gsub("|::|", "; ", ., fixed=TRUE))  
+    
+    
+  out = out %>%
     tidyr::separate(col=chemical_id, 
                     into = c("id", "name_type"),
                     sep="_", 

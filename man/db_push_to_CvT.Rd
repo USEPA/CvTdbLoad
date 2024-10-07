@@ -45,6 +45,6 @@ if(interactive()){
 \link[RPostgreSQL:dbWriteTable]{dbWriteTable}, \link[RPostgreSQL:dbClearResult]{dbClearResult}, \link[RPostgreSQL:dbDisconnect]{dbDisconnect}
 \link[DBI:dbSendStatement]{dbSendStatement}
 
-\link[RPostgreSQL:dbWriteTable]{dbWriteTable}, \link[RPostgreSQL:dbClearResult]{dbClearResult}, \link[RPostgreSQL:dbDisconnect]{dbDisconnect}
+\link[DBI:dbWriteTable]{dbWriteTable}, \link[DBI:dbClearResult]{dbClearResult}, \link[DBI:dbDisconnect]{dbDisconnect}
 \link[DBI:dbSendStatement]{dbSendStatement}
 }

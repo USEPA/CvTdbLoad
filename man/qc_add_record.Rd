@@ -4,15 +4,19 @@
 \alias{qc_add_record}
 \title{qc_add_record}
 \usage{
-qc_add_record(df, tbl_field_list, load_doc_sheet_only)
+qc_add_record(df, tbl_field_list, load_doc_sheet_only, col_exclude)
 }
 \arguments{
 \item{df}{Input dataframe of field values to add to database table}
 
-\item{tbl_name}{Name of table the records are from}
+\item{tbl_field_list}{Dataframe of CvT tables and fields}
+
+\item{load_doc_sheet_only}{Boolean whether just to add document sheet only}
+
+\item{col_exclude}{List of columns to exclude from database pushes}
 }
 \value{
-Modified version of input df with mapped new database ID values
+None, SQL statements are submitted
 }
 \description{
 Function to add record from QC template
