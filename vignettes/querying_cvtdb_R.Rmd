@@ -36,7 +36,14 @@ See [here](https://www.lucidchart.com/pages/ER-diagram-symbols-and-meaning) for 
 ### CvTdb EER Diagram
 ```{r out.height = "400px", out.width = "400px", echo = FALSE}
 knitr::include_graphics("images/CvTdb_EER.jpg")
-knitr::opts_chunk$set(warning = FALSE, message = FALSE) 
+knitr::opts_chunk$set(warning = FALSE, message = FALSE)
+
+if(!file.exists("res_cvtdb.sqlite")){
+  if(!file.exists("../output/release/res_cvtdb.sqlite")){
+    get_cvtdb_sqlite("cvt", outdir=getwd())
+  }
+  file.copy("../output/release/res_cvtdb.sqlite", "res_cvtdb.sqlite")
+}
 ```
 
 ### Load required packages
