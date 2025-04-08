@@ -10,15 +10,15 @@
 #'  }
 #' }
 #' @seealso 
-#'  [dbConnect][RPostgreSQL::dbConnect], [PostgreSQL][RPostgreSQL::PostgreSQL]
+#'  [dbConnect][RPostgres::dbConnect], [PostgreSQL][RPostgres::PostgreSQL]
 #' @rdname db_connect_to_CvT
 #' @export 
-#' @importFrom RPostgreSQL dbConnect PostgreSQL
+#' @importFrom RPostgres dbConnect PostgreSQL
 db_connect_to_CvT <- function(){
   # dbConnect(RSQLite::SQLite(), 
   #           "L:\\Lab\\HEM\\T_Wall_Projects_FY20\\CvT Database\\input\\sql dump\\CvTdb_20210825.sqlite") %>%
   #   return()#"CvTdb_20210408.sqlite"))
-  RPostgreSQL::dbConnect(RPostgreSQL::PostgreSQL(), 
+  RPostgres::dbConnect(RPostgres::Postgres(), 
             user = Sys.getenv("user"), 
             password = Sys.getenv("pass"), #
             host = Sys.getenv("host"), #

@@ -17,7 +17,7 @@ library(dbplyr)
 #'@return Database connection pointer object
 connect_to_db <- function(con_type){
   switch(con_type,
-         "postgres" = dbConnect(RPostgreSQL::PostgreSQL(), 
+         "postgres" = dbConnect(RPostgres::PostgreSQL(), 
                                 user = Sys.getenv("postgres_user"), 
                                 password = Sys.getenv("postgres_pass"), #
                                 host = Sys.getenv("postgres_host"), #

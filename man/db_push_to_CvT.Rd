@@ -42,7 +42,7 @@ if(interactive()){
 }
 }
 \seealso{
-\link[RPostgreSQL:dbWriteTable]{dbWriteTable}, \link[RPostgreSQL:dbClearResult]{dbClearResult}, \link[RPostgreSQL:dbDisconnect]{dbDisconnect}
+\link[RPostgres:dbWriteTable]{dbWriteTable}, \link[RPostgres:dbClearResult]{dbClearResult}, \link[RPostgres:dbDisconnect]{dbDisconnect}
 \link[DBI:dbSendStatement]{dbSendStatement}
 
 \link[DBI:dbWriteTable]{dbWriteTable}, \link[DBI:dbClearResult]{dbClearResult}, \link[DBI:dbDisconnect]{dbDisconnect}

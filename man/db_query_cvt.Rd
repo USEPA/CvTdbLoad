@@ -27,5 +27,5 @@ if(interactive()){
 }
 }
 \seealso{
-\link[RPostgreSQL:dbGetQuery]{dbGetQuery}, \link[RPostgreSQL:dbDisconnect]{dbDisconnect}
+\link[RPostgres:dbGetQuery]{dbGetQuery}, \link[RPostgres:dbDisconnect]{dbDisconnect}
 }
