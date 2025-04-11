@@ -12,15 +12,15 @@
 #'  }
 #' }
 #' @seealso 
-#'  [dbGetQuery][RPostgreSQL::dbGetQuery], [dbDisconnect][RPostgreSQL::dbDisconnect]
+#'  [dbGetQuery][RPostgres::dbGetQuery], [dbDisconnect][RPostgres::dbDisconnect]
 #' @rdname db_query_cvt
 #' @export 
-#' @importFrom RPostgreSQL dbGetQuery dbDisconnect
+#' @importFrom RPostgres dbGetQuery dbDisconnect
 db_query_cvt <- function(query=NULL){
   if(is.null(query)) return(message("...Must provide a query to send"))
   con = db_connect_to_CvT()
   query_result = tryCatch({
-    RPostgreSQL::dbGetQuery(con, query)
+    RPostgres::dbGetQuery(con, query)
     #dbSendQuery(con, query) %T>% #run query
     #{ dbFetch(.) ->> tmp } %>% #save intermediate variable, critical tee-operator
     #  dbClearResult() #clear result
@@ -28,6 +28,6 @@ db_query_cvt <- function(query=NULL){
   },
   error=function(cond){ message("...Error message: ", cond); return(NA) },
   warning=function(cond){ message("...Warning message: ", cond); return(NULL) },
-  finally={ RPostgreSQL::dbDisconnect(con) })
+  finally={ RPostgres::dbDisconnect(con) })
   return(query_result)
 }

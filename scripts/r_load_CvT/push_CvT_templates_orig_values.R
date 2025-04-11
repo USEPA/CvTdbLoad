@@ -17,11 +17,14 @@ load_cvt_templates_to_db <- function(
   load_mode = "curation"
   
   # Query already loaded Jira tickets
-  loaded_jira_docs = db_query_cvt(paste0("SELECT clowder_template_id FROM cvt.documents ",
-                                         "WHERE jira_ticket IS NOT NULL"))
+  loaded_jira_docs = db_query_cvt(paste0("SELECT clowder_template_id, jira_ticket FROM cvt.documents ",
+                                         "WHERE jira_ticket IS NOT NULL")) %>%
+    tidyr::separate_longer_delim(jira_ticket, delim = ", ") %>%
+    dplyr::mutate(jira_ticket = stringr::str_squish(jira_ticket))
   
   # Pull dataset ticket templates and filter to those not loaded
   to_load = pull_clowder_files_to_load(dsID, baseurl, apiKey, curation_set_tag=cvt_dataset, metadata_filter_tag=NULL) %>%
+    
     dplyr::filter(!clowder_id %in% loaded_jira_docs$clowder_template_id,
                   !jira_ticket %in% loaded_jira_docs$jira_ticket,
                   grepl("_final\\.xlsx", filename))
@@ -119,6 +122,9 @@ load_cvt_templates_to_db <- function(
           dplyr::rename(fk_dosed_chemical_id=fk_chemicals_id)
         doc_sheet_list$Series = doc_sheet_list$Series %>%
           dplyr::rename(fk_analyzed_chemical_id=fk_chemicals_id)  
+        # Add Conc_Time_Values id column for ID mapping
+        doc_sheet_list$Conc_Time_Values = doc_sheet_list$Conc_Time_Values %>%
+          dplyr::mutate(id = 1:dplyr::n())
       }
       
       ###########################################################################
@@ -174,10 +180,6 @@ load_cvt_templates_to_db <- function(
       ################################################################################    
       # get/set ID values and foreign key relations between sheets
       # Account for whether it is a load vs. QC based on "QC_"
-      
-      # Add Conc_Time_Values id column for ID mapping
-      doc_sheet_list$Conc_Time_Values = doc_sheet_list$Conc_Time_Values %>%
-        dplyr::mutate(id = 1:dplyr::n())
       
       tbl_id_list <- get_next_tbl_id(schema)
       fk_map = lapply(names(doc_sheet_list), function(sheet){
@@ -310,6 +312,12 @@ load_cvt_templates_to_db <- function(
           return()
       }) %T>% {
         names(.) <- names(doc_sheet_list)
+      }
+      
+      # Add in extraction document ID to study sheet
+      # Set as document_type == 1 id
+      if(!"fk_extraction_document_id" %in% names(doc_sheet_list$Studies)){
+        doc_sheet_list$Studies$fk_extraction_document_id = unique(doc_sheet_list$Documents$id[doc_sheet_list$Documents$document_type == 1])
       }
       
       # Export loaded template log

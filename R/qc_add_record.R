@@ -95,8 +95,12 @@ qc_add_record <- function(df, tbl_field_list, load_doc_sheet_only, col_exclude){
     
     if(nrow(df[[sheet]])){
       if(sheet == "Studies"){
-        # Set extraction document ID
-        df$Studies$fk_extraction_document_id = df$Documents$fk_document_id[df$Documents$document_type == 1]
+        
+        if(!"fk_extraction_document_id" %in% names(df$Studies)){
+          # Set extraction document ID
+          df$Studies$fk_extraction_document_id = df$Documents$id[df$Documents$document_type == 1]
+        }
+        
       }
       
       # Get table fields

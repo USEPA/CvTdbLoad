@@ -4,12 +4,14 @@
 \alias{qc_remove_record}
 \title{qc_remove_record}
 \usage{
-qc_remove_record(df, tbl_name)
+qc_remove_record(df, tbl_name, reset_extraction = FALSE)
 }
 \arguments{
 \item{df}{Input dataframe of id, qc_notes, and qc_flags for records to remove}
 
 \item{tbl_name}{Name of table the records are from}
+
+\item{reset_extraction}{Boolean whether to reset_extraction or remove whole record. Defaul FALSE.}
 }
 \value{
 None.

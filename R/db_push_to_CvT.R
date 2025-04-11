@@ -12,11 +12,11 @@
 #'  }
 #' }
 #' @seealso 
-#'  [dbWriteTable][RPostgreSQL::dbWriteTable], [dbClearResult][RPostgreSQL::dbClearResult], [dbDisconnect][RPostgreSQL::dbDisconnect]
+#'  [dbWriteTable][RPostgres::dbWriteTable], [dbClearResult][RPostgres::dbClearResult], [dbDisconnect][RPostgres::dbDisconnect]
 #'  [dbSendStatement][DBI::dbSendStatement]
 #' @rdname db_push_to_CvT
 #' @export 
-#' @importFrom RPostgreSQL dbWriteTable dbClearResult dbDisconnect
+#' @importFrom RPostgres dbWriteTable dbClearResult dbDisconnect
 #' @importFrom DBI dbSendStatement
 db_push_to_CvT <- function(df=NULL, tblName=NULL){
   
@@ -38,17 +38,17 @@ db_push_to_CvT <- function(df=NULL, tblName=NULL){
     # DBI Issues with schema references
     # https://github.com/r-dbi/odbc/issues/140
     DBI::dbExecute(con, "SET search_path = cvt")
-    RPostgreSQL::dbWriteTable(con, value = df, name="temp_tbl", overwrite=TRUE, row.names=FALSE)  
+    RPostgres::dbWriteTable(con, value = df, name="temp_tbl", overwrite=TRUE, row.names=FALSE)  
     
     DBI::dbSendStatement(con, paste0("INSERT INTO cvt.", tblName, " (", paste0(names(df), collapse=','),
                                 ") SELECT ", paste0(names(df), collapse=','), " FROM cvt.temp_tbl")) %T>% 
-      RPostgreSQL::dbClearResult()
+      RPostgres::dbClearResult()
     
     DBI::dbSendStatement(con, "DROP TABLE cvt.temp_tbl") %T>% 
-      RPostgreSQL::dbClearResult() #Drop temporary table
+      RPostgres::dbClearResult() #Drop temporary table
   },
   error=function(cond){ message("Error message: ", cond); return(NA) },
   warning=function(cond){ message("Warning message: ", cond); return(NULL) },
-  finally={ RPostgreSQL::dbDisconnect(con) }
+  finally={ RPostgres::dbDisconnect(con) }
   )
 }

@@ -22,3 +22,6 @@ shared_subs = in_data %>%
   # dplyr::mutate(id = paste0(sort(unique(id[!is.na(id)])), collapse=", ")) %>%
   dplyr::distinct() %>%
   dplyr::filter(grepl(",", fk_extraction_document_id))
+
+# Get list of affected documents
+shared_subs$fk_extraction_document_id %>% paste0(., collapse = ", ") %>% strsplit(", ") %>% unlist() %>% unique()

@@ -28,6 +28,7 @@ get_dict_update_ids <- function(sheet_list, schema){
       )
     # Go through every template sheet to update dictionaries
     for(sheet_n in names(sheet_list)){
+      # message("...sheet: ", sheet_n)
       sheet = sheet_list[[sheet_n]]
       if(dict_tbl == "chemicals"){
         # Select fields to rename
@@ -71,7 +72,10 @@ get_dict_update_ids <- function(sheet_list, schema){
           max_id = db_query_cvt(paste0("SELECT MAX(id) FROM ", schema, ".", dict_tbl))[,1]
           if(is.na(max_id)) max_id = 0
           # Sequence of ID values
-          new$id = (max_id+1):(nrow(new)+max_id)
+          new$id = as.numeric(seq(max_id+1, nrow(new)+max_id))
+          ## Old approach doesn't work, returns essentially 0
+          # new$id = (max_id+1):(nrow(new)+max_id)  
+          
           # Push new entries to database
           db_push_tbl_to_db(dat=new,# %>% dplyr::select(-id),
                             tblName=dict_tbl,

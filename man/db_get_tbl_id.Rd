@@ -33,6 +33,6 @@ if(interactive()){
 }
 }
 \seealso{
-\link[RPostgreSQL:dbSendQuery]{dbSendQuery}, \link[RPostgreSQL:dbClearResult]{dbClearResult}, \link[RPostgreSQL:dbDisconnect]{dbDisconnect}
+\link[RPostgres:dbSendQuery]{dbSendQuery}, \link[RPostgres:dbClearResult]{dbClearResult}, \link[RPostgres:dbDisconnect]{dbDisconnect}
 \link[DBI:dbFetch]{dbFetch}
 }
