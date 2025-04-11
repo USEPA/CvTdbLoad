@@ -18,10 +18,13 @@ load_cvt_templates_to_db <- function(
   
   # Query already loaded Jira tickets
   loaded_jira_docs = db_query_cvt(paste0("SELECT clowder_template_id, jira_ticket FROM cvt.documents ",
-                                         "WHERE jira_ticket IS NOT NULL"))
+                                         "WHERE jira_ticket IS NOT NULL")) %>%
+    tidyr::separate_longer_delim(jira_ticket, delim = ", ") %>%
+    dplyr::mutate(jira_ticket = stringr::str_squish(jira_ticket))
   
   # Pull dataset ticket templates and filter to those not loaded
   to_load = pull_clowder_files_to_load(dsID, baseurl, apiKey, curation_set_tag=cvt_dataset, metadata_filter_tag=NULL) %>%
+    
     dplyr::filter(!clowder_id %in% loaded_jira_docs$clowder_template_id,
                   !jira_ticket %in% loaded_jira_docs$jira_ticket,
                   grepl("_final\\.xlsx", filename))
@@ -309,6 +312,12 @@ load_cvt_templates_to_db <- function(
           return()
       }) %T>% {
         names(.) <- names(doc_sheet_list)
+      }
+      
+      # Add in extraction document ID to study sheet
+      # Set as document_type == 1 id
+      if(!"fk_extraction_document_id" %in% names(doc_sheet_list$Studies)){
+        doc_sheet_list$Studies$fk_extraction_document_id = unique(doc_sheet_list$Documents$id[doc_sheet_list$Documents$document_type == 1])
       }
       
       # Export loaded template log
