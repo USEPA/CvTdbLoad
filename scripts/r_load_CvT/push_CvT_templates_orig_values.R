@@ -63,6 +63,11 @@ load_cvt_templates_to_db <- function(
       # Select Template Sheets
       doc_sheet_list = doc_sheet_list[names(cvt_template)[names(cvt_template) %in% names(doc_sheet_list)]]
       
+      if("clowder_id" %in% names(doc_sheet_list$Documents)){
+        doc_sheet_list$Documents = doc_sheet_list$Documents %>%
+          dplyr::rename(clowder_file_id = clowder_id)
+      }
+      
       # Validation using the standard curation template
       if (!validate_cvt(df=doc_sheet_list, df_identifier = f, log_path=log_path, ignore_qc = TRUE)) {
         stop("Validation failed, exiting.")
@@ -314,10 +319,12 @@ load_cvt_templates_to_db <- function(
         names(.) <- names(doc_sheet_list)
       }
       
-      # Add in extraction document ID to study sheet
-      # Set as document_type == 1 id
-      if(!"fk_extraction_document_id" %in% names(doc_sheet_list$Studies)){
-        doc_sheet_list$Studies$fk_extraction_document_id = unique(doc_sheet_list$Documents$id[doc_sheet_list$Documents$document_type == 1])
+      if(!load_doc_sheet_only){
+        # Add in extraction document ID to study sheet
+        # Set as document_type == 1 id
+        if(!"fk_extraction_document_id" %in% names(doc_sheet_list$Studies)){
+          doc_sheet_list$Studies$fk_extraction_document_id = unique(doc_sheet_list$Documents$id[doc_sheet_list$Documents$document_type == 1])
+        }
       }
       
       # Export loaded template log

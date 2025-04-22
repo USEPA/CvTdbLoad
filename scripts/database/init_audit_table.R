@@ -75,19 +75,22 @@ init.audit.table <- function(db_schema){
     
     # Drop trigger if exists already
     db_query_cvt(query=audit_sql$drop_bu_audit_trigger %>%
-               gsub("cvt_table", s_tbl, .))
+               gsub("cvt_table", s_tbl, .),
+               query_type = "statement")
     
     # Drop trigger function if exists already
     db_query_cvt(query=audit_sql$drop_bu_audit_trigger_function %>%
-               gsub("cvt_table", s_tbl, .))
+               gsub("cvt_table", s_tbl, .),
+               query_type = "statement")
     
     # Apply custom audit function to database
-    db_query_cvt(query=src_bu_audit_trigger_function)
+    db_query_cvt(query=src_bu_audit_trigger_function,
+                 query_type = "statement")
     if(!db_query_cvt(query = paste0("select exists(select * from pg_proc where proname = '",s_tbl,"_audit_tbl_bu');"))$exists){
       stop(paste0("Issue creating ",s_tbl,"_audit_tbl_bu function..."))
     }
     # Apply trigger to table
-    db_query_cvt(query=src_bu_audit_trigger)
-    db_query_cvt(query=src_bu_source_trigger)
+    db_query_cvt(query=src_bu_audit_trigger, query_type = "statement")
+    db_query_cvt(query=src_bu_source_trigger, query_type = "statement")
   }
 }

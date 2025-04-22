@@ -31,9 +31,10 @@ db_update_tbl <- function(df=NULL, tblName=NULL){
   df = df[ , colSums(is.na(df)) < nrow(df)]
   tryCatch({
     # Drop temp table if exists
-    db_query_cvt("DROP TABLE IF EXISTS cvt.z_updated_df")
+    db_query_cvt("DROP TABLE IF EXISTS cvt.z_updated_df", query_type = "statement")
     # Create temp table to store data for update
-    db_query_cvt(paste0("CREATE TABLE cvt.z_updated_df (LIKE cvt.",tblName," INCLUDING ALL)"))
+    db_query_cvt(paste0("CREATE TABLE cvt.z_updated_df (LIKE cvt.",tblName," INCLUDING ALL)"),
+                 query_type = "statement")
     
     con = db_connect_to_CvT()
     # DBI Issues with schema references
