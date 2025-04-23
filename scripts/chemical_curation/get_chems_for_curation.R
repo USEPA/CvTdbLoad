@@ -12,6 +12,18 @@ get_chems_for_curation <- function(){
     dplyr::filter(filter_key != "NA_NA") %>%
     dplyr::select(-filter_key)
   
+  # Read in previous attempts to ignore
+  previous_map_attempt = list.files("output/chemical_mapping", 
+                                    recursive = TRUE, full.names = TRUE) %>%
+    .[grepl("jira_chemical_files", .)] %>%
+    lapply(., readxl::read_xlsx) %>%
+    dplyr::bind_rows() %>%
+    dplyr::pull(external_id) %>%
+    unique()
+  
+  in_data = in_data %>%
+    dplyr::filter(!external_id %in% previous_map_attempt)
+  
   out = chem.check.v2(res0 = in_data)
   
   # Export raw and cleaned chems
