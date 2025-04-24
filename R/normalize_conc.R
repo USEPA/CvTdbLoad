@@ -78,13 +78,13 @@ normalize_conc <- function(raw, f, log_path, debug = FALSE){
     log_CvT_doc_load(f=f, m="conc_conversion_needed_percentage", log_path=log_path, val=out$percentage$id)
   }
   # Invalid units list
-  out$invalid_units = out$raw %>% dplyr::filter(grepl("ms peak area", conc_units_original))
+  out$invalid_units = out$raw %>% dplyr::filter(grepl("ms peak area|MS Peak Area", conc_units_original))
   out$raw = out$raw %>% dplyr::filter(!tempID %in% out$invalid_units$tempID)
   if(nrow(out$invalid_units)){
     log_CvT_doc_load(f=f, m="conc_invalid_units", log_path=log_path, val=out$invalid_units$id)
   }
-  #Radioactive units flag
-  out$radioactive = out$raw %>% dplyr::filter(grepl("MBq|bq/", conc_units_original))
+  # Radioactive units flag
+  out$radioactive = out$raw %>% dplyr::filter(grepl("MBq|bq\\/|dpm\\/", conc_units_original))
   out$raw = out$raw %>% dplyr::filter(!tempID %in% out$radioactive$tempID)
   if(nrow(out$radioactive)){
     log_CvT_doc_load(f=f, m="conc_conversion_needed_radioactive", log_path=log_path, val=out$radioactive$id)
@@ -95,6 +95,11 @@ normalize_conc <- function(raw, f, log_path, debug = FALSE){
   if(nrow(out$rate_units)){
     log_CvT_doc_load(f=f, m="conc_conversion_needed_rate", log_path=log_path, val=out$rate_units$id)
   }
+  
+  # Conc needs volume (doesn't have / units)
+  out$need_volume = out$raw %>% dplyr::filter(grepl("^nmol$", conc_units_original))
+  out$raw = out$raw %>% dplyr::filter(!tempID %in% out$need_volume$tempID)
+  
   #Non-numerics
   out = check_non_numeric(x=out, f=f, col="conc_original", log_path=log_path)
   #Prep for conversion
@@ -116,6 +121,7 @@ normalize_conc <- function(raw, f, log_path, debug = FALSE){
     dplyr::filter(grepl("/kg|/g|/mg|/ng|/ug", conc_units_original)) %>%
     convert_mass_per_mass()
   out$convert_ready = out$convert_ready %>% dplyr::filter(!tempID %in% out$per_weight$tempID)
+  
   #Try to normalize
   #Filter out ones that didn't get normalized
   #Add them back to the convert_ready list

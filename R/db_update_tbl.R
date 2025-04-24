@@ -28,7 +28,11 @@ db_update_tbl <- function(df=NULL, tblName=NULL){
     return()
   }
   # Filter out NA fields (which will automatically be NULL in the database)
-  df = df[ , colSums(is.na(df)) < nrow(df)]
+  # Only if there are multiple columns
+  if(length(df) > 1){
+    df = df[ , colSums(is.na(df)) < nrow(df)]  
+  }
+  
   tryCatch({
     # Drop temp table if exists
     db_query_cvt("DROP TABLE IF EXISTS cvt.z_updated_df", query_type = "statement")

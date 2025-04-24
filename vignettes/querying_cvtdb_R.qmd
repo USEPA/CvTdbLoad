@@ -83,7 +83,7 @@ library(dbplyr)
 #'@return Database connection pointer object
 connect_to_db <- function(con_type){
   switch(con_type,
-         "postgres" = dbConnect(RPostgreSQL::PostgreSQL(), 
+         "postgres" = dbConnect(RPostgres::Postgres(), 
                                 user = Sys.getenv("postgres_user"), 
                                 password = Sys.getenv("postgres_pass"), #
                                 host = Sys.getenv("postgres_host"), #
@@ -178,7 +178,7 @@ The following is the EER diagram for CvTdb. The basic tables and connections are
 
     -   id
 
-![CvTdb EER Diagram](images/CvTdb_EER.jpg){.lightbox fig-alt="CvTdb EER Diagram" fig-align="center"}
+![CvTdb EER Diagram](images/CvTdb_EER.png){.lightbox fig-alt="CvTdb EER Diagram" fig-align="center"}
 
 ### Sample Queries
 

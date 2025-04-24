@@ -16,8 +16,11 @@ normalize_conc_units <- function(x){
     return(x)
   }
   #Convert conc units
-  x = tolower(x)
-  conv = list(`percentage`=list("%", "% of original dose", "percent", "percentage", "% Dose", "% dose", "cumulative %", "perc_dose", "% 14C-PFOA recovered", "fraction absorbed"),
+  # x = tolower(x) # Commented out due to edge cases like meter (m) and molarity (M)
+  conv = list(`percentage`=list("%", "% of original dose", "percent", "percentage", 
+                                "% Dose", "% dose", "cumulative %", "perc_dose", 
+                                "% 14C-PFOA recovered", "fraction absorbed",
+                                "Percent Dose", "Percent total dose"),
               `ng/ml`=list("ng/ml", "ng/mL"),
               `ng/l`=list("ng/l", "ng/L"),
               `ng/g`=list("ng/g", "ng/g-tissue"),
@@ -36,8 +39,8 @@ normalize_conc_units <- function(x){
               `ul/kg`=list("µl liquidkg"),
               `pmol/ml`=list("pmole/ml"),
               `nmol`=list("nmole"),
-              `nmol/ml`=list("nmol/ml", "nmoles/ml"),
-              `nmol/l`=list("nmol/l"),
+              `nmol/ml`=list("nmol/ml", "nmoles/ml", "nmol/mL"),
+              `nmol/l`=list("nmol/l", "nmol/L"),
               `umol/l`=list("umol/l", "um", "uM"),
               `umol/kg`=list("umolkg"),
               `mmol/m3`=list("mmolm3"),
