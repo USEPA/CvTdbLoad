@@ -1,0 +1,185 @@
+---
+title: "CvTdb v2.0 Release Notes"
+author: Taylor Wall
+description: >
+  The following are notes to accompany a release for CvTdb.
+resource_files:
+  - images/CvTdb_EER.jpg
+format: 
+  html:
+    embed-resources: TRUE # https://quarto.org/docs/output-formats/html-basics.html#self-contained
+    toc: TRUE
+    toc-depth: 4
+    toc-location: left
+    number-sections: TRUE
+    code-fold: TRUE
+    code-summary: "Show Code"
+    code-overflow: scroll
+    code-line-numbers: TRUE
+    code-copy: TRUE
+    page-layout: full
+    html-table-processing: none # https://quarto.org/docs/prerelease/1.4/ast.html#finer-control-over-table-processing
+editor: visual
+---
+  
+```{r}
+#| echo: FALSE
+#| message: FALSE
+#| warning: FALSE
+
+knitr::opts_chunk$set(collapse = T, comment = "#>")
+knitr::opts_chunk$set(warning = FALSE, message = FALSE)
+options(tibble.print_min = 4L, tibble.print_max = 4L)
+devtools::load_all()
+
+# https://stackoverflow.com/questions/37755037/how-to-add-code-folding-to-output-chunks-in-rmarkdown-html-documents
+# https://stackoverflow.com/questions/56550878/in-r-markdown-how-to-output-sortable-table-while-r-chunk-is-set-to-results-a
+```
+
+## Background
+
+The Concentration versus Time Database (CvTdb) contains manually curated time-series data and associated metadata for in vivo studies on organic chemicals available in the scientific literature. These data inform chemical safety analysis and allow evaluation of the relationship between administered doses and internal concentrations of a substance. These data can also be used to build or evaluate physiologically based pharmacokinetic (PBPK) models, which simulate the absorption, distribution, metabolism, and elimination of a chemical. The database also contains toxicokinetic parameters, including volume of distribution and elimination half-life, which are calculated across all data associated with a particular compound using the publicly available pharmacokinetic curve-fitting software invivoPKfit. This version 2 release builds upon the original “legacy” database released with Sayre, Wambaugh, and Grulke (2020). 
+The code, documentation, and vignettes associated with the database release are available on GitHub (CvTdbLoad). The database is also available for download through the public CCTE EPA Clowder repository (no user account required).
+
+## Usage Note
+
+The CvTdb v2.0 2025 data release has largely increased the subset of time-series data previously captured in the 2020 release. However, despite the substantial increase in the number of time-series data and improved modeling capabilities of environmentally- and occupationally-relevant exposure routes loaded into CvTdb, this subset still only covers a small portion of available relevant data in the literature and across other structured sources. The data included in CvTdb is also not fully exhaustive for any one chemical, species, or exposure route, and as additional data are loaded into the database, the pharmacokinetic parameters calculated in the linked tables are likely to change based on the available aggregated time-series data. Thus, it is important that users determine the significance of any modeling or assessment outcomes as provided by use of data within CvTdb.  
+
+### Summary Counts
+```{r}
+
+```
+
+- Total Documents: `r #TBD`
+- Total Studies: `r #TBD`
+  - Total Dosed Chemicals: `r #TBD`
+- Total Series: `r #TBD`
+  - Total Analyzed Chemicals: `r #TBD`
+- Total Subjects: `r #TBD`
+  - Species Breakdown: `r #TBD`
+- Total Concentration-Time Values: `r #TBD`
+  - Total with normalized values: `r #TBD`
+
+### Summary Visualizations
+
+```{r}
+query <- paste0(
+  "SELECT distinct ",
+  # Studies table fields
+  "c.fk_dosed_chemical_id, ",
+  ## Chemical dictionary fields (dosed chemical information)
+  "k.dosed_chem_dtxsid, k.dosed_chem_name_original, k.dosed_chem_casrn, k.dosed_chem_name, ",
+  # Series table fields
+  "b.fk_analyzed_chemical_id, ",
+  ## Chemical dictionary fields (analyzed chemical information)
+  "l.analyzed_chem_dtxsid, l.analyzed_chem_name_original, l.analyzed_chem_casrn, l.analyzed_chem_name, ",
+  "b.radiolabeled, ",
+  ## conc_medium dictionary fields
+  "b.conc_medium_original, i.conc_medium_normalized, ", 
+  ## administration_route dictionary fields
+  "c.administration_route_original, h.administration_route_normalized, ",
+  ## administration_method dictionary fields
+  "c.administration_method_original, g.administration_method_normalized, ",
+  ## administration_form dictionary fields
+  "c.administration_form_original, f.administration_form_normalized ",
+  
+  # Join with series table by series ID
+  "FROM series b ",
+  
+  # Join to studies table by study ID
+  "LEFT JOIN studies c ON b.fk_study_id = c.id ",
+  
+  # Join to dictionary tables
+  "LEFT JOIN administration_form_dict f ON c.fk_administration_form_id = f.id ",
+  "LEFT JOIN administration_method_dict g ON c.fk_administration_method_id = g.id ",
+  "LEFT JOIN administration_route_dict h ON c.fk_administration_route_id = h.id ",
+  "LEFT JOIN conc_medium_dict i ON b.fk_conc_medium_id = i.id ",
+  
+  # Rename chemical fields for dosed vs. analyzed chemical record foreign keys
+  "LEFT JOIN (SELECT id, dsstox_substance_id as dosed_chem_dtxsid, ",
+  "chemical_name_original as dosed_chem_name_original, dsstox_casrn as dosed_chem_casrn, preferred_name as dosed_chem_name ",
+  "FROM chemicals) as k ON c.fk_dosed_chemical_id = k.id ",
+  "LEFT JOIN (SELECT id, dsstox_substance_id as analyzed_chem_dtxsid, ",
+  "chemical_name_original as analyzed_chem_name_original, dsstox_casrn as analyzed_chem_casrn, preferred_name as analyzed_chem_name ",
+  "FROM chemicals) as l ON b.fk_analyzed_chemical_id = l.id "
+)
+```
+## New Datasets
+
+- CEBS NTP documents (New and Updated) (> 30)
+  - The Chemical Effects in Biological Systems (CEBS) database is a comprehensive, publicly available database hosted by the National Toxicology Program (NTP). The data sourced from CEBS is primarily focused on oral gavage and intravenous routes of administration to rats and mice
+- PK Working Group identified documents (> 55)
+  - The PK Working Group (PKWG) as part of the US Environmental Protection Agency’s Integrated Risk Information System (IRIS) toxicokinetic assessments. These data contain toxicity values for chronic exposures and identifies and characterizes the health hazards of environmentally relevant chemicals. Chemicals included were PCBs, PFOS, PFOA, and PFAS.
+- 3M documents (31)
+  - 3M documents that were obtained via legal action with the Department of Justice. This set contains over 9,000 documents, 6,546 of which are currently being analyzed. The documents focus on PFAS monitoring and testing and are very heterogeneous.
+
+## New Features
+
+- Updated standard operating procedures for data curation and QC.
+- New fields added to study and subject fields to improve capture of study and subject attributes
+  - ex. Subject health_status captures key differences in physiology across subjects that may impact measurable time-series data
+- New/updated dermal study metadata model (~18).
+- New/updated inhalation study metadata model (~14).
+- Streamlined data processing workflow.
+- Standardized QC workflow and programmatic approaches to flag records for review.
+  - QC of 62 identified documents.
+- New document_lineage table to improve reporting of relationships between documents (e.g., Supplemental Document, Study Methods Document, Reference Document)
+
+## Future Planned Features
+
+- New data sources
+  - Pharmacokinetics Database (PK-DB)
+    - The Pharmacokinetics Database (PK-DB) is an open database containing pharmacokinetic data alongside metadata required for computation modeling and data integration. The data is sourced from clinical trials and pre-clinical research.
+  - Elsevier’s PharmaPendium
+    - Scoping of data available in PharmaPendium that is relevant for the current CvTdb data model (and potentially expansion thereof).
+  - Toxicokinetic Knowledgebase (TKKB) documents
+    - The list of citations for the TKKB set was meant to increase diversity of available CvT data and provide a means to compare bespoke toxicokinetic models with HTTK models. This dataset contained numerous studies with occupationally relevant routes of exposure (inhalation and dermal) that had not previously been loaded into CvTdb.
+
+## Known Issues
+
+## References
+- Sayre, R.R., Wambaugh, J.F. & Grulke, C.M (2020). Database of pharmacokinetic time-series data and parameters for 144 environmental chemicals. Sci Data 7(122). https://doi.org/10.1038/s41597-020-0455-1.
+
+## Database Field Definitions
+
+```{r}
+#| label: "database-field-definitions"
+#| echo: FALSE
+#| output: "asis"
+
+field_dictionary = readxl::read_xlsx("cvtdb_field_dictionary.xlsx")
+db_tbl_list = unique(field_dictionary$table_name)
+field_dictionary = field_dictionary %>%
+  dplyr::group_split(table_name) %T>% {
+    names(.) <- db_tbl_list
+  }
+
+# Special printing approach to render plots in a loop
+# https://mickael.canouil.fr/posts/2023-03-05-quarto-auto-table-crossref/
+for(dict in names(field_dictionary)){
+  df_dict = field_dictionary[[dict]] %>% 
+                             select(-dplyr::any_of(c("table_name")))
+  
+  dict_tbl = DT::datatable(df_dict, 
+                           options = list(
+                             scrollX = TRUE,
+                             columnDefs = list(list(className = 'dt-left',
+                                                    targets = "_all"
+                                                    )
+                                               )
+                             ),
+                           rownames = FALSE
+                           )
+  
+  cat(sep = "\n", knitr::knit_child(quiet = TRUE, text = c(
+    paste0("### ", dict),
+    "```{r}",
+    "#| echo: FALSE",
+    sprintf("#| tbl-cap: %s", dict),
+    sprintf("#| label: tbl-%s", dict %>% gsub(" ", "-", .) %>% tolower()),
+    "dict_tbl",
+    "```"
+  )))
+}
+
+```

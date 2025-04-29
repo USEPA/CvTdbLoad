@@ -19,23 +19,17 @@
 #' @importFrom dplyr filter select
 #' @importFrom RPostgres dbWriteTable dbDisconnect
 clowder_match_post_upload <- function(dsID = NULL, apiKey = NULL){
-  #Get all documents in CvT without Clowder ID
+  # Get all documents in CvT without Clowder ID
   docs = db_query_cvt("SELECT id, pmid, other_study_identifier FROM cvt.documents where clowder_file_id is NULL") %>%
     dplyr::filter(!is.na(pmid) | !is.na(other_study_identifier))
-  #Match to Clowder ID
-  output = match_clowder_docs(df=docs, dsID=dsID, apiKey=apiKey) %>%
+  # Match to Clowder ID
+  output = clowder_match_docs(df=docs,
+                              dsID=doc_dsID,
+                              baseurl=baseurl,
+                              apiKey=apiKey) %>%
     dplyr::filter(!is.na(clowder_file_id)) %>%
     dplyr::select(id, clowder_file_id)
-  #Push to CvT
-  #Push updates
-  con = db_connect_to_CvT()
-  RPostgres::dbWriteTable(con, value = output, name=c("cvt", "temp_tbl"), overwrite=TRUE, row.names=FALSE)  
-  RPostgres::dbDisconnect(con)
-  
-  query = paste0("UPDATE cvt.documents h SET clowder_file_id = m.clowder_file_id",
-                 " FROM cvt.temp_tbl m",
-                 " WHERE h.id = m.id")  
-  #Make update (only uncomment when ready to use)
-  #db_query_cvt(query=query)
-  db_query_cvt("DROP TABLE cvt.temp_tbl")
+  # Push updates to documents table
+  db_update_tbl(df = output,
+                tblName = "documents")
 }
