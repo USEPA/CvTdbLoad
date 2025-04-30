@@ -98,14 +98,14 @@ get.dictionary.entries.to.curate <- function(schema, full.report=FALSE){
       "LEFT JOIN (SELECT id, dsstox_substance_id as analyzed_chem_dtxsid, ",
       "chemical_name_original as analyzed_chem_name_original, dsstox_casrn as analyzed_chem_casrn, preferred_name as analyzed_chem_name ",
       "FROM cvt.chemicals) as l ON b.fk_analyzed_chemical_id = l.id "
-    ) %>% db_query_cvt() %>%
-      # Remove extraneous fields 
-      dplyr::select(-dplyr::any_of(c(
-        "analyte_name_original", "analyte_dtxsid", "analyte_casrn",
-        "test_substance_dtxsid", "test_substance_casrn", "fk_test_chemical_id",
-        "analyte_name_secondary_original", "analyte_casrn_original", "test_substance_name_original",
-        "test_substance_name_secondary_original",
-        "test_substance_casrn_original", "dose_frequency")))
+    ) %>% db_query_cvt() # %>%
+      # # Remove extraneous fields 
+      # dplyr::select(-dplyr::any_of(c(
+      #   "analyte_name_original", "analyte_dtxsid", "analyte_casrn",
+      #   "test_substance_dtxsid", "test_substance_casrn", "fk_test_chemical_id",
+      #   "analyte_name_secondary_original", "analyte_casrn_original", "test_substance_name_original",
+      #   "test_substance_name_secondary_original",
+      #   "test_substance_casrn_original", "dose_frequency")))
   }
   
   # Export file and return dataframe list
