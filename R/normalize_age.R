@@ -8,7 +8,7 @@
 #' @examples 
 #' \dontrun{
 #' if(interactive()){
-#'  #EXAMPLE1
+#'  # EXAMPLE1
 #'  }
 #' }
 #' @seealso 
@@ -28,7 +28,7 @@ normalize_age <- function(raw, f, log_path, debug = FALSE){
   # }) %>%
   #   bind_rows()
   # tmp$species = normalize_species(tmp$species)
-  if(!nrow(raw)){#Empty dataframe
+  if(!nrow(raw)){# Empty dataframe
     message("...normalize_age dataframe empty...returning...")
     return(raw)
   }
@@ -50,10 +50,10 @@ normalize_age <- function(raw, f, log_path, debug = FALSE){
   out = norm_extrapolate(x=out, f=f, extrap_type="age", log_path=log_path)
   # Missing age
   out = check_missing(x=out, miss_col = "age", f=f, log_path=log_path, flag=FALSE)
-  #Missing units
+  # Missing units
   out = check_missing_units(x=out, f=f, units_col="age_units", log_path=log_path, flag=FALSE)
   if(nrow(out$missing_units)){
-    out$missing_units$age_units = NA #reverting missing units back to NA  
+    out$missing_units$age_units = NA # reverting missing units back to NA  
   }
   
   out$unmatched_species = out$raw %>% dplyr::filter(!species %in% age_dict$species)
@@ -68,20 +68,24 @@ normalize_age <- function(raw, f, log_path, debug = FALSE){
   }
 
   out$raw = out$raw %>% dplyr::filter(!tempID %in% out$unmatched_species$tempID)
-  #Normalize units
+  # Normalize units
   out$raw$age_units = normalize_age_units(out$raw$age_units)
-  #Remove extraneous characters
+  # Remove extraneous characters
   out$raw = out$raw %>%
     dplyr::mutate(age_normalized = sub("mean=|old|between|GD|gestational|≥|avg", "", age_normalized) %>%
              trimws(),
            age_units = sub("gestational", "", age_units) %>% trimws(.))
-  #List of ages
+  # List of ages
   out = check_subject_list(x=out, f=f, col="age_normalized", log_path=log_path)
   # +/- Group
   out = check_unit_ci(x=out, f=f, col="age_normalized", estimated=c(), log_path=log_path)
-  #age range
+  # age range
   out = check_unit_range(x=out, f=f, col="age_normalized", estimated=c(), log_path=log_path)
-  #Missed cases to handle or curate
+  # age qualifier - remove for now
+  out$raw = out$raw %>%
+    dplyr::mutate(age_normalized = age_normalized %>%
+                    gsub("^>=|^>", "", .))
+  # Missed cases to handle or curate
   out$need_curation = out$raw %>%
     dplyr::mutate(age_num = suppressWarnings(as.numeric(age_normalized))) %>%
     dplyr::filter(is.na(age_num) | (is.na(age_num & is.na(age_category)))) %>%
@@ -100,10 +104,10 @@ normalize_age <- function(raw, f, log_path, debug = FALSE){
     dplyr::mutate(age_normalized = as.numeric(age_normalized))
   out$to_convert = out$raw
   out$raw = NULL
-  #Ready for conversion
-  #Combine and convert prepped datasets
+  # Ready for conversion
+  # Combine and convert prepped datasets
   out$mapped_age = dplyr::bind_rows(out$ci, out$unit_range, out$to_convert)
-  #Remove mapped dataframes
+  # Remove mapped dataframes
   out$ci = NULL; out$unit_range = NULL; out$to_convert = NULL
   if(nrow(out$mapped_age)){
     out$mapped_age = map_age_category(x=out$mapped_age, dict=age_dict)
@@ -118,7 +122,7 @@ normalize_age <- function(raw, f, log_path, debug = FALSE){
   
   # Remove empty list elements
   out = out[sapply(out, nrow) > 0]
-  #Convert to NA for all lists that were not normalized
+  # Convert to NA for all lists that were not normalized
   out = lapply(names(out), function(n){
     if(n %in% c("extrapolate", "mapped_age")){
       return(out[[n]])
@@ -127,7 +131,7 @@ normalize_age <- function(raw, f, log_path, debug = FALSE){
         return()
     }
   }) %T>% { names(.) <- names(out) }
-  #Convert age_normalized to numeric for unconverted lists
+  # Convert age_normalized to numeric for unconverted lists
   out = lapply(out, function(x){ 
     x = x %>% dplyr::mutate(age_normalized = suppressWarnings(as.numeric(age_normalized)))
   })
@@ -139,7 +143,7 @@ normalize_age <- function(raw, f, log_path, debug = FALSE){
     dplyr::arrange(tempID) %>% 
     dplyr::select(-tempID) %>% 
     return()
-  #Match to age category
-  #Values represent the lower threshold for age inclusion in this category
-  #Younger than infant was categorized "neonate"
+  # Match to age category
+  # Values represent the lower threshold for age inclusion in this category
+  # Younger than infant was categorized "neonate"
 }

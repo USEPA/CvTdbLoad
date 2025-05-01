@@ -47,10 +47,12 @@ normalize_dose <- function(raw, f, log_path, debug = FALSE){
   #Set to convert column to maintain original
   out$raw$dose_level_normalized = out$raw$dose_level
   #out$raw$dose_level_units_original = out$raw$dose_level_units
+  species_list = db_query_cvt("SELECT distinct species FROM cvt.subjects") %>%
+    dplyr::pull(species)
   #Remove species and "body weight" from units field
   out$raw$dose_level_units = gsub(paste0(c("body weight", "bw", "b.w.",
-                                           paste0("/",out$raw$species %>% unique()),
-                                           out$raw$species %>% unique()), collapse="|"), 
+                                           paste0("/", species_list %>% unique()),
+                                           species_list %>% unique()), collapse="|"), 
                                   "",
                                   out$raw$dose_level_units) %>%
     gsub(" per ", "/", .) %>% 
@@ -130,17 +132,18 @@ normalize_dose <- function(raw, f, log_path, debug = FALSE){
     return(out)
   }
   
-  #Fix need_per_weight - convert to mg then divide by kg weight (given or extrapolated)
-  if(nrow(out$need_per_weight)){
-    for(i in seq_len(nrow(out$need_per_weight))){
-      out$need_per_weight[i,] = convert_units(x=out$need_per_weight[i,], 
-                                            num="dose_level_normalized", 
-                                            units="dose_level_units", desired="mg",
-                                            overwrite_units = FALSE)
-    }
-    #Divide by weight (given or extrapolated)
-    out$need_per_weight$dose_level_normalized = out$need_per_weight$dose_level_normalized / out$need_per_weight$weight_kg
-  }
+  # Fix need_per_weight - convert to mg then divide by kg weight (given or extrapolated)
+  # Cannot use subject weight since it's not always possible to connect to 1 subject
+  # if(nrow(out$need_per_weight)){
+  #   for(i in seq_len(nrow(out$need_per_weight))){
+  #     out$need_per_weight[i,] = convert_units(x=out$need_per_weight[i,], 
+  #                                           num="dose_level_normalized", 
+  #                                           units="dose_level_units", desired="mg",
+  #                                           overwrite_units = FALSE)
+  #   }
+  #   #Divide by weight (given or extrapolated)
+  #   out$need_per_weight$dose_level_normalized = out$need_per_weight$dose_level_normalized / out$need_per_weight$weight_kg
+  # }
  
   #Convert dosages
   out$convert_ready = dplyr::bind_rows(out$conversion, out$ci, out$unit_range)

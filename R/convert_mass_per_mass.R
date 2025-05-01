@@ -38,9 +38,10 @@ convert_mass_per_mass <- function(x){
       if(!is.na(x$value[i])){
         x[i,] = convert_units(x=x[i,], 
                               num=t, 
-                              units="conc_units_original", desired="ug/ml",
-                              overwrite_units = FALSE,
-                              MW=(x$value[i])) #g/mL
+                              units="conc_units_original", 
+                              desired="ug/ml",
+                              conv_factor=x$value[i],
+                              overwrite_units = FALSE)
         
       }
       

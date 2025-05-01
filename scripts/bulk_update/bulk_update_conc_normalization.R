@@ -71,7 +71,7 @@ bulk_update_conc_normalization <- function(){
   # Filter to only entries that need updating
   df_out = df_update %>%
     # Can't compare NA values, so replace for now
-    tidyr::replace_na(list(conc_old = -99999, conc = -99999)) %>%
+    tidyr::replace_na(list(conc_old = "-99999", conc = "-99999")) %>%
     dplyr::filter(conc_old != conc) %>%
     dplyr::filter(conc != -99999) %>%
     dplyr::select(id, conc, conc_sd, conc_lower_bound, conc_upper_bound) %>%

@@ -5,12 +5,12 @@ bulk_update_dose_normalization <- function(){
   API_AUTH <<- Sys.getenv("API_AUTH")
   
   # Query with needed columns
-  query <- paste0("SELECT b.id, a.fk_study_id, c.species, c.subtype, c.weight_kg, c.height_cm, ",
+  query <- paste0("SELECT b.id, a.fk_study_id, ",
                   "e.chemical_name_original as test_substance_name, b.dose_level_original as dose_level, ",
                   "b.dose_level_units_original as dose_level_units, b.dose_volume, b.dose_volume_units, ",
                   "d.administration_route_normalized, b.fk_dosed_chemical_id, b.dose_level_normalized ",
-                  "FROM cvt.series a ",
-                  "LEFT JOIN cvt.studies b ON a.fk_study_id = b.id ",
+                  "FROM cvt.studies b ",
+                  "LEFT JOIN cvt.series a ON a.fk_study_id = b.id ",
                   "LEFT JOIN cvt.subjects c ON a.fk_subject_id = c.id ",
                   "LEFT JOIN cvt.administration_route_dict d ON b.fk_administration_route_id = d.id ",
                   "LEFT JOIN cvt.chemicals e ON b.fk_dosed_chemical_id = e.id ",
@@ -20,12 +20,21 @@ bulk_update_dose_normalization <- function(){
   # Pull data to check
   df_raw <- db_query_cvt(query) %>%
     # Preserve previous conversion value
-    dplyr::mutate(dose_old = dose_level_normalized)
+    dplyr::mutate(dose_old = dose_level_normalized) %>%
+    dplyr::distinct()
+  
+  dups = df_raw %>%
+    dplyr::count(id) %>%
+    dplyr::filter(n > 1)
+  
+  if(nrow(dups)){
+    stop("Duplicate ID values pulled from query...")
+  }
   
   # Collapse ID field to improve conversion speeds (only convert unique cases once)
   df_raw_zip <- df_raw %>%
     dplyr::group_by(dplyr::across(c(-id))) %>%  
-    dplyr::summarise(id = toString(id)) %>%
+    dplyr::summarise(id = toString(unique(id))) %>%
     dplyr::ungroup()
   
   # Normalized data

@@ -44,6 +44,7 @@ convert_get_conversion_factor <- function(conv_factor=1){
        `ng/l`=list(`ug/ml`="/1000000"),
        `mg/ml`=list(`ug/ml`="*1000"),
        `mg/l`=list(`ug/ml`="/1"),
+       `mg/L`=list(`ug/ml`="/1"),
        ppm=list(`ug/ml`="/1"), #1 ppm = 1 ug/mL
        ppbv = list(`ug/ml`="/1000"), #1 ppb = 0.001 ug/mL,
        ppb = list(`ug/ml`="/1000"), #1 ppb = 0.001 ug/mL,
