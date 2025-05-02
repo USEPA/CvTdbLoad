@@ -33,6 +33,8 @@ options(tibble.print_min = 4L, tibble.print_max = 4L)
 library(DT)
 library(magrittr)
 
+devtools::load_all()
+
 # Get SQLite file
 if(!file.exists("res_cvtdb.sqlite")){
   if(!file.exists("../output/release/res_cvtdb.sqlite")){
@@ -62,16 +64,19 @@ Although credentials are not required to use the provided CvTdb SQLite database,
 
 An example .Renviron (R) or .env (Python) looks like the following, replacing the appropriate placeholders with their respective values:
 
-    user=username-here
-    password=password-here
-    host=host-here
-    database=database-here
+```         
+user=username-here
+password=password-here
+host=host-here
+database=database-here
+```
 
 ### Querying Databases in R
 
 Queries in R can be made either by using pure SQL (as with the example `query_db()` example function below), or through dplyr notation (see [dplyr](https://db.rstudio.com/r-packages/dplyr/ "Link to dplyr package documentation") and [dbplyr](https://dbplyr.tidyverse.org/ "Link to dbplyr package documentation") for additional information).
 
 ### Querying Databases in Python
+
 Queries in Python can be made using pure SQL (as with the example `query_db_python()` example function below) using the [pandas](https://pandas.pydata.org/docs/reference/api/pandas.read_sql_query.html) and [sqlalchemy](https://docs.sqlalchemy.org/en/20/intro.html) packages. Since this approach is a pure SQL approach where a user can input the same query, only the R approach will be shown below.
 
 ### Database Schema Diagrams
@@ -81,7 +86,9 @@ An EER diagram shows how the tables are linked together, which helps with creati
 ## Getting Started
 
 ### Load required packages
+
 R required packages
+
 ```{r}
 library(DBI)
 library(dplyr)
@@ -91,7 +98,9 @@ library(dbplyr)
 ## - RMySQL (MySQL)
 ## - RSQLite (SQLite)
 ```
+
 Python required packages
+
 ```{python}
 #| python.reticulate: FALSE
 import pandas as pd
@@ -103,7 +112,9 @@ import pandas as pd
 ```
 
 ### Example Functions for Querying a Database
+
 R Example Functions
+
 ```{r}
 #'@description A function to make a connection to the database
 #'@param con_type Whether to connect to postgres, mysql, or sqlite version
@@ -165,6 +176,7 @@ compare_sql_dbplyr <- function(){
 ```
 
 Python Example Functions
+
 ```{python}
 #| python.reticulate: FALSE
 
@@ -493,8 +505,7 @@ return(NULL)
 )
 ```
 
-`r DT::datatable(df_dbplyr, options = list(scrollX = TRUE, columnDefs = list(list(className = 'dt-left', targets = "_all"))), rownames = FALSE)`
-<!-- End of tabset -->
+`r DT::datatable(df_dbplyr, options = list(scrollX = TRUE, columnDefs = list(list(className = 'dt-left', targets = "_all"))), rownames = FALSE)` <!-- End of tabset -->
 :::
 
 #### Pull dosed and analyzed chemical data by chemical identifier
