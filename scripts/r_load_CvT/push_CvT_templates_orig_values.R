@@ -60,6 +60,16 @@ load_cvt_templates_to_db <- function(
                                           mode = "wb",
                                           file_type = "xlsx")
       
+      tk_params_sheets = list()
+      # Special tk_params table curation case
+      if("tk_params" %in% names(doc_sheet_list)){
+        tk_params_sheets = list(
+          tk_parameters = doc_sheet_list$tk_params
+        )
+        # Remove excess name whitespace
+        names(tk_params_sheets$tk_parameters) <- stringr::str_squish(names(tk_params_sheets$tk_parameters))
+      }
+      
       # Select Template Sheets
       doc_sheet_list = doc_sheet_list[names(cvt_template)[names(cvt_template) %in% names(doc_sheet_list)]]
       
@@ -326,11 +336,91 @@ load_cvt_templates_to_db <- function(
           doc_sheet_list$Studies$fk_extraction_document_id = unique(doc_sheet_list$Documents$id[doc_sheet_list$Documents$document_type == 1])
         }
       }
+      ##########################################################################
+      ## Handle tk_params sheet case if it exists
+      ##########################################################################
+      if(length(tk_params_sheets)){
+        
+        for(sheet in unique(fk_map$sheet)){
+          key_map = fk_map %>%
+            dplyr::filter(sheet == !!sheet) %>%
+            dplyr::select(-sheet)
+          
+          # Create foreign_key table-field pair map
+          fk_list = switch(sheet,
+                           "Studies" = c("tk_params", "fk_study_id"),
+                           "Subjects" = c("tk_params", "fk_subject_id"),
+                           "Series" = c("tk_parameters", "fk_series_id"))
+          
+          # Map foreign key fields with table-field pair
+          if(!is.null(fk_list)){
+            if(fk_list[1] %in% names(tk_params_sheets)){
+              if(!fk_list[2] %in% names(tk_params_sheets[[fk_list[1]]])){
+                message("...", fk_list[2], " not present in tk_params sheet...")
+                stop()
+              }
+              tk_params_sheets[[fk_list[1]]] = tk_params_sheets[[fk_list[1]]] %>%
+                dplyr::mutate(!!fk_list[2] := as.numeric(!!rlang::sym(fk_list[2]))) %>%
+                dplyr::left_join(key_map,
+                                 by = dplyr::join_by(!!fk_list[2] == id)) %>%
+                dplyr::mutate(fk_id = dplyr::case_when(
+                  is.na(fk_id) ~ !!rlang::sym(fk_list[2]),
+                  TRUE ~ fk_id
+                )) %>%
+                dplyr::select(-dplyr::any_of(c(fk_list[2]))) %>%
+                dplyr::rename(!!fk_list[2] := fk_id) 
+            }
+          }
+        }
+        
+        if(anyNA(tk_params_sheets$tk_parameters$fk_series_id)){
+          stop("Template missing fk_series_id...")
+        }
+        
+        # Map fk_chemical_id
+        if(all(is.na(tk_params_sheets$tk_parameters$fk_study_id)) & 
+           all(!is.na(tk_params_sheets$tk_parameters$fk_series_id))){
+          # Set to Series analyzed chemical foreign key
+          tk_params_series_chem = doc_sheet_list$Series %>%
+            dplyr::filter(id %in% tk_params_sheets$tk_parameters$fk_series_id) %>%
+            dplyr::select(fk_series_id = id, fk_chemical_id_new = fk_analyzed_chemical_id) %>%
+            dplyr::distinct()
+          
+          tk_params_sheets$tk_parameters = tk_params_sheets$tk_parameters %>%
+            dplyr::left_join(tk_params_series_chem,
+                             by = "fk_series_id") %>%
+            dplyr::mutate(fk_chemical_id = dplyr::case_when(
+              !is.na(fk_chemical_id_new) ~ fk_chemical_id_new,
+              TRUE ~ fk_chemical_id
+            )) %>%
+            dplyr::select(-fk_chemical_id_new)
+        } else {
+          stop("Unhandled case for tk_params chemical identifier mapping...")
+        }
+        
+        # Remove fields not present
+        # Get table fields
+        tbl_fields = tbl_field_list$column_name[tbl_field_list$table_name == tolower("tk_parameters")] %>%
+          .[!. %in% col_exclude]
+        tk_params_sheets$tk_parameters = tk_params_sheets$tk_parameters %>%
+          dplyr::select(dplyr::any_of(tbl_fields))
+        
+        n_id = tbl_id_list[[tolower(sheet)]]
+        tk_params_sheets$tk_parameters = tk_params_sheets$tk_parameters %>%
+                        # Set ID values
+          dplyr::mutate(id = as.numeric(seq(n_id, (n_id + dplyr::n() - 1))),
+                        # Add push category
+                        qc_push_category = "Add")
+        
+        # Append to doc_sheet_list
+        doc_sheet_list = doc_sheet_list %>%
+          append(tk_params_sheets)
+      }
       
       # Export loaded template log
       output_dir = file.path("output", "Document Loading", to_load$curation_set_tag[i])
       if(!dir.exists(output_dir)) dir.create(output_dir, recursive = TRUE)
-      
+    
       # Write export file  
       writexl::write_xlsx(doc_sheet_list, path=paste0(output_dir,"/", 
                                                       basename(to_load$filename[i]) %>% gsub(".xlsx", "", .), 

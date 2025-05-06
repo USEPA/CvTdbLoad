@@ -15,6 +15,10 @@ conc_series = db_query_cvt("SELECT DISTINCT fk_series_id FROM cvt.conc_time_valu
 #Series without Conc Information
 no_conc_series = db_query_cvt(paste0("SELECT id, fk_study_id, fk_subject_id FROM cvt.series WHERE id not in (",
                                   toString(conc_series$fk_series_id),")"))
+# Series without conc Information but with tk_params information
+no_conc_series_tk_params = db_query_cvt(paste0("SELECT id, fk_study_id, fk_subject_id FROM cvt.series WHERE id not in (",
+                                     toString(conc_series$fk_series_id),") and ",
+                                     "id in (SELECT fk_series_id FROm cvt.tk_parameters)"))
 #Series without study information
 no_study_series = db_query_cvt("SELECT * FROM cvt.series where fk_study_id IS NULL")
 #Series without subject information
@@ -33,7 +37,10 @@ cat("---Report Start ---\n",
     nrow(no_conc_series)," series without conc data connected to ", 
         length(unique(no_conc_series$fk_study_id)), " studies and ", 
         length(unique(no_conc_series$fk_subject_id))," subjects\n",
-    nrow(no_study_series), " series without a study link\n",
+  nrow(no_conc_series_tk_params), " series without conc data but tk_parameters connection for ",  
+        length(unique(no_conc_series_tk_params$fk_study_id)), " studies and ", 
+        length(unique(no_conc_series_tk_params$fk_subject_id))," subjects\n",
+  nrow(no_study_series), " series without a study link\n",
   nrow(no_study_series), " series without a subject link\n",
   nrow(no_doc_study), " studies without any document link\n",
   nrow(no_ref_doc_study), " studies without a reference document link\n",
