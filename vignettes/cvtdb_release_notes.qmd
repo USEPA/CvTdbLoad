@@ -168,20 +168,26 @@ chemical_route_species_summary = chemical_route_summary %>%
 
 ## New Datasets
 
+-   Showa dataset
+    -   **Add details**
 -   CEBS NTP documents (New and Updated) (\> 30)
     -   The Chemical Effects in Biological Systems (CEBS) database is a comprehensive, publicly available database hosted by the National Toxicology Program (NTP). The data sourced from CEBS is primarily focused on oral gavage and intravenous routes of administration to rats and mice
 -   PK Working Group identified documents (\> 55)
     -   The PK Working Group (PKWG) as part of the US Environmental Protection Agency’s Integrated Risk Information System (IRIS) toxicokinetic assessments. These data contain toxicity values for chronic exposures and identifies and characterizes the health hazards of environmentally relevant chemicals. Chemicals included were PCBs, PFOS, PFOA, and PFAS.
 -   3M documents (31)
     -   3M documents that were obtained via legal action with the Department of Justice. This set contains over 9,000 documents, 6,546 of which are currently being analyzed. The documents focus on PFAS monitoring and testing and are very heterogeneous.
+-   Dermal study documents (18)
+    -   **Add details**
+-   Inhalation study documents (14)
+    -   **Add details**
 
 ## New Features
 
 -   Updated standard operating procedures for data curation and QC.
 -   New fields added to study and subject fields to improve capture of study and subject attributes
     -   ex. Subject health_status captures key differences in physiology across subjects that may impact measurable time-series data
--   New/updated dermal study metadata model (\~18).
--   New/updated inhalation study metadata model (\~14).
+-   New/updated dermal study metadata model.
+-   New/updated inhalation study metadata model.
 -   Streamlined data processing workflow.
 -   Standardized QC workflow and programmatic approaches to flag records for review.
     -   QC of 62 identified documents.
@@ -199,9 +205,12 @@ chemical_route_species_summary = chemical_route_summary %>%
 
 ## Known Issues
 
+-   \*\*Add description of data dictionary update decisions and why certain entries were updated or left blank
+
 ## References
 
 -   Sayre, R.R., Wambaugh, J.F. & Grulke, C.M (2020). Database of pharmacokinetic time-series data and parameters for 144 environmental chemicals. Sci Data 7(122). https://doi.org/10.1038/s41597-020-0455-1.
+-   \*\*Add reference to Gil's paper and others?
 
 ## Database Field Definitions
 

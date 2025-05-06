@@ -260,7 +260,9 @@ All sample queries below provide the pure `SQL` and `dplyr` approaches in tabbed
 
 ```{r}
 #| echo: FALSE
-query <- "SELECT pmid, year, first_author, title FROM documents LIMIT 15"
+query <- paste0("SELECT pmid, year, first_author, title ",
+                "FROM documents WHERE first_author IS NOT NULL AND ",
+                "title IS NOT NULL LIMIT 15 ")
 df_sql <- query_db(query = query, con_type = "sqlite")
 ```
 
@@ -275,6 +277,7 @@ df_dbplyr <- tryCatch(
     tbl(con, "documents") %>%
       head(15) %>%
       select(pmid, year, first_author, title) %>%
+      filter(!is.na(first_author), !is.na(title)) %>%
       collect() %>%
       as.data.frame()
   },
@@ -303,7 +306,9 @@ compare = compare_sql_dbplyr()
 ##### df_sql
 
 ```         
-query <- "SELECT pmid, year, first_author, title FROM documents LIMIT 15"
+query <- paste0("SELECT pmid, year, first_author, title ",
+                "FROM documents WHERE first_author IS NOT NULL AND ",
+                "title IS NOT NULL LIMIT 15 ")
 df_sql <- query_db(query = query, con_type = "sqlite")
 ```
 
@@ -320,6 +325,7 @@ df_dbplyr <- tryCatch(
 tbl(con, "documents") %>%
   head(15) %>%
   select(pmid, year, first_author, title) %>%
+  filter(!is.na(first_author), !is.na(title)) %>%
   collect() %>%
   as.data.frame()
   },
