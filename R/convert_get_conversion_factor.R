@@ -49,6 +49,7 @@ convert_get_conversion_factor <- function(conv_factor=1){
        ppbv = list(`ug/ml`="/1000"), #1 ppb = 0.001 ug/mL,
        ppb = list(`ug/ml`="/1000"), #1 ppb = 0.001 ug/mL,
        `nmol/l` = list(`ug/ml`=paste0("*",conv_factor,"/1000000")), #1 nmol/L*(1mol/1000000000nmol)*(conv_factor g/1mol)*(1000000ug/1g)*(1L/1000mL)=1*conv_factor/1000000
+       `mmol/l` = list(`ug/ml`=paste0("*",conv_factor)),
        `nmol/ml` = list(`ug/ml`=paste0("*",conv_factor,"/1000")),
        `nmoles/ml` = list(`ug/ml`=paste0("*",conv_factor,"/1000")),
        `umol/l` = list(`umol/l`="/1", `ug/ml`=paste0("*",conv_factor,"/1000")), #1000 less than nmol/l conversion 

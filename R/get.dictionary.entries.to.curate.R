@@ -10,7 +10,7 @@ get.dictionary.entries.to.curate <- function(schema, full.report=FALSE){
   fk_list = list(
     administration_form_dict = c("studies", "fk_administration_form_id"),
     administration_method_dict  = c("studies", "fk_administration_method_id"),
-    administration_route_dict  = c("studies", "fk_administration_form_id"),
+    administration_route_dict  = c("studies", "fk_administration_route_id"),
     conc_medium_dict  = c("series", "fk_conc_medium_id"),
     dose_frequency_dict  = c("studies", "fk_dose_frequency_id")
   )
@@ -70,7 +70,9 @@ get.dictionary.entries.to.curate <- function(schema, full.report=FALSE){
       ## Chemical dictionary fields (analyzed chemical information)
       "l.analyzed_chem_dtxsid, l.analyzed_chem_name_original, l.analyzed_chem_casrn, l.analyzed_chem_name, ",
       ## conc_medium dictionary fields
-      "i.conc_medium_original, i.conc_medium_normalized ", 
+      "i.conc_medium_original, i.conc_medium_normalized, ", 
+      # tk_parameters
+      "m.* ",
       
       # Join with series table by series ID
       "FROM cvt.series b ",
@@ -97,7 +99,9 @@ get.dictionary.entries.to.curate <- function(schema, full.report=FALSE){
       "FROM cvt.chemicals) as k ON c.fk_dosed_chemical_id = k.id ",
       "LEFT JOIN (SELECT id, dsstox_substance_id as analyzed_chem_dtxsid, ",
       "chemical_name_original as analyzed_chem_name_original, dsstox_casrn as analyzed_chem_casrn, preferred_name as analyzed_chem_name ",
-      "FROM cvt.chemicals) as l ON b.fk_analyzed_chemical_id = l.id "
+      "FROM cvt.chemicals) as l ON b.fk_analyzed_chemical_id = l.id ",
+      # tk_parameters table join
+      "LEFT JOIN cvt.tk_parameters m ON b.id = m.fk_series_id"
     ) %>% db_query_cvt() # %>%
       # # Remove extraneous fields 
       # dplyr::select(-dplyr::any_of(c(

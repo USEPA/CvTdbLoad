@@ -62,10 +62,11 @@ load_cvt_templates_to_db <- function(
       
       tk_params_sheets = list()
       # Special tk_params table curation case
-      if("tk_params" %in% names(doc_sheet_list)){
-        tk_params_sheets = list(
-          tk_parameters = doc_sheet_list$tk_params
-        )
+      if(any(c("tk_params", "tk_parameters") %in% names(doc_sheet_list))){
+        tk_params_sheets = doc_sheet_list[c("tk_params", "tk_parameters")] %>%
+            purrr::compact()
+        # Rename to it's tk_parameters
+        names(tk_params_sheets) <- "tk_parameters"
         # Remove excess name whitespace
         names(tk_params_sheets$tk_parameters) <- stringr::str_squish(names(tk_params_sheets$tk_parameters))
       }
@@ -405,7 +406,7 @@ load_cvt_templates_to_db <- function(
         tk_params_sheets$tk_parameters = tk_params_sheets$tk_parameters %>%
           dplyr::select(dplyr::any_of(tbl_fields))
         
-        n_id = tbl_id_list[[tolower(sheet)]]
+        n_id = tbl_id_list[["tk_parameters"]]
         tk_params_sheets$tk_parameters = tk_params_sheets$tk_parameters %>%
                         # Set ID values
           dplyr::mutate(id = as.numeric(seq(n_id, (n_id + dplyr::n() - 1))),

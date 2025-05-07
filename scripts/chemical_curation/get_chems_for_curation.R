@@ -36,7 +36,11 @@ get_chems_for_curation <- function(){
                        )) %>%
                        dplyr::select(cleaned_name = name, cleaned_casrn = casrn, checksum_pass = cs)
                      ) %>%
-    dplyr::mutate(dplyr::across(where(is.character), ~na_if(., "NA"))) %>% 
+    dplyr::mutate(dplyr::across(where(is.character), ~na_if(., "NA")),
+                  cleaned_casrn = dplyr::case_when(
+                    checksum_pass %in% c(0) ~ NA,
+                    TRUE ~ checksum_pass
+                  )) %>% 
     # Filter out any without cleaned information
     tidyr::unite(cleaned_name, cleaned_casrn, col = "filter_key", sep = "_", remove=FALSE) %>%
     dplyr::filter(filter_key != "NA_NA") %>%

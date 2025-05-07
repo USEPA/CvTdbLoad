@@ -33,8 +33,8 @@ no_series_study = db_query_cvt("SELECT * FROM cvt.studies WHERE id NOT in (SELEC
 no_series_subject = db_query_cvt("SELECT * FROM cvt.subjects WHERE id NOT in (SELECT DISTINCT fk_subject_id FROM cvt.series)")
 
 cat("---Report Start ---\n",
-    paste0(nrow(conc_missing_series), " conc entries without a series link\n"),
-    nrow(no_conc_series)," series without conc data connected to ", 
+  paste0(nrow(conc_missing_series), " conc entries without a series link\n"),
+  nrow(no_conc_series)," series without conc data connected to ", 
         length(unique(no_conc_series$fk_study_id)), " studies and ", 
         length(unique(no_conc_series$fk_subject_id))," subjects\n",
   nrow(no_conc_series_tk_params), " series without conc data but tk_parameters connection for ",  
