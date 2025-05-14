@@ -309,6 +309,7 @@ compare = compare_sql_dbplyr()
 query <- paste0("SELECT pmid, year, first_author, title ",
                 "FROM documents WHERE first_author IS NOT NULL AND ",
                 "title IS NOT NULL LIMIT 15 ")
+
 df_sql <- query_db(query = query, con_type = "sqlite")
 ```
 
@@ -322,12 +323,12 @@ con <- connect_to_db(con_type = "sqlite")
 # Wrapped in a tryCatch so the connection is always closed in case of error
 df_dbplyr <- tryCatch(
   {
-tbl(con, "documents") %>%
-  head(15) %>%
-  select(pmid, year, first_author, title) %>%
-  filter(!is.na(first_author), !is.na(title)) %>%
-  collect() %>%
-  as.data.frame()
+    tbl(con, "documents") %>%
+      head(15) %>%
+      select(pmid, year, first_author, title) %>%
+      filter(!is.na(first_author), !is.na(title)) %>%
+      collect() %>%
+      as.data.frame()
   },
   error=function(e) {
     message(e)
@@ -453,6 +454,7 @@ query <- paste0("SELECT distinct e.pmid, b.analyte_name_original, c.dose_level_o
             # are alphanumeric strings
             paste0(pmid_list, collapse="', '"),
             "')")
+            
 df_sql <- query_db(query = query, 
            con_type = "sqlite")
            
@@ -471,39 +473,39 @@ con <- connect_to_db(con_type = "sqlite")
 # Wrapped in a tryCatch so the connection is always closed in case of error
 df_dbplyr <- tryCatch(
   {
-# Store table pointers with column name prefixes
-conc = tbl(con, "conc_time_values") %>% rename_all(function(x) paste0("a.", x))
-series = tbl(con, "series") %>% rename_all(function(x) paste0("b.", x))
-studies = tbl(con, "studies") %>% rename_all(function(x) paste0("c.", x))
-subjects = tbl(con, "subjects") %>% rename_all(function(x) paste0("d.", x))
-docs = tbl(con, "documents") %>% rename_all(function(x) paste0("e.", x))
-
-out <- conc %>%
-  left_join(series, 
-            by=c("a.fk_series_id"="b.id")) %>%
-  left_join(studies, 
-            by=c("b.fk_study_id"="c.id")) %>%
-  left_join(subjects, 
-            by=c("b.fk_subject_id"="d.id")) %>%
-  left_join(docs, 
-            by=c("c.fk_extraction_document_id"="e.id")) %>%
-  filter(e.pmid %in% pmid_list) %>%
-  select(e.pmid, b.analyte_name_original, c.dose_level_original, 
-         c.dose_level_units_original, d.species, b.conc_medium_original, 
-         a.time_original, b.time_units_original, a.conc_original, b.conc_units_original) %>%
-  distinct() %>%
-  collect() %>%
-  as.data.frame()
-
-# Remove column prefixes
-colnames(out) = sub('.*\\.', '', colnames(out))
-
-out
+    # Store table pointers with column name prefixes
+    conc = tbl(con, "conc_time_values") %>% rename_all(function(x) paste0("a.", x))
+    series = tbl(con, "series") %>% rename_all(function(x) paste0("b.", x))
+    studies = tbl(con, "studies") %>% rename_all(function(x) paste0("c.", x))
+    subjects = tbl(con, "subjects") %>% rename_all(function(x) paste0("d.", x))
+    docs = tbl(con, "documents") %>% rename_all(function(x) paste0("e.", x))
+    
+    out <- conc %>%
+      left_join(series, 
+                by=c("a.fk_series_id"="b.id")) %>%
+      left_join(studies, 
+                by=c("b.fk_study_id"="c.id")) %>%
+      left_join(subjects, 
+                by=c("b.fk_subject_id"="d.id")) %>%
+      left_join(docs, 
+                by=c("c.fk_extraction_document_id"="e.id")) %>%
+      filter(e.pmid %in% pmid_list) %>%
+      select(e.pmid, b.analyte_name_original, c.dose_level_original, 
+             c.dose_level_units_original, d.species, b.conc_medium_original, 
+             a.time_original, b.time_units_original, a.conc_original, b.conc_units_original) %>%
+      distinct() %>%
+      collect() %>%
+      as.data.frame()
+    
+    # Remove column prefixes
+    colnames(out) = sub('.*\\.', '', colnames(out))
+    
+    out
 
   },
   error=function(e) {
     message(e)
-return(NULL)
+    return(NULL)
   },
   finally={
     dbDisconnect(con)
@@ -824,6 +826,297 @@ df_dbplyr <- tryCatch(
 :::
 
 > **Note:** It is important to make the distinction between the "dosed substance" (fk_dosed_chemical_id) from the Studies table, and the "analyzed chemical" (fk_analyzed_chemical_id) from the Series table. The dosed substance represents the chemical administered to the subject for a study, whereas the analyzed substance represents the chemical being measured in the subject as a result of the dosed substance. These substances may be the same, a radiolabeled version, or multiple analytes that derived from a single dosed substance. One may need to alter a query to use either the dosed substance or analyzed chemical identifier fields to search for a chemical of interest depending on intended use.
+
+#### Filter for chemicals that have conc time data for species and administartion routes of interest
+
+An example of querying for CvTdb chemicals that have conc time data for species and administration routes of interest.
+
+::: {.panel-tabset .nav-pills}
+```{r}
+#| echo: FALSE
+
+# DTXSID list of interest
+dtxsid_list <- c('DTXSID8031865','DTXSID40892486')
+                # Select columns of interest
+query <- paste0(
+  "SELECT distinct ",
+  # Studies table fields
+  "c.fk_dosed_chemical_id, ",
+  ## Chemical dictionary fields (dosed chemical information)
+  "k.dosed_chem_dtxsid, k.dosed_chem_name_original, k.dosed_chem_casrn, k.dosed_chem_name, ",
+  # Series table fields
+  "b.fk_analyzed_chemical_id, ",
+  
+  ## Chemical dictionary fields (analyzed chemical information)
+  "l.analyzed_chem_dtxsid, l.analyzed_chem_name_original, l.analyzed_chem_casrn, l.analyzed_chem_name ",
+  
+  # Join with series table by series ID
+  "FROM series b ",
+  
+  # Join to studies table by study ID
+  "LEFT JOIN studies c ON b.fk_study_id = c.id ",
+  
+  # Join to subjects table by subject ID
+  "LEFT JOIN subjects d ON b.fk_subject_id = d.id ",
+  
+  # Join to dictionary tables
+  "LEFT JOIN administration_route_dict h ON c.fk_administration_route_id = h.id ",
+  
+  # Rename chemical fields for dosed vs. analyzed chemical record foreign keys
+  "LEFT JOIN (SELECT id, dsstox_substance_id as dosed_chem_dtxsid, ",
+  "chemical_name_original as dosed_chem_name_original, dsstox_casrn as dosed_chem_casrn, preferred_name as dosed_chem_name ",
+  "FROM chemicals) as k ON c.fk_dosed_chemical_id = k.id ",
+  "LEFT JOIN (SELECT id, dsstox_substance_id as analyzed_chem_dtxsid, ",
+  "chemical_name_original as analyzed_chem_name_original, dsstox_casrn as analyzed_chem_casrn, preferred_name as analyzed_chem_name ",
+  "FROM chemicals) as l ON b.fk_analyzed_chemical_id = l.id ",
+  
+  # Filter to DTXSID of interest
+  "WHERE (k.dosed_chem_dtxsid in ('", paste0(dtxsid_list, collapse = "', '"),
+  "') OR l.analyzed_chem_dtxsid in ('", paste0(dtxsid_list, collapse = "', '"), "')) ",
+  # Filter to species of interest
+  "AND d.species IN ('rat', 'human') ",
+  # Filter to administration route of interest
+  "AND h.administration_route_normalized IN ('oral','iv') ",
+  # Filter to series with conc_time_values
+  "AND b.id IN (SELECT distinct fk_series_id FROM conc_time_values)"
+)
+df_sql <- query_db(query = query, 
+               con_type = "sqlite")
+```
+
+```{r}
+#| echo: FALSE
+con <- connect_to_db(con_type = "sqlite")
+
+# Wrapped in a tryCatch so the connection is always closed in case of error
+df_dbplyr <- tryCatch(
+  {
+    # Store table pointers with column name prefixes
+    # Filter series table to those with conc_time_values
+    series = con %>% tbl(sql(paste0("SELECT * FROM series WHERE id IN ",
+                            "(SELECT distinct fk_series_id FROM conc_time_values)"))) %>% 
+      rename_all(function(x) paste0("b.", x))
+    studies = tbl(con, "studies") %>% rename_all(function(x) paste0("c.", x))
+    subjects = tbl(con, "subjects") %>% rename_all(function(x) paste0("d.", x))
+    
+    administration_route_dict = tbl(con, "administration_route_dict") %>% 
+      rename_all(function(x) paste0("h.", x))
+    
+    dosed_chemicals = tbl(con, "chemicals") %>% 
+      dplyr::select(id, dosed_chem_dtxsid = dsstox_substance_id, 
+                    dosed_chem_name_original = chemical_name_original, 
+                    dosed_chem_casrn = dsstox_casrn, 
+                    dosed_chem_name = preferred_name) %>%
+      rename_all(function(x) paste0("k.", x))
+    
+    analyzed_chemicals = tbl(con, "chemicals") %>% 
+      dplyr::select(id, analyzed_chem_dtxsid = dsstox_substance_id,
+                    analyzed_chem_name_original = chemical_name_original, 
+                    analyzed_chem_casrn = dsstox_casrn, 
+                    analyzed_chem_name = preferred_name) %>%
+      rename_all(function(x) paste0("l.", x))
+    
+    out <- series %>%
+      left_join(studies, 
+                by=c("b.fk_study_id"="c.id")) %>%
+      left_join(subjects, 
+                by=c("b.fk_subject_id"="d.id")) %>%
+      left_join(administration_route_dict, 
+                by=c("c.fk_administration_route_id"="h.id")) %>%
+      left_join(dosed_chemicals, 
+                by=c("c.fk_dosed_chemical_id"="k.id")) %>%
+      left_join(analyzed_chemicals, 
+                by=c("b.fk_analyzed_chemical_id"="l.id")) %>%
+      filter(
+        k.dosed_chem_dtxsid %in% dtxsid_list | 
+          l.analyzed_chem_dtxsid %in% dtxsid_list
+             ) %>%
+      filter(
+        d.species %in% c('rat', 'human'),
+        h.administration_route_normalized %in% c('oral','iv')
+             ) %>%
+      select(# Studies table fields
+ # Studies table fields
+  c.fk_dosed_chemical_id,
+  ## Chemical dictionary fields (dosed chemical information)
+  k.dosed_chem_dtxsid, k.dosed_chem_name_original, k.dosed_chem_casrn, k.dosed_chem_name,
+  # Series table fields
+  b.fk_analyzed_chemical_id,
+  ## Chemical dictionary fields (analyzed chemical information)
+  l.analyzed_chem_dtxsid, l.analyzed_chem_name_original, l.analyzed_chem_casrn, l.analyzed_chem_name
+  ) %>%
+      distinct() %>%
+      collect() %>%
+      as.data.frame()
+    
+    # Remove column prefixes
+    colnames(out) = sub('.*\\.', '', colnames(out))
+    
+    out
+  
+  },
+  error=function(e) {
+    message(e)
+    return(NULL)
+  },
+  finally={
+    dbDisconnect(con)
+  }
+)
+```
+
+```{r}
+#| echo: FALSE
+compare = compare_sql_dbplyr()
+```
+
+`r compare`
+
+##### df_sql
+
+```         
+# DTXSID list of interest
+dtxsid_list <- c('DTXSID8031865','DTXSID40892486')
+
+# Select columns of interest
+query <- paste0(
+  "SELECT distinct ",
+  # Studies table fields
+  "c.fk_dosed_chemical_id, ",
+  ## Chemical dictionary fields (dosed chemical information)
+  "k.dosed_chem_dtxsid, k.dosed_chem_name_original, k.dosed_chem_casrn, k.dosed_chem_name, ",
+  # Series table fields
+  "b.fk_analyzed_chemical_id, ",
+  ## Chemical dictionary fields (analyzed chemical information)
+  "l.analyzed_chem_dtxsid, l.analyzed_chem_name_original, l.analyzed_chem_casrn, l.analyzed_chem_name ",
+  
+  # Join with series table by series ID
+  "FROM series b ",
+  
+  # Join to studies table by study ID
+  "LEFT JOIN studies c ON b.fk_study_id = c.id ",
+  
+  # Join to subjects table by subject ID
+  "LEFT JOIN subjects d ON b.fk_subject_id = d.id ",
+  
+  # Join to dictionary tables
+  "LEFT JOIN administration_route_dict h ON c.fk_administration_route_id = h.id ",
+  
+  # Rename chemical fields for dosed vs. analyzed chemical record foreign keys
+  "LEFT JOIN (SELECT id, dsstox_substance_id as dosed_chem_dtxsid, ",
+  "chemical_name_original as dosed_chem_name_original, dsstox_casrn as dosed_chem_casrn, preferred_name as dosed_chem_name ",
+  "FROM chemicals) as k ON c.fk_dosed_chemical_id = k.id ",
+  "LEFT JOIN (SELECT id, dsstox_substance_id as analyzed_chem_dtxsid, ",
+  "chemical_name_original as analyzed_chem_name_original, dsstox_casrn as analyzed_chem_casrn, preferred_name as analyzed_chem_name ",
+  "FROM chemicals) as l ON b.fk_analyzed_chemical_id = l.id ",
+  
+  # Filter to DTXSID of interest
+  "WHERE k.dosed_chem_dtxsid in ('", paste0(dtxsid_list, collapse = "', '"),
+  "') OR l.analyzed_chem_dtxsid in ('", paste0(dtxsid_list, collapse = "', '"), "') ",
+  # Filter to species of interest
+  "AND d.species IN ('rat', 'human') ",
+  # Filter to administration route of interest
+  "AND h.administration_route_normalized IN ('oral','iv') ",
+  # Filter to series with conc_time_values
+  "AND b.id IN (SELECT distinct fk_series_id FROM conc_time_values)"
+)
+
+df_sql <- query_db(query = query, 
+               con_type = "sqlite")
+           
+```
+
+`r DT::datatable(df_sql, options = list(scrollX = TRUE, columnDefs = list(list(className = 'dt-left', targets = "_all"))), rownames = FALSE)`
+
+##### df_dbplyr
+
+```         
+# DTXSID list of interest
+dtxsid_list <- c('DTXSID8031865','DTXSID40892486')
+
+con <- connect_to_db(con_type = "sqlite")
+
+# Wrapped in a tryCatch so the connection is always closed in case of error
+df_dbplyr <- tryCatch(
+  {
+    # Store table pointers with column name prefixes
+    # Filter series table to those with conc_time_values
+    series = con %>% tbl(sql(paste0("SELECT * FROM series WHERE id IN ",
+                            "(SELECT distinct fk_series_id FROM conc_time_values)"))) %>% 
+      rename_all(function(x) paste0("b.", x))
+    studies = tbl(con, "studies") %>% rename_all(function(x) paste0("c.", x))
+    subjects = tbl(con, "subjects") %>% rename_all(function(x) paste0("d.", x))
+    
+    administration_route_dict = tbl(con, "administration_route_dict") %>% 
+      rename_all(function(x) paste0("h.", x))
+    
+    dosed_chemicals = tbl(con, "chemicals") %>% 
+      dplyr::select(id, dosed_chem_dtxsid = dsstox_substance_id, 
+                    dosed_chem_name_original = chemical_name_original, 
+                    dosed_chem_casrn = dsstox_casrn, 
+                    dosed_chem_name = preferred_name) %>%
+      rename_all(function(x) paste0("k.", x))
+    
+    analyzed_chemicals = tbl(con, "chemicals") %>% 
+      dplyr::select(id, analyzed_chem_dtxsid = dsstox_substance_id,
+                    analyzed_chem_name_original = chemical_name_original, 
+                    analyzed_chem_casrn = dsstox_casrn, 
+                    analyzed_chem_name = preferred_name) %>%
+      rename_all(function(x) paste0("l.", x))
+    
+    out <- series %>%
+      left_join(studies, 
+                by=c("b.fk_study_id"="c.id")) %>%
+      left_join(subjects, 
+                by=c("b.fk_subject_id"="d.id")) %>%
+      left_join(administration_route_dict, 
+                by=c("c.fk_administration_route_id"="h.id")) %>%
+      left_join(dosed_chemicals, 
+                by=c("c.fk_dosed_chemical_id"="k.id")) %>%
+      left_join(analyzed_chemicals, 
+                by=c("b.fk_analyzed_chemical_id"="l.id")) %>%
+      filter(
+        k.dosed_chem_dtxsid %in% dtxsid_list | 
+          l.analyzed_chem_dtxsid %in% dtxsid_list
+             ) %>%
+      filter(
+        d.species %in% c('rat', 'human'),
+        h.administration_route_normalized %in% c('oral','iv')
+             ) %>%
+      select(
+          # Studies table fields
+          c.fk_dosed_chemical_id,
+          ## Chemical dictionary fields (dosed chemical information)
+          k.dosed_chem_dtxsid, k.dosed_chem_name_original, k.dosed_chem_casrn, k.dosed_chem_name,
+          # Series table fields
+          b.fk_analyzed_chemical_id,
+          ## Chemical dictionary fields (analyzed chemical information)
+          l.analyzed_chem_dtxsid, l.analyzed_chem_name_original, l.analyzed_chem_casrn, l.analyzed_chem_name
+          ) %>%
+      distinct() %>%
+      collect() %>%
+      as.data.frame()
+    
+    # Remove column prefixes
+    colnames(out) = sub('.*\\.', '', colnames(out))
+    
+    out
+  
+  },
+  error=function(e) {
+    message(e)
+    return(NULL)
+  },
+  finally={
+    dbDisconnect(con)
+  }
+)
+```
+
+`r DT::datatable(df_dbplyr, options = list(scrollX = TRUE, columnDefs = list(list(className = 'dt-left', targets = "_all"))), rownames = FALSE)`
+
+<!-- End of tabset -->
+:::
 
 ## Database Field Definitions
 
