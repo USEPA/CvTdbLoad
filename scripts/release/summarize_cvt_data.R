@@ -42,15 +42,10 @@ summarize_cvt_data <- function(){
       dplyr::pull(administration_route_normalized_n) %>%
       paste0(collapse = ", "),
     
-    `Total Series` = db_query_cvt(paste0("SELECT count(*) as n FROM cvt.series WHERE id IN ",
-                                         "(SELECT distinct fk_series_id FROM cvt.conc_time_values) ",
-                                         "AND fk_study_id IN (SELECT id FROM cvt.studies WHERE fk_extraction_document_id IN (",
-                                         "SELECT id FROM cvt.documents))")) %>%
-      dplyr::pull(n),
-    
     `Total Subjects` = db_query_cvt(paste0("SELECT count(*) as n FROM cvt.subjects ",
                                            "WHERE id in (SELECT fk_subject_id FROM cvt.series)")) %>%
       dplyr::pull(n),
+    
     `Total Species by Study Count` = db_query_cvt(paste0(
       "SELECT distinct a.fk_study_id, b.species ",
       "FROM cvt.series a ",

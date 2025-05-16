@@ -40,6 +40,20 @@ if(file.exists("../scripts/release/summarize_cvt_data.R")){
   stop("Cannot find summarize_cvt_data script...", getwd())
 }
 
+v_compare = file.path("../output/release/version_comparison/v2.0.0.RData")
+# Check if comparison stats exist, if not create them
+if(!file.exists(v_compare)){
+  source("../scripts/release/cvtdb_release_comparison_stats.R", .GlobalEnv)
+  cvtdb_release_comparison_stats()
+}
+
+load(v_compare)
+
+# Manually select version colors
+version_palette = c("v1.0.0"="#4454C4FF",
+                    "v1.1.0"="#A2FC3CFF",
+                    "v2.0.0"="#FABA39FF")
+
 # https://stackoverflow.com/questions/37755037/how-to-add-code-folding-to-output-chunks-in-rmarkdown-html-documents
 # https://stackoverflow.com/questions/56550878/in-r-markdown-how-to-output-sortable-table-while-r-chunk-is-set-to-results-a
 ```
@@ -117,6 +131,85 @@ cvt_summary_out = cvt_summary %>%
 `r cvt_summary_out`
 
 ### Summary Visualizations
+
+#### Version Comparison
+
+The following tabs of tables summarize count differences between CvTdb versions.
+
+::: {.panel-tabset .nav-pills}
+```{r}
+#| label: "version-comparison-stats"
+#| echo: FALSE
+#| warning: FALSE
+#| results: 'asis'
+#| fig-width: 12
+#| fig-height: 7
+
+vc_stat_list = sort(unique(cvtdb_release_comparison$stat))
+
+# Create list of plots
+vc_plots = lapply(vc_stat_list, function(stat){
+  if(stat %in% c(
+    "Total Administration Routes by Study Count",
+    "Total Species by Study Count"
+  )) {
+    
+    ggplot2::ggplot(cvtdb_release_comparison %>%
+                      dplyr::filter(stat == !!stat) %>%
+                      dplyr::arrange(version, stat) %>%
+                      tidyr::separate_longer_delim(
+                        cols = count,
+                        delim = "; "
+                      ) %>%
+                      tidyr::separate_wider_delim(
+                       cols = count,
+                       names = c("label", "count"),
+                       delim = " - "
+                      ) %>%
+                      dplyr::mutate(count = as.numeric(count)),
+                  ggplot2::aes(x=label, y=count, fill=version, label = prettyNum(count, big.mark = ","))) +
+      ggplot2::geom_bar(stat = "identity", position = "dodge") + 
+      # Manually set the palette
+      ggplot2::scale_fill_manual(values=version_palette, drop=TRUE) +
+      ggplot2::geom_text(
+        position = ggplot2::position_dodge(width = .9),
+        check_overlap = TRUE
+        ) + 
+      ggplot2::labs(y = "Count",
+                  x = stat %>%
+                    stringr::str_extract("Administration Routes|Species"),
+                  title = paste0("CvTdb Version Comparison - ", stat))
+  } else {
+  ggplot2::ggplot(cvtdb_release_comparison %>%
+                    dplyr::filter(stat == !!stat) %>%
+                    dplyr::arrange(version, stat) %>%
+                    dplyr::mutate(count = as.numeric(count)),
+                  ggplot2::aes(x=as.numeric(version), y=count, fill=stat, label = prettyNum(count, big.mark = ",")))+
+    ggplot2::geom_area(fill="#69b3a2", position = 'identity', alpha=0.4) +
+    ggplot2::geom_line(color="#69b3a2", lwd = 2) +
+    ggplot2::geom_point(color="#69b3a2", size = 3) +
+    ggplot2::geom_text(check_overlap = TRUE) + 
+    # ggplot2::facet_wrap(~stat, scales = "free") +
+    ggplot2::scale_x_discrete(limits = levels(cvtdb_release_comparison$version)) +
+    # ggplot2::theme(axis.text.x = ggplot2::element_text(angle = 45, hjust=0.9, vjust=1.0)) +
+    ggplot2::labs(y = "Count",
+                  x = "CvTdb Version",
+                  title = paste0("CvTdb Version Comparison - ", stat)) + 
+    ggplot2::theme(legend.position="none")
+  }
+})
+
+# Programmatically generate the tabset of tables with headers
+for(i in seq_len(length(vc_stat_list))){
+  cat('###### ', vc_stat_list[i], '\n\n')
+  print(vc_plots[[i]])
+  cat('\n\n')
+}
+```
+
+<!-- End of tabset -->
+:::
+i. Total Subjects changes dramatically between v1.1.0 and v2.0.0 due to an effort to move to create unique subject table entries per extraction document, rather than having documents share the same subject entry. This helped untangle and prevent cases where a document is QC'd and subject information is updated, causing subject information to be incorrect for other linked documents. Also, NTP documents were re-extracted to report on a per-subject basis, often having hundreds of entries.
 
 ```{r}
 #| label: "tbl-cvt-chemical_route_species_summary"
@@ -237,6 +330,7 @@ i. Note, counts are by unique studies, where a single study may have dosed throu
 -   3M documents (31)
     -   3M documents that were obtained via legal action with the Department of Justice. This set contains over 9,000 documents, 6,546 of which are currently being analyzed. The documents focus on PFAS monitoring and testing and are very heterogeneous.
 -   Dermal (18) and Inhalation (14) study documents
+    -   Expanded dermal and inhalation route study metadata data model.
     -   Documents as referenced in Thompson et al. 2021.
     -   Curated dermal data used in Meade et al. 2023 SOT poster.
     -   **Upcoming publication from Celia Schacht**
