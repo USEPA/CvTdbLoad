@@ -60,7 +60,7 @@ version_palette = c("v1.0.0"="#4454C4FF",
 
 ## Background
 
-The Concentration versus Time Database (CvTdb) contains manually curated time-series data and associated metadata for *in vivo* toxicokinetic ("TK") studies on organic chemicals available in the scientific literature. The database has been developed in close coordination with leading researchers at the EPA with specialties relating to toxicology and toxicokinetic modeling. These data inform chemical safety analysis and allow evaluation of the relationship between administered doses and internal concentrations of a substance. These data can also be used to build or evaluate physiologically based pharmacokinetic (PBPK) and physiologically-based (PBTK) models (such as the [*httk*](https://cran.r-project.org/web/packages/httk/index.html) R package), which simulate the absorption, distribution, metabolism, and elimination of a chemical. The database also contains toxicokinetic parameters, including volume of distribution and elimination half-life, which are calculated across all data associated with a particular compound using the publicly available pharmacokinetic curve-fitting software [*invivoPKfit*](https://CRAN.R-project.org/package=invivoPKfit). This version 2.0.0 release builds upon the original v1.0.0 “legacy” database released with Sayre, Wambaugh, and Grulke (2020) and the v1.1.0 database release from 2021 (**Add GitHub release link**) that added the Showa Pharmaceutical University dataset. The code, documentation, and vignettes associated with the database release are available on GitHub ([CompTox-PK-CvTdb](https://github.com/USEPA/CompTox-PK-CvTdb); [CvTdbLoad](https://github.com/USEPA/cvtdbload)). The database is also available for download through the public CCTE EPA Clowder repository (**Add FigShare link**) (no user account required).
+The Concentration versus Time Database (CvTdb) contains manually curated time-series data and associated metadata for *in vivo* toxicokinetic ("TK") studies on organic chemicals available in the scientific literature. The database has been developed in close coordination with leading researchers at the EPA with specialties relating to toxicology and toxicokinetic modeling. These data inform chemical safety analysis and allow evaluation of the relationship between administered doses and internal concentrations of a substance. These data can also be used to build or evaluate physiologically based pharmacokinetic (PBPK) and physiologically-based (PBTK) models (such as the [*httk*](https://cran.r-project.org/web/packages/httk/index.html) R package), which simulate the absorption, distribution, metabolism, and elimination of a chemical. The database also contains toxicokinetic parameters, including volume of distribution and elimination half-life, which are calculated across all data associated with a particular compound using the publicly available pharmacokinetic curve-fitting software [*invivoPKfit*](https://CRAN.R-project.org/package=invivoPKfit). This version 2.0.0 release builds upon the original v1.0.0 “legacy” database released with Sayre, Wambaugh, and Grulke (2020) and the minor v1.1.0 database release from 2021 (**Add GitHub release link**) that added the Showa Pharmaceutical University dataset. The code, documentation, and vignettes associated with the database release are available on GitHub ([CompTox-PK-CvTdb](https://github.com/USEPA/CompTox-PK-CvTdb); [CvTdbLoad](https://github.com/USEPA/cvtdbload)). The database is also available for download through the public CCTE EPA Clowder repository (**Add FigShare link**) (no user account required).
 
 > **Note:** Since a variety of chemicals are considered of interest for CvTdb, beyond pharmaceutical substances, the term "toxicokinetic" (TK) is used preferentially over the term "pharmacokinetic" (PK). However, there may be instances where PK and TK are used interchangeably. We recognize that there are slight differences, but for practicality purposes, the terms may be interchangeably used within discussions.
 
@@ -133,6 +133,12 @@ cvt_summary_out = cvt_summary %>%
 ### Summary Visualizations
 
 #### Version Comparison
+
+Quick notes on past versions:
+-   v1.0.0
+    -   The original database released with the Sayre, Wambaugh, and Grulke (2020) manuscript.
+-   v1.1.0
+    -   Release with minor changes to add/update conc_time_values normalizations, fix a couple study normalized administration routes, and add a new chemicals table to split off chemical information from the studies and series tables.
 
 The following tabs of tables summarize count differences between CvTdb versions.
 
@@ -321,7 +327,7 @@ i. Note, counts are by unique studies, where a single study may have dosed throu
 
 ## New Datasets
 
--   Showa dataset (~200 reference documents) (**added in v1.1.0**, reiterating here)
+-   Showa dataset (~200 reference documents)
     -   Showa Pharmaceutical University/EPA Material Transfer Agreement, as described in Kamiya et al. 2020.
 -   CEBS NTP documents (New and Updated) (\> 50)
     -   The Chemical Effects in Biological Systems (CEBS) database is a comprehensive, publicly available database hosted by the National Toxicology Program (NTP). The data sourced from CEBS is primarily focused on oral gavage and intravenous routes of administration to rats and mice. This also included QC updates and re-extraction of documents, including remapping NTP study identifiers for document metadata (e.g., C55301B -> K55301B). All re-extractions started with a scripted autoextraction of the NTP XLSX raw data files into a CvTdb template, which was then reviewed by a curator for completeness.
