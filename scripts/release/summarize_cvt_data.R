@@ -69,39 +69,54 @@ summarize_cvt_data <- function(){
                                                                       "WHERE dsstox_substance_id IS NOT NULL AND id in (SELECT fk_analyzed_chemical_id FROM cvt.series)")) %>%
       dplyr::pull(n),
     
-    `Total Studies Where the Dosed Chemical is Different from the Analyzed Chemical` = db_query_cvt(
-      paste0(
-        "SELECT ",
-        # "b.id as series_id, b.fk_study_id, ",
-        " DISTINCT b.fk_study_id ",
-        # # Studies table fields
-        # "c.fk_dosed_chemical_id, ",
-        # ## Chemical dictionary fields (dosed chemical information)
-        # "k.dosed_chem_dtxsid, ",
-        # # Series table fields
-        # "b.fk_analyzed_chemical_id, ",
-        # 
-        # ## Chemical dictionary fields (analyzed chemical information)
-        # "l.analyzed_chem_dtxsid ",
-        
-        # Join with series table by series ID
-        "FROM cvt.series b ",
-        
-        # Join to studies table by study ID
-        "LEFT JOIN cvt.studies c ON b.fk_study_id = c.id ",
-        
-        # Rename chemical fields for dosed vs. analyzed chemical record foreign keys
-        "LEFT JOIN (SELECT id, dsstox_substance_id as dosed_chem_dtxsid, ",
-        "chemical_name_original as dosed_chem_name_original, dsstox_casrn as dosed_chem_casrn, preferred_name as dosed_chem_name ",
-        "FROM cvt.chemicals) as k ON c.fk_dosed_chemical_id = k.id ",
-        "LEFT JOIN (SELECT id, dsstox_substance_id as analyzed_chem_dtxsid, ",
-        "chemical_name_original as analyzed_chem_name_original, dsstox_casrn as analyzed_chem_casrn, preferred_name as analyzed_chem_name ",
-        "FROM cvt.chemicals) as l ON b.fk_analyzed_chemical_id = l.id ",
-        "WHERE k.dosed_chem_dtxsid != l.analyzed_chem_dtxsid"
+    `Total Instances Where the Dosed Chemical is Different from the Analyzed Chemical` = {
+      
+      tmp = db_query_cvt(
+        paste0(
+          "SELECT ",
+          # "b.id as series_id, b.fk_study_id, ",
+          " DISTINCT b.id as series_id, b.fk_study_id, ",
+          "k.dosed_chem_dtxsid, l.analyzed_chem_dtxsid ",
+          # # Studies table fields
+          # "c.fk_dosed_chemical_id, ",
+          # ## Chemical dictionary fields (dosed chemical information)
+          # "k.dosed_chem_dtxsid, ",
+          # # Series table fields
+          # "b.fk_analyzed_chemical_id, ",
+          # 
+          # ## Chemical dictionary fields (analyzed chemical information)
+          # "l.analyzed_chem_dtxsid ",
+          
+          # Join with series table by series ID
+          "FROM cvt.series b ",
+          
+          # Join to studies table by study ID
+          "LEFT JOIN cvt.studies c ON b.fk_study_id = c.id ",
+          
+          # Rename chemical fields for dosed vs. analyzed chemical record foreign keys
+          "LEFT JOIN (SELECT id, dsstox_substance_id as dosed_chem_dtxsid, ",
+          "chemical_name_original as dosed_chem_name_original, dsstox_casrn as dosed_chem_casrn, preferred_name as dosed_chem_name ",
+          "FROM cvt.chemicals) as k ON c.fk_dosed_chemical_id = k.id ",
+          "LEFT JOIN (SELECT id, dsstox_substance_id as analyzed_chem_dtxsid, ",
+          "chemical_name_original as analyzed_chem_name_original, dsstox_casrn as analyzed_chem_casrn, preferred_name as analyzed_chem_name ",
+          "FROM cvt.chemicals) as l ON b.fk_analyzed_chemical_id = l.id ",
+          "WHERE k.dosed_chem_dtxsid != l.analyzed_chem_dtxsid"
+        )
       )
-    ) %>%
-      # TODO add summary "n" field based on some grouping of records
-      nrow(),
+      # Output as string to parse later
+      paste0(c(tmp %>%
+               dplyr::select(dplyr::contains("dtxsid")) %>%
+               dplyr::distinct() %>%
+               nrow(), 
+             tmp %>%
+               dplyr::select(fk_study_id) %>%
+               dplyr::distinct() %>%
+               nrow(),
+             nrow(tmp)),
+             collapse = ";"
+             )
+        
+    },
     
     `Total Concentration-Time Values with Normalized Units` = db_query_cvt(paste0("SELECT count(*) as n FROM cvt.conc_time_values ",
                                                                                   "WHERE fk_series_id in (SELECT id FROM cvt.series) ",

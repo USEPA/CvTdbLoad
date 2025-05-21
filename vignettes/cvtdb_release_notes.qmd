@@ -74,35 +74,164 @@ Studies (and the data from those studies) must meet certain criteria in order to
 
 Currently, CvTdb only extracts data that can be used by the *httk* modeling package. Therefore, experimental designs that can be extracted are limited by what can be purposefully used in *httk*. 
 
-To determine whether a study is suitable for CvTdb, one can ask:
-Does the study.. 
+To determine whether a study is suitable for CvTdb, one can ask: 
 
-*  .. depict *in-vivo* TK studies dose-response time series?
-*  .. use mammalian subjects?
+Does the study... 
+
+*  ...depict *in-vivo* TK studies dose-response time series?
+*  ...use mammalian subjects?
     * Aquatic species are currently not suitable.
-* .. administer a single substance during exposure?
+* ...administer a single substance during exposure?
     * Currently, studies that co-administer substances are not suitable. 
-*  .. measure chemicals that are either:
+*  ...measure chemicals that are either:
     * the dosed chemical itself, or
     * a substructure of the dosed chemical, or
     * a transformation product?  
     * (This excludes bio-markers, generally speaking.)
-*  .. take measurements in biological media?
-*  .. report the dose level(s) as during the exposure (constant within reasonable variation)?
+*  ...take measurements in biological media?
+*  ...report the dose level(s) as during the exposure (constant within reasonable variation)?
     * Occupational exposure studies, where dose is not given as a specific dose, are not suitable. 
     * Indirect exposures (e.g. fetal exposure during gestational time) are currently not suitable.
-*  .. implement a dosing schedule with predictable and regular intervals (which can include both single and multiple dosing regimens)?
+*  ...implement a dosing schedule with predictable and regular intervals (which can include both single and multiple dosing regimens)?
     * Any dosing regimen too complex to be incorporated into our standardized template is not be suitable.
     
 ### CvTdb GitHub Files 
-| File Name                    | Description                                                                                                                                              | File Type |
-|------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------|-----------|
+| File Name                    | Description          | File Type |
+|------------------------------|----------------------|-----------|
 |     CvTdb_Curation_SOP       |     In depth guide to procedures and best practices for extracting (“curating”) data from published papers into templates for upload to the database.    | .pdf      |
 |     CvTdb_QC_SOP             |     Guide for the specific process designed for going through previously uploaded templates and updating them for compliance with CvTdb 2024 Release               | .pdf      |
-|     CvTdb-QAPP               |     Quality Assurance Project Plan                                                                                                                       | .pdf      |
 |     CvT_curation_template    |     Template for extracting data from papers for upload in the database                                                                                  | .xlsx     |
 |     CvT_QC_template          |     Template for "QC" worfklow, containing fields for "qc_flags", "qc_notes", etc.                                                                       | .xlsx     |
 
+### Querying CvTdb
+**Add reference and link to the vignette**
+
+### CvTdb Field and Unit Normalization
+Where possible, original reported values are converted to standard terms and units. For normalized terms, review the "_dict" dictionary tables that are linked to the main database tables by foreign keys.
+```{r}
+#| label: "tbl-cvt-normalized-units"
+#| tbl-cap: "Summary of Normalized Units by Table"
+#| echo: FALSE
+
+norm_tbl = list(
+  data.frame(
+    table = "subjects",
+    category = "weight",
+    `normalized units` = "kg",
+    fields = "weight, weight_kg, weight_units",
+    `original units` = db_query_cvt(paste0("SELECT distinct weight_units ",
+                                "FROM cvt.subjects ",
+                                "WHERE weight_kg IS NOT NULL")) %>%
+      dplyr::pull(weight_units) %>%
+      .[!. %in% c(NA)] %>%
+      sort() %>%
+      paste0(., collapse = ", ")
+  ),
+  data.frame(
+    table = "subjects",
+    category = "height",
+    `normalized units` = "cm",
+    fields = "height, height_cm, height_units",
+    `original units` = db_query_cvt(paste0("SELECT distinct height_units ",
+                                 "FROM cvt.subjects WHERE weight_units IS NOT NULL")) %>%
+    dplyr::pull(height_units) %>%
+      .[!. %in% c(NA, "missing_units")] %>%
+      sort() %>%
+      paste0(., collapse = ", ")
+  ),
+  data.frame(
+    table = "subjects",
+    category = "age",
+    `normalized units` = paste0("> ",
+      readxl::read_xlsx("../input/dictionaries/age_category_dict.xlsx") %>%
+        tidyr::pivot_longer(
+          col = -c(species, unit)
+          ) %>%
+        dplyr::mutate(species = paste0("<b>", species, "</b>")) %>%
+        tidyr::unite(col = "age_cat_val", name, value, sep = " (") %>%
+        # dplyr::mutate(age_cat_val = paste0(age_cat_val, ")")) %>%
+        dplyr::group_by(species, unit) %>%
+        dplyr::mutate(age_cat_val = paste0(age_cat_val, ")", collapse = ", ")) %>%
+        dplyr::ungroup() %>%
+        dplyr::distinct() %>%
+        tidyr::unite(col = "spec_age_cat",
+                     species, age_cat_val,
+                     sep = ": ") %>%
+        tidyr::unite(col = "spec_age_cat_unit",
+                     spec_age_cat, unit,
+                     sep = " ") %>%
+        dplyr::pull(spec_age_cat_unit) %>%
+        paste0(., "s"), 
+      collapse = "</br>"
+      ),
+    fields = "age, age_category, age_units",
+    `original units` = db_query_cvt(paste0("SELECT distinct age_units ",
+                                 "FROM cvt.subjects WHERE age_units IS NOT NULL")) %>%
+    dplyr::pull(age_units) %>%
+      .[!. %in% c(NA, "missing_units")] %>%
+      sort() %>%
+      paste0(., collapse = ", ")
+  ),
+  data.frame(
+    table = "conc_time_values",
+    category = "conc",
+    `normalized units` = "ug/mL",
+    fields = "conc, conc_sd, conc_lower_bound, conc_upper_bound (with *_original fields), conc_units_original (series)",
+    `original units` = db_query_cvt(paste0("SELECT distinct conc_units_original, conc_units_normalized ",
+                                 "FROM cvt.series WHERE id in (",
+                                "SELECT fk_series_id FROM cvt.conc_time_values WHERE conc IS NOT NULL ",
+                                "AND conc NOT IN ('NA', 'ND', 'NQ')", ")")) %>%
+    dplyr::pull(conc_units_original) %>%
+      .[!. %in% c(NA, "missing_units")] %>%
+      sort() %>%
+      paste0(., collapse = ", ")
+  ),
+    data.frame(
+    table = "studies",
+    category = "dose",
+    `normalized units` = "mg/kg",
+    fields = "dose_level_original, dose_level_normalized, dose_level_units_original",
+    `original units` = db_query_cvt(paste0("SELECT distinct dose_level_units_original ",
+                                 "FROM cvt.studies WHERE dose_level_normalized IS NOT NULL ",
+                                "AND dose_level_normalized NOT IN ('NA', 'ND', 'NQ')")) %>%
+    dplyr::pull(dose_level_units_original) %>%
+      .[!. %in% c(NA, "missing_units")] %>%
+      sort() %>%
+      paste0(., collapse = ", ")
+  ),
+  data.frame(
+    table = "conc_time_values",
+    category = "time",
+    `normalized units` = "hr",
+    fields = "time_original, time_hr, time_units_original (series)",
+    `original units` = db_query_cvt(paste0("SELECT distinct time_units_original ",
+                                 "FROM cvt.series WHERE id in (",
+                                "SELECT fk_series_id FROM cvt.conc_time_values WHERE time_hr IS NOT NULL)")) %>%
+    dplyr::pull(time_units_original) %>%
+      .[!. %in% c(NA, "missing_units")] %>%
+      sort() %>%
+      paste0(., collapse = ", ")
+  )
+) %>%
+  dplyr::bind_rows() %>%
+  dplyr::rename(`Original Units` = "original.units", `Normalized Units` = "normalized.units") %>%
+  dplyr::arrange(table) %T>%
+  { names(.) <- stringr::str_to_title(names(.)) }
+
+
+DT::datatable(norm_tbl, 
+              options = list(
+                scrollX = TRUE,
+                columnDefs = list(list(className = 'dt-left',
+                                       targets = "_all"
+                                       )
+                                  )
+                ),
+              rownames = FALSE,
+              # Render HTML
+              escape = FALSE
+              )
+```
 ## CvTdb: Database Summary
 ### Summary Counts
 CvTdb contains data for various chemicals, species, and administration routes. Top routes include oral and intravenous, with inhalation and dermal routes being newly added to CvTdb v2.0.0 2025 Release. The breakdown of the counts from various tables and fields of interest can be explored below.
@@ -112,6 +241,18 @@ CvTdb contains data for various chemicals, species, and administration routes. T
 #| results: 'asis'
 
 cvt_summary_out = cvt_summary %>%
+  dplyr::mutate(value = dplyr::case_when(
+    `Summary Name` %in% c(
+      "Total Instances Where the Dosed Chemical is Different from the Analyzed Chemical"
+    ) ~ {
+      # Parse into sentence
+      tmp = value %>%
+      stringr::str_split(";") %>% 
+      unlist()
+      paste0(tmp[1], " DTXSID pairs from ", tmp[2], " studies and ", tmp[3], " series")
+    },
+    TRUE ~ value
+  )) %>%
   tidyr::unite(col = "summary_out", `Summary Name`, value, 
                sep = ": ", remove = FALSE) %>%
   dplyr::mutate(summary_out = dplyr::case_when(
@@ -141,6 +282,19 @@ Quick notes on past versions:
     -   Release with minor changes to add/update conc_time_values normalizations, fix a couple study normalized administration routes, and add a new chemicals table to split off chemical information from the studies and series tables.
 
 The following tabs of tables summarize count differences between CvTdb versions.
+
+
+```{r}
+#| include: FALSE
+#| echo: FALSE
+#| warning: FALSE
+
+# TODO Leave here so datatable will dynamically render with tabset
+# https://stackoverflow.com/questions/74707808/programatically-generate-tabset-panels-of-datatables-in-quarto
+# https://www.simoncoulombe.com/posts/2024-05-11-how-to-loop-stuff-in-tabset--quarto-edition/
+# Init Step to make sure that the dependencies are loaded
+htmltools::tagList(DT::datatable(mtcars))
+```
 
 ::: {.panel-tabset .nav-pills}
 ```{r}
@@ -185,6 +339,21 @@ vc_plots = lapply(vc_stat_list, function(stat){
                   x = stat %>%
                     stringr::str_extract("Administration Routes|Species"),
                   title = paste0("CvTdb Version Comparison - ", stat))
+  } else if (stat %in% c("Total Instances Where the Dosed Chemical is Different from the Analyzed Chemical")) {
+    
+    cvtdb_release_comparison %>%
+      dplyr::filter(stat == !!stat) %>%
+      dplyr::arrange(version, stat) %>%
+      tidyr::separate_wider_delim(
+        cols = count,
+        names = c("DTXSID Pairs", "Studies", "Series"),
+        delim = ";"
+      ) %>%
+      dplyr::select(-stat) %>%
+      dplyr::select(version, dplyr::everything()) %>%
+    DT::datatable(options = list(scrollX = TRUE, columnDefs = 
+                               list(list(className = 'dt-left', targets = "_all"))), 
+              rownames = FALSE)
   } else {
   ggplot2::ggplot(cvtdb_release_comparison %>%
                     dplyr::filter(stat == !!stat) %>%
@@ -203,19 +372,27 @@ vc_plots = lapply(vc_stat_list, function(stat){
                   title = paste0("CvTdb Version Comparison - ", stat)) + 
     ggplot2::theme(legend.position="none")
   }
-})
+}) %T>% {
+  names(.) <- vc_stat_list
+}
 
 # Programmatically generate the tabset of tables with headers
-for(i in seq_len(length(vc_stat_list))){
-  cat('###### ', vc_stat_list[i], '\n\n')
-  print(vc_plots[[i]])
+for(stat in names(vc_plots)){
+  cat('###### ', stat, '\n\n')
+  if(stat %in% c("Total Instances Where the Dosed Chemical is Different from the Analyzed Chemical")){
+    print(htmltools::tagList(vc_plots[[stat]]))
+  } else {
+    # Print ggplot figures
+    print(vc_plots[[stat]])  
+  }
+  
   cat('\n\n')
 }
 ```
 
 <!-- End of tabset -->
 :::
-i. Total Subjects changes dramatically between v1.1.0 and v2.0.0 due to an effort to move to create unique subject table entries per extraction document, rather than having documents share the same subject entry. This helped untangle and prevent cases where a document is QC'd and subject information is updated, causing subject information to be incorrect for other linked documents. Also, NTP documents were re-extracted to report on a per-subject basis, often having hundreds of entries.
+i. Total Subjects changes dramatically between v1.1.0 and v2.0.0 due to an effort to shift towards creating unique subject table entries per extraction document, rather than having documents share the same subject entry. This helped untangle and prevent cases where a document is QC'd and subject information is updated, causing subject information to be incorrect for other linked documents. This also helped support packages like *invivopkfit*, where curve fitting could treat each subject's timecourse as unique. Also, NTP documents were re-extracted to report on a per-subject basis, often having hundreds of entries.
 
 ```{r}
 #| label: "tbl-cvt-chemical_route_species_summary"
@@ -363,15 +540,23 @@ i. Note, counts are by unique studies, where a single study may have dosed throu
         -   The Pharmacokinetics Database (PK-DB) is an open database containing pharmacokinetic data alongside metadata required for computation modeling and data integration. The data is sourced from clinical trials and pre-clinical research.
     -   Toxicokinetic Knowledgebase (TKKB) documents
         -   The list of citations for the TKKB set was meant to increase diversity of available CvT data and provide a means to compare bespoke toxicokinetic models with HTTK models. This dataset contained numerous studies with occupationally relevant routes of exposure (inhalation and dermal) that had not previously been loaded into CvTdb.
+    -   Mixture Data
+        -   Expansion of the CvTdb data model to handle studies with dosed chemical mixtures (in collaboration with Celia Schacht).
 
 ## Known Issues
 
--   \*\*Add description of data dictionary update decisions and why certain entries were updated or left blank.
+-   The administration method, administration form, and conc_medium dictionaries have entries that are not normalized at this time. This was due to internal decisions related to interpretability and consistency of the use of authoritative vocabulary/ontology.
+-   Select dose and concentration units were not normalized due to their complexity, lack of required metadata, or potentially being out of scope for CvTdb. A QC effort is underway to review such records and determine if they can be fixed or should be removed.
+    -   Dose
+        -   percentage, concentration (mg/mL, ug/L), radioactive (uCi/kg), rates (mg/kg/day), surface area (mmol/m3), gas/liquid (nl gas/g, ul liquid/kg)
+    -   Concentration
+        -   percentage, radioactive (dpm/ml), rates (pmol/min), weights (nmol)
 
 ## References
 **CHECK IF ALL REFERENCES ARE USED**
 
 -   Kamiya, Y., Otsuka, S., Miura, T., Yoshizawa, M., Nakano, A., Iwasaki, M., Kobayashi, Y., Shimizu, M., Kitajima, M., Shono, F., Funatsu, K., and Yamazaki, H. (2020). Physiologically Based Pharmacokinetic Models Predicting Renal and Hepatic Concentrations of Industrial Chemicals after Virtual Oral Doses in Rats. Chemical Research in Toxicology 33 (7), 1736-1751 DOI: 10.1021/acs.chemrestox.0c00009.
+-   Linakis, M. W., Sayre, R. R., Pearce, R. G., Sfeir, M. A., Sipes, N. S., Pangburn, H. A., Gearhart, J. M., & Wambaugh, J. F. (2020). Development and evaluation of a high throughput inhalation model for organic chemicals. Journal of exposure science & environmental epidemiology, 30(5), 866–877. https://doi.org/10.1038/s41370-020-0238-y.
 -   Meade., A., Wambaugh, J. F., Evans, M. V. (2023). Development and analysis of high throughput physiologically based pharmacokinetic/toxicokinetic (PBPK/TK) dermal exposure model. The United States Environmental Protection Agency’s Center for Computational Toxicology and Exposure. Poster. https://doi.org/10.23645/epacomptox.22637536.v1.
 -   Padilla Mercado, G., Cook, C., Adkins, N. et al. (2025). Informatics for toxicokinetics. J Pharmacokinet Pharmacodyn 52, 30. https://doi.org/10.1007/s10928-025-09977-4.
 -   Pearce, R. G., Setzer, R. W., Strope, C. L., Sipes, N. S., Wambaugh, J. F. (2017). httk: R Package for High-Throughput Toxicokinetics. Journal of Statistical Software, 79(4), 1–25. doi:10.18637/jss.v079.i04.
@@ -390,6 +575,8 @@ Special thanks to team members who contributed to CvTdb as a data curator:
 Michael F. Hughes, Lucas Albrecht, Grace Cary, Brenda Edwards, Nancy M. Hanley, Anna Jarnagin, Tirumala D. Kodavanti, Evgenia Korol-Bexell, Anna Kreutz, Mayla Ngo, Caitlyn Patullo, Hiroshi Yamazaki, Evelyn G. Rowan, L. McKenna Huse, Veronica A. Correa, Branislav Kesic, Robert "Will" Casey, Jennat Aboabdo, Kaitlyn Wolf, Jasmine Hope.
 
 Additional thanks to Evelyn G. Rowan and L. McKenna Huse for scoping and implementing the data model expansion to include dermal and inhalation studies.
+
+Additional thanks to John Wambaugh and Gilberto Padilla Mercado for their feedback throughout this curation cycle as end-users developing the httk and invivopkfit packages.
 
 ## Database Field Definitions
 
