@@ -111,9 +111,9 @@ normalize_dose <- function(raw, f, log_path, debug = FALSE){
   #List of doses
   out = check_subject_list(x=out, f=f, col="dose_level_normalized", log_path=log_path)
   # +/- Group
-  out = check_unit_ci(x=out, f=f, col="dose_level_normalized", estimated=c(), log_path=log_path)
+  out = check_unit_ci(x=out, f=f, col="dose_level_normalized", log_path=log_path)
   #Dose range
-  out = check_unit_range(x=out, f=f, col="dose_level_normalized", estimated=c(), log_path=log_path)
+  out = check_unit_range(x=out, f=f, col="dose_level_normalized", log_path=log_path)
   #Ready for conversion
   out$conversion = out$raw %>% 
     dplyr::mutate(dose_level_normalized = suppressWarnings(as.numeric(dose_level_normalized))) %>%

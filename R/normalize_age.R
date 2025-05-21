@@ -78,9 +78,9 @@ normalize_age <- function(raw, f, log_path, debug = FALSE){
   # List of ages
   out = check_subject_list(x=out, f=f, col="age_normalized", log_path=log_path)
   # +/- Group
-  out = check_unit_ci(x=out, f=f, col="age_normalized", estimated=c(), log_path=log_path)
+  out = check_unit_ci(x=out, f=f, col="age_normalized", log_path=log_path)
   # age range
-  out = check_unit_range(x=out, f=f, col="age_normalized", estimated=c(), log_path=log_path)
+  out = check_unit_range(x=out, f=f, col="age_normalized", log_path=log_path)
   # age qualifier - remove for now
   out$raw = out$raw %>%
     dplyr::mutate(age_normalized = age_normalized %>%

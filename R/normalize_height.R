@@ -35,7 +35,7 @@ normalize_height <- function(raw, f, log_path, debug=FALSE){
   }
   #List of dataframe subsets
   out = list()
-  out$raw = normalization_prep(x=raw, newcols=c("height_cm"))#, "height_estimated"))
+  out$raw = normalization_prep(x=raw, newcols=c("height_cm"))
   #Set to convert column to maintain original
   out$raw$height_cm = out$raw$height
   #Extract units
@@ -55,14 +55,13 @@ normalize_height <- function(raw, f, log_path, debug=FALSE){
   #List of heights
   out = check_subject_list(x=out, f=f, col="height_cm", log_path=log_path)
   # +/- Group
-  out = check_unit_ci(x=out, f=f, col="height_cm", estimated=c(), log_path=log_path)#"height_estimated")
+  out = check_unit_ci(x=out, f=f, col="height_cm", log_path=log_path)
   #Height range
-  out = check_unit_range(x=out, f=f, col="height_cm", estimated=c(), log_path=log_path)#"height_estimated")
+  out = check_unit_range(x=out, f=f, col="height_cm", log_path=log_path)
   #Ready for conversion
   out$conversion = out$raw %>% 
     dplyr::mutate(height_cm = suppressWarnings(as.numeric(height_cm))) %>%
-    dplyr::filter(!is.na(height_cm)) #%>%
-    #mutate(height_estimated = 0)
+    dplyr::filter(!is.na(height_cm))
   out$raw = out$raw %>% dplyr::filter(!tempID %in% out$conversion$tempID)
   
   if(nrow(out$raw)){
