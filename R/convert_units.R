@@ -24,6 +24,7 @@ convert_units <- function(x, num, units, desired, conv_factor=NA, overwrite_unit
   #Convert units based on input string equation
   if(is.null(conv[[x[[units]]]][[desired]])){
     #No matching desired output
+    message("No conversion for: ", x[[units]])
     browser()
     x[[num]] = NA
   } else {

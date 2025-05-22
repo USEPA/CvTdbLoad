@@ -44,6 +44,12 @@ normalize_dose <- function(raw, f, log_path, debug = FALSE){
   #List of dataframe subsets
   out = list()
   out$raw = normalization_prep(x=raw, newcols=c("dose_level_normalized"))
+  
+  # Handle special cases
+  out$raw = out$raw %>%
+    dplyr::mutate(dose_level_units = dose_level_units %>%
+                    # Remove the /day for mg/kg/day
+                    gsub("mg/kg/day", "mg/kg", .))
   #Set to convert column to maintain original
   out$raw$dose_level_normalized = out$raw$dose_level
   #out$raw$dose_level_units_original = out$raw$dose_level_units
@@ -73,7 +79,7 @@ normalize_dose <- function(raw, f, log_path, debug = FALSE){
     log_CvT_doc_load(f=f, m="dose_conversion_needed_percentage", log_path=log_path, val=out$percentage$id)
   }
   #Concentration units flag
-  out$concentration = out$raw %>% dplyr::filter(grepl("/l|/ml|/L|/mL", dose_level_units))
+  out$concentration = out$raw %>% dplyr::filter(grepl("/l|/ml|/L|/mL|/0.1mL", dose_level_units))
   out$raw = out$raw %>% dplyr::filter(!tempID %in% out$concentration$tempID)
   if(nrow(out$concentration)){
     log_CvT_doc_load(f=f, m="dose_conversion_needed_concentration", log_path=log_path, val=out$concentration$id)
@@ -128,6 +134,10 @@ normalize_dose <- function(raw, f, log_path, debug = FALSE){
   out$need_per_weight = out$conversion %>% dplyr::filter(!grepl("/|per", dose_level_units))
   out$conversion = out$conversion %>% dplyr::filter(!tempID %in% out$need_per_weight$tempID)
   
+  # # Dose ignore cases
+  # out$ignored_cases = out$conversion %>% dplyr::filter(dose_level_units %in% c("mg/0.1mL"))
+  # out$conversion = out$conversion %>% dplyr::filter(!tempID %in% out$ignored_cases$tempID)
+  
   if (isTRUE(debug)) {
     return(out)
   }
@@ -145,7 +155,7 @@ normalize_dose <- function(raw, f, log_path, debug = FALSE){
   #   out$need_per_weight$dose_level_normalized = out$need_per_weight$dose_level_normalized / out$need_per_weight$weight_kg
   # }
  
-  #Convert dosages
+  # Convert dosages
   out$convert_ready = dplyr::bind_rows(out$conversion, out$ci, out$unit_range)
   out$conversion = NULL; out$ci = NULL; out$unit_range = NULL
   
@@ -168,6 +178,13 @@ normalize_dose <- function(raw, f, log_path, debug = FALSE){
       MW_dict = get_mw_chemicals_api(dtxsid_list=unique(out$convert_ready$dsstox_substance_id),
                                      api_key=API_AUTH)
     }
+    
+    out$convert_ready = out$convert_ready %>%
+      dplyr::mutate(dose_level_units = dose_level_units %>%
+                      # Remove all whitespace
+                      gsub("[[:space:]]", "", .) %>%
+                      # Replace unicode micro
+                      gsub("\u00b5", "u", .))
     
     for(i in seq_len(nrow(out$convert_ready))){
       #Molecular Weight conversion (have to find MW first)

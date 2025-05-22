@@ -110,7 +110,13 @@ normalize_conc <- function(raw, f, log_path, debug = FALSE){
                     # Ends in S, should be 5
                     gsub("S$", "5", .) %>%
                     # Remove ending lowercase letters
-                    gsub("[a-z]+$", "", .))
+                    gsub("[a-z]+$", "", .),
+                  conc_units_original = conc_units_original %>%
+                    # Change x 10^-3 M to x 10^-3 mol/L so it's not removed with need_per_liquid
+                    gsub("x 10^-3 M", "x 10^-3 mol/L", ., fixed = TRUE) %>%
+                    # Remove tissue qualifiers
+                    gsub("tissue|wet tissue", "", .) %>%
+                    stringr::str_squish())
   
   # Non-numerics
   out = check_non_numeric(x=out, f=f, col="conc_original", log_path=log_path)
@@ -128,21 +134,24 @@ normalize_conc <- function(raw, f, log_path, debug = FALSE){
                                                             # Filter out tissue measures to httk Density conversion attempts
                                                             !conc_units_original %in% c("ug"))
   out$convert_ready = out$convert_ready %>% dplyr::filter(!tempID %in% out$need_per_liquid$tempID)
-  # Is per weight
-  out$per_weight = out$convert_ready %>% 
-    dplyr::filter(grepl("/kg|/g|/mg|/ng|/ug", conc_units_original)) %>%
-    convert_mass_per_mass()
-  out$convert_ready = out$convert_ready %>% dplyr::filter(!tempID %in% out$per_weight$tempID)
+  # # Is per weight - Now handled with httk tissue density attempt
+  # out$per_weight = out$convert_ready %>% 
+  #   dplyr::filter(grepl("/kg|/g|/mg|/ng|/ug", conc_units_original)) %>%
+  #   convert_mass_per_mass()
+  # out$convert_ready = out$convert_ready %>% dplyr::filter(!tempID %in% out$per_weight$tempID)
   
   # Try to normalize
   # Filter out ones that didn't get normalized
   # Add them back to the convert_ready list
-  # Filer to convert_ready and convert to numeric
-  out$convert_ready = out$convert_ready %>% dplyr::filter(!tempID %in% out$per_weight$tempID) %>%
-    dplyr::mutate(dplyr::across(c(conc, conc_sd, conc_lower_bound, conc_upper_bound), as.numeric))
+  # Filter to convert_ready and convert to numeric
+  # out$convert_ready = out$convert_ready %>% dplyr::filter(!tempID %in% out$per_weight$tempID)
   # remaining logic TBD
   # message("...Conc_units conversion logic TBD")
   # warning("...Conc_units conversion logic TBD")
+  
+  # Set as numeric for processing
+  out$convert_ready = out$convert_ready %>%
+    dplyr::mutate(dplyr::across(c(conc, conc_sd, conc_lower_bound, conc_upper_bound), as.numeric))
   
   # Map to chemical entries for DTXSID
   chem_map = db_query_cvt(paste0("SELECT id as fk_analyzed_chemical_id, dsstox_substance_id ",
@@ -163,6 +172,10 @@ normalize_conc <- function(raw, f, log_path, debug = FALSE){
                                    api_key=API_AUTH)
   }
   
+  out$convert_ready = out$convert_ready %>%
+    # Lowercase for conversion
+    dplyr::mutate(conc_units_original = tolower(conc_units_original))
+  
   # TODO Split up between routes as well (ug/mL tissue and ug/m3 breath)
   for(t in c("conc", "conc_sd", "conc_lower_bound", "conc_upper_bound")){
     message("...normalizing ", t)
@@ -175,8 +188,13 @@ normalize_conc <- function(raw, f, log_path, debug = FALSE){
         MW <- MW_dict$mw[MW_dict$dtxsid == out$convert_ready[i,]$dsstox_substance_id]
       }
       # Tissue density lookup/conversion attempt
-      if(out$convert_ready[i,]$conc_units_original %in% c("ug")){
-        out$convert_ready[i,]$conc_units_original = paste0(out$convert_ready[i,]$conc_units_original, " tissue conc")
+      if(out$convert_ready[i,]$conc_units_original %in% c("ug") |
+         grepl("/kg|/g|/mg|/ng|/ug", out$convert_ready[i,]$conc_units_original)){
+        if(!grepl("tissue conc", out$convert_ready[i,]$conc_units_original)){
+          # Flag as tissue conc unit conversion to use correct unit conversion logic
+          out$convert_ready[i,]$conc_units_original = paste0(out$convert_ready[i,]$conc_units_original, " tissue conc")  
+        }
+        
         MW <- httk::tissue.data[httk::tissue.data$variable == "Density (g/cm^3)",] %>%
           dplyr::filter(Tissue == out$convert_ready[i,]$conc_medium) %>%
           dplyr::mutate(Species = tolower(Species)) %>%

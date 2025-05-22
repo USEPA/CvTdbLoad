@@ -86,7 +86,6 @@ bulk_update_conc_normalization <- function(){
     message("No conc normalization updates to push")
   }
   
-  
   # Return updated values
   return(df_out)
 }

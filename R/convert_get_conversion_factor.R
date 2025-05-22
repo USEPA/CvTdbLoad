@@ -33,11 +33,11 @@ convert_get_conversion_factor <- function(conv_factor=1){
        hr=list(hr="/1"),
        `mg/kg`=list(`mg/kg`="/1", `ug/ml`= paste0("*", conv_factor)), #1 mg/kg*conv_factor kg/L*1L/1000mL*1000ug/mg=ug/mL --> using httk density value for conv_factor variable (refactor name)
        `ng/g`=list(`ug/kg`="/1", `ug/ml`= paste0("*", conv_factor, "/1000")), # ug/mL from httk g/mL tissue density
-       `ug/g`=list(`ug/kg`="*1000"),
+       `ug/g`=list(`ug/kg`="*1000", `mg/kg`="/1"),
        `ug/kg`=list(`ug/kg`="/1", `mg/kg`="/1000", `ug/ml`=paste0("*", conv_factor, "/1000")), # ug/mL from httk g/mL tissue density
        `µg/kg` = list(`ug/ml`=paste0("*", conv_factor, "/1000")), 
        `g/kg`=list(`mg/kg`="*1000"),
-       `ug/250 g`=list(`mg/kg`="*4/1000"),
+       `ug/250g`=list(`mg/kg`="*4/1000"),
        `ug/ml`=list(`ug/ml`="/1"),
        `ug/l`=list(`ug/ml`="/1000"),
        `ng/ml`=list(`ug/ml`="/1000"),
@@ -45,6 +45,7 @@ convert_get_conversion_factor <- function(conv_factor=1){
        `mg/ml`=list(`ug/ml`="*1000"),
        `mg/l`=list(`ug/ml`="/1"),
        `mg/L`=list(`ug/ml`="/1"),
+       `ng/kg`=list(`mg/kg`="/1000000"),
        ppm=list(`ug/ml`="/1"), #1 ppm = 1 ug/mL
        ppbv = list(`ug/ml`="/1000"), #1 ppb = 0.001 ug/mL,
        ppb = list(`ug/ml`="/1000"), #1 ppb = 0.001 ug/mL,
@@ -54,12 +55,13 @@ convert_get_conversion_factor <- function(conv_factor=1){
        `nmoles/ml` = list(`ug/ml`=paste0("*",conv_factor,"/1000")),
        `umol/l` = list(`umol/l`="/1", `ug/ml`=paste0("*",conv_factor,"/1000")), #1000 less than nmol/l conversion 
        `pmol/ml` = list(`ug/ml`=paste0("*",conv_factor,"/1000000")), #1 pmol/ml*(1mol/1000000000000pmol)*(conv_factor g/1mol)*(1000000ug/1g)=1*conv_factor/1000000
-       `ug/g` = list(`ug/g`="/1", `ug/ml`=paste0("*", conv_factor)), #1 ug/g*1000g/kg*conv_factor kg/L*1L/1000mL=ug/mL --> using httk density value for conv_factor variable (refactor name)
+       `ug/g tissue conc` = list(`ug/g`="/1", `ug/ml`=paste0("*", conv_factor)), #1 ug/g*1000g/kg*conv_factor kg/L*1L/1000mL=ug/mL --> using httk density value for conv_factor variable (refactor name)
        `umol/kg` = list(`mg/kg`= paste0("*", conv_factor, "/1000")), # conv_factor is g/mol, which is the same as mg/mmol or ug/umol
        # Molarity
-       `x 10^-3 M` = list(`ug/ml`=paste0("*", conv_factor, "*1000000")), # M * MW * 1000 * 1000
+       `x 10^-3 mol/l` = list(`ug/ml`=paste0("*", conv_factor)), # M * MW
        # Tissue density conversions (Density = g/mL from httk)
-       `ug tissue conc` = list(`ug/ml`=paste0("*conv_factor"))
+       `ug tissue conc` = list(`ug/ml`=paste0("*conv_factor")),
+       `ng/g tissue conc` = list(`ug/ml`=paste0("*conv_factor/1000"))
   ) %>%
     return()
 }
