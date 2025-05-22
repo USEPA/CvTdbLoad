@@ -5,7 +5,7 @@ bulk_update_age_normalization <- function(){
   API_AUTH <<- Sys.getenv("API_AUTH")
   
   # Query with needed columns
-  query <- paste0("SELECT * FROM cvt.subjects WHERE age_category is not NULL")
+  query <- paste0("SELECT * FROM cvt.subjects WHERE age is NOT NULL and age_category is NULL")
   
   # Pull data to check
   df_raw <- db_query_cvt(query) %>%

@@ -116,6 +116,8 @@ normalize_conc <- function(raw, f, log_path, debug = FALSE){
                     gsub("x 10^-3 M", "x 10^-3 mol/L", ., fixed = TRUE) %>%
                     # Remove tissue qualifiers
                     gsub("tissue|wet tissue", "", .) %>%
+                    # Replace unicode micro
+                    gsub("\u00b5", "u", .) %>%
                     stringr::str_squish())
   
   # Non-numerics

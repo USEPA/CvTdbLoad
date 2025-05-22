@@ -63,7 +63,7 @@ normalize_age <- function(raw, f, log_path, debug = FALSE){
 
   if(nrow(out$unmatched_species)){
     message("...Missing age category species match...Needs further curation - ",
-            paste0(out$unmatched_species$species, collapse = "; "))
+            paste0(unique(out$unmatched_species$species), collapse = "; "))
     log_CvT_doc_load(f=f, m="no_species_age_category_match", log_path = log_path, val=out$unmatched_species$id)
   }
 
