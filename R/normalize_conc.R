@@ -51,16 +51,16 @@ normalize_conc <- function(raw, f, log_path, debug = FALSE){
   out$raw = out$raw %>%
     # Remove evaluation symbols
     dplyr::mutate(conc_original=gsub(">|<|at least", "", conc_original),
-           # Remove conc_medium tags and other extraneous terms in units
-           conc_units_original = gsub(paste0(c("tissue concentration", "[()]", unique(out$raw$conc_medium)), collapse="|"), "", 
-                                      conc_units_original) %>%
-             trimws(.))
+                  # Remove conc_medium tags and other extraneous terms in units
+                  conc_units_original = gsub(paste0(c("tissue concentration", "[()]", unique(out$raw$conc_medium)), collapse="|"), "", 
+                                             conc_units_original) %>%
+                    trimws(.))
   
   # Create normalization columns                                                                       
   out$raw = out$raw %>% dplyr::mutate(conc=conc_original,
-                               conc_sd=conc_sd_original,
-                               conc_lower_bound=conc_lower_bound_original,
-                               conc_upper_bound=conc_upper_bound_original)
+                                      conc_sd=conc_sd_original,
+                                      conc_lower_bound=conc_lower_bound_original,
+                                      conc_upper_bound=conc_upper_bound_original)
   # Get ND and NQ concentrations
   out$ND = out$raw %>% dplyr::filter(conc_original %in% c("ND", "NQ", "NE", "NS", "."))
   out$raw = out$raw %>% dplyr::filter(!tempID %in% unique(out$ND$tempID))
@@ -86,7 +86,7 @@ normalize_conc <- function(raw, f, log_path, debug = FALSE){
     log_CvT_doc_load(f=f, m="conc_invalid_units", log_path=log_path, val=out$invalid_units$id)
   }
   # Radioactive units flag
-  out$radioactive = out$raw %>% dplyr::filter(grepl("MBq|bq\\/|dpm\\/", conc_units_original))
+  out$radioactive = out$raw %>% dplyr::filter(grepl("MBq|bq\\/|^dpm|eq/|equiv/|equivalent", conc_units_original))
   out$raw = out$raw %>% dplyr::filter(!tempID %in% out$radioactive$tempID)
   if(nrow(out$radioactive)){
     log_CvT_doc_load(f=f, m="conc_conversion_needed_radioactive", log_path=log_path, val=out$radioactive$id)
@@ -130,7 +130,7 @@ normalize_conc <- function(raw, f, log_path, debug = FALSE){
   }
   
   out$raw = NULL
-
+  
   # Conc needs liquid portion (doesn't have / units)
   out$need_per_liquid = out$convert_ready %>% dplyr::filter(!grepl("/|per|ppm|ppb|ppmv|ppbv", conc_units_original),
                                                             # Filter out tissue measures to httk Density conversion attempts
@@ -174,42 +174,84 @@ normalize_conc <- function(raw, f, log_path, debug = FALSE){
                                    api_key=API_AUTH)
   }
   
+  tissue_density_dict = httk::tissue.data %>%
+    dplyr::filter(variable == "Density (g/cm^3)",
+                  Tissue %in% unique(out$convert_ready$conc_medium)) %>%
+    dplyr::mutate(Species = tolower(Species)) %>%
+    dplyr::filter(Species %in% unique(out$convert_ready$species)) %>%
+    dplyr::select(conc_medium = Tissue, species = Species, tissue_density = value)
+  
   out$convert_ready = out$convert_ready %>%
     # Lowercase for conversion
     dplyr::mutate(conc_units_original = tolower(conc_units_original))
+  
+  # Prep conversion factor ahead of time
+  out$convert_ready = out$convert_ready %>%
+    dplyr::left_join(MW_dict,
+                     by = c("dsstox_substance_id"="dtxsid")) %>%
+    dplyr::left_join(tissue_density_dict,
+                     by = c("species", "conc_medium")) %>%
+    dplyr::mutate(
+      conversion_factor_type = dplyr::case_when(
+        # Mass/Mass tissue density with molar units - multiply the molecular weight and density
+        grepl("nmol/g|pmol/g|umol/kg", conc_units_original) ~ "mw_tissue",
+        # Molar units, needs molecular weight
+        grepl("mol/", conc_units_original) ~ "mw_only",
+        # Mass, use tissue density conversion factor
+        grepl("/kg|/g|/mg|/ng|/ug", conc_units_original) ~ "tissue",
+        TRUE ~ NA
+      ),
+      conv_factor = dplyr::case_when(
+        # Mass/Mass tissue density with molar units - multiply the molecular weight and density
+        conversion_factor_type == "mw_tissue" ~ mw * tissue_density,
+        # Molar units, needs molecular weight
+        conversion_factor_type == "mw_only" ~ mw,
+        # Mass, use tissue density conversion factor
+        conversion_factor_type == "tissue" ~ tissue_density,
+        # Default 1 conversion factor, because it doesn't change anything
+        TRUE ~ NA
+      ),
+      # Append "tissue conc" to differentiate tissue density conversions
+      conc_units_original = dplyr::case_when(
+        # Mass, use tissue density conversion factor
+        grepl("tissue", conversion_factor_type) ~ paste0(conc_units_original, " tissue conc"),
+        TRUE ~ conc_units_original
+      )
+    )
   
   # TODO Split up between routes as well (ug/mL tissue and ug/m3 breath)
   for(t in c("conc", "conc_sd", "conc_lower_bound", "conc_upper_bound")){
     message("...normalizing ", t)
     for(i in seq_len(nrow(out$convert_ready))){
-      # Molecular Weight conversion (have to find MW first)
-      # Units must be mol and dsstox_substance_id must be present
-      MW=NA
-      if(grepl("mol/", out$convert_ready[i,]$conc_units_original) && !is.na(out$convert_ready[i,]$dsstox_substance_id)){
-        # Pull MW from dictionary by DTXSID
-        MW <- MW_dict$mw[MW_dict$dtxsid == out$convert_ready[i,]$dsstox_substance_id]
-      }
-      # Tissue density lookup/conversion attempt
-      if(out$convert_ready[i,]$conc_units_original %in% c("ug") |
-         grepl("/kg|/g|/mg|/ng|/ug", out$convert_ready[i,]$conc_units_original)){
-        if(!grepl("tissue conc", out$convert_ready[i,]$conc_units_original)){
-          # Flag as tissue conc unit conversion to use correct unit conversion logic
-          out$convert_ready[i,]$conc_units_original = paste0(out$convert_ready[i,]$conc_units_original, " tissue conc")  
-        }
-        
-        MW <- httk::tissue.data[httk::tissue.data$variable == "Density (g/cm^3)",] %>%
-          dplyr::filter(Tissue == out$convert_ready[i,]$conc_medium) %>%
-          dplyr::mutate(Species = tolower(Species)) %>%
-          dplyr::filter(Species == out$convert_ready[i,]$species) %>%
-          dplyr::pull(value)
-        # If not matching tissue density, set NA
-        if(!length(MW)) MW = NA
-      }
+      # # Molecular Weight conversion (have to find MW first)
+      # # Units must be mol and dsstox_substance_id must be present
+      # MW=NA
+      # if(grepl("mol/", out$convert_ready[i,]$conc_units_original) && !is.na(out$convert_ready[i,]$dsstox_substance_id)){
+      #   # Pull MW from dictionary by DTXSID
+      #   MW <- MW_dict$mw[MW_dict$dtxsid == out$convert_ready[i,]$dsstox_substance_id]
+      # }
+      # # Tissue density lookup/conversion attempt
+      # if(out$convert_ready[i,]$conc_units_original %in% c("ug") |
+      #    grepl("/kg|/g|/mg|/ng|/ug", out$convert_ready[i,]$conc_units_original)){
+      #   if(!grepl("tissue conc", out$convert_ready[i,]$conc_units_original)){
+      #     # Flag as tissue conc unit conversion to use correct unit conversion logic
+      #     out$convert_ready[i,]$conc_units_original = paste0(out$convert_ready[i,]$conc_units_original, " tissue conc")  
+      #   }
+      #   
+      #   MW <- httk::tissue.data[httk::tissue.data$variable == "Density (g/cm^3)",] %>%
+      #     dplyr::filter(Tissue == out$convert_ready[i,]$conc_medium) %>%
+      #     dplyr::mutate(Species = tolower(Species)) %>%
+      #     dplyr::filter(Species == out$convert_ready[i,]$species) %>%
+      #     dplyr::pull(value)
+      #   # If not matching tissue density, set NA
+      #   if(!length(MW)) MW = NA
+      # }
       out$convert_ready[i,] = convert_units(x=out$convert_ready[i,], 
                                             num=t, 
-                                            units="conc_units_original", desired="ug/ml",
+                                            units="conc_units_original", 
+                                            desired="ug/ml",
                                             overwrite_units = FALSE,
-                                            conv_factor=MW)
+                                            conv_factor=out$convert_ready$conv_factor[i])
     }
   }
   

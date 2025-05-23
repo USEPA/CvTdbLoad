@@ -51,9 +51,9 @@ get.dictionary.entries.to.curate <- function(schema, full.report=FALSE){
       "SELECT distinct ",
       
       # Documents
-      "e.*, ",
+      "e.*, e.id as document_id, ",
       # Studies
-      "c.*, ",
+      "c.*, c.id as study_id, ",
       ## Chemical dictionary fields (dosed chemical information)
       "k.dosed_chem_dtxsid, k.dosed_chem_name_original, k.dosed_chem_casrn, k.dosed_chem_name, ",
       "j.dose_frequency_original, j.dose_frequency_normalized, ",
@@ -64,15 +64,15 @@ get.dictionary.entries.to.curate <- function(schema, full.report=FALSE){
       ## administration_form dictionary fields
       "f.administration_form_original, f.administration_form_normalized, ",
       # Subjects
-      "d.*, ",
+      "d.*, d.id as subject_id, ",
       # Series
-      "b.*, ",
+      "b.*, b.id as series_id, ",
       ## Chemical dictionary fields (analyzed chemical information)
       "l.analyzed_chem_dtxsid, l.analyzed_chem_name_original, l.analyzed_chem_casrn, l.analyzed_chem_name, ",
       ## conc_medium dictionary fields
       "i.conc_medium_original, i.conc_medium_normalized, ", 
       # tk_parameters
-      "m.* ",
+      "m.*, m.id as tk_parameters_id ",
       
       # Join with series table by series ID
       "FROM cvt.series b ",
