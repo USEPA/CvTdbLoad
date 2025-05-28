@@ -51,9 +51,6 @@ convert_get_conversion_factor <- function(conv_factor=1){
        `ng/kg`=list(`mg/kg`="/1000000"),
        `g/dl`=list(`ug/ml`="*10000"),
        `ug/dl`=list(`ug/ml`="/100"),
-       ppm=list(`ug/ml`="/1"), #1 ppm = 1 ug/mL
-       ppbv = list(`ug/ml`="/1000"), #1 ppb = 0.001 ug/mL,
-       ppb = list(`ug/ml`="/1000"), #1 ppb = 0.001 ug/mL,
        `nmol/l` = list(`ug/ml`=paste0("*",conv_factor,"/1000000")), #1 nmol/L*(1mol/1000000000nmol)*(conv_factor g/1mol)*(1000000ug/1g)*(1L/1000mL)=1*conv_factor/1000000
        `mmol/l` = list(`ug/ml`=paste0("*",conv_factor)),
        `nmol/ml` = list(`ug/ml`=paste0("*",conv_factor,"/1000")),
@@ -74,13 +71,28 @@ convert_get_conversion_factor <- function(conv_factor=1){
        `pg/g tissue conc` = list(`ug/ml`=paste0("*", conv_factor, "/1000000")),
        `ug/mg tissue conc` = list(`ug/ml`=paste0("*", conv_factor, "*1000")),
        
-       # TODO Special MW * tissue density conv_factor
+       # Special MW * tissue density conv_factor
        `nmol/g tissue conc` = list(`ug/ml`=paste0("*", conv_factor, "/1000")),
        `pmol/g tissue conc` = list(`ug/ml`=paste0("*", conv_factor, "/1000000")),
        `umol/kg tissue conc` = list(`ug/ml`=paste0("*", conv_factor, "/1000")),
        
+       # Air conversions
+       `ug/ml air conc` = list(`ug/m3`="*1000000"),
+       `mg/l air conc` = list(`ug/m3`="*1000000"),
+       `ug/l air conc` = list(`ug/m3`="*1000"),
+       `umol/m^3 air conc` = list(`ug/m3` = paste0("*", conv_factor)),
+       `umol/l air conc` = list(`ug/m3`=paste0("*", conv_factor, "*1000")),
+       `nmol/l air conc` = list(`ug/m3`=paste0("*", conv_factor)),
+       `ng/l air conc` = list(`ug/m3`="/1"),
+       `ug air conc`=list(`ug/m3`="*NA"),
+
+       # TODO Handle ppm and ppb cases
+       `ppmm` = list(`ug/ml` = "*NA"),
+       `ppbm` = list(`ug/ml` = "*NA"),
+       `ppmv air conc` = list(`ug/m3` = "*NA"),
+       `ppbv air conc` = list(`ug/m3` = "*NA"),
+       
        ## TODO Special ignore cases
-       `mg/g creatinine tissue conc` = list(`ug/ml` = "*NA"),
        `ng/24h` = list(`ug/ml` = "*NA"),
        `ug/24h` = list(`ug/ml` = "*NA"),
        `ng/l / ng/kg tissue conc` = list(`ug/ml` = "*NA"),
@@ -98,9 +110,7 @@ convert_get_conversion_factor <- function(conv_factor=1){
        `umol eq/g tissue conc` = list(`ug/ml` = "*NA"),
        `umol eq/ml` = list(`ug/ml` = "*NA"),
        `ug equivalent of fc-143-14c/ml` = list(`ug/ml` = "*NA"),
-       `ug equivalents of fc-143-14c/g tissue conc` = list(`ug/ml` = "*NA"),
-       `ug/g creatinine tissue conc` = list(`ug/ml` = "*NA"),
-       `umol/m^3` = list(`ug/ml` = "*NA")
+       `ug equivalents of fc-143-14c/g tissue conc` = list(`ug/ml` = "*NA")
   ) %>%
     return()
 }

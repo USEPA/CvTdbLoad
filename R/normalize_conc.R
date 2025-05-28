@@ -192,6 +192,14 @@ normalize_conc <- function(raw, f, log_path, debug = FALSE){
     dplyr::left_join(tissue_density_dict,
                      by = c("species", "conc_medium")) %>%
     dplyr::mutate(
+      # Add mass vs. volume designation to ppm and ppb
+      conc_units_original = dplyr::case_when(
+        # Assumes expired air is a volume
+        conc_units_original %in% c("ppm", "ppb") & conc_medium %in% c("expired air") ~ paste0(conc_units_original, "v"),
+        # Assumes not expired air is a mass
+        conc_units_original %in% c("ppm", "ppb") & !conc_medium %in% c("expired air") ~ paste0(conc_units_original, "m"),
+        TRUE ~ conc_units_original
+      ),
       conversion_factor_type = dplyr::case_when(
         # Mass/Mass tissue density with molar units - multiply the molecular weight and density
         grepl("nmol/g|pmol/g|umol/kg", conc_units_original) ~ "mw_tissue",
@@ -199,8 +207,14 @@ normalize_conc <- function(raw, f, log_path, debug = FALSE){
         grepl("mol/", conc_units_original) ~ "mw_only",
         # Mass, use tissue density conversion factor
         grepl("/kg|/g|/mg|/ng|/ug", conc_units_original) ~ "tissue",
+        conc_units_original %in% c("ppbv","ppmv") & desired_units == "ug/m3" ~ "ppb_ppm_v",
         TRUE ~ NA
       ),
+      # Calculate Liters per mole constant fpr ppmv and ppbv (only assume STP if no test environment temp provided)
+      # TODO insert logic to calculate based on PV = nRT --> V/n = RT/P (R = 0.0821, P = 1atm, T = Kelvin)
+      # TODO normalized study temperature field and convert to Kelvin
+      # TODO set liters_per_mol_gas_const as case_when if temperature is available
+      liters_per_mol_gas_const = 22.4,
       conv_factor = dplyr::case_when(
         # Mass/Mass tissue density with molar units - multiply the molecular weight and density
         conversion_factor_type == "mw_tissue" ~ mw * tissue_density,
@@ -208,6 +222,8 @@ normalize_conc <- function(raw, f, log_path, debug = FALSE){
         conversion_factor_type == "mw_only" ~ mw,
         # Mass, use tissue density conversion factor
         conversion_factor_type == "tissue" ~ tissue_density,
+        # Needs molecular weight to convert ppm/ppb to ug/m3
+        conversion_factor_type == "ppb_ppm_v" ~ mw/liters_per_mol_gas_const,
         # Default 1 conversion factor, because it doesn't change anything
         TRUE ~ NA
       ),
@@ -215,45 +231,52 @@ normalize_conc <- function(raw, f, log_path, debug = FALSE){
       conc_units_original = dplyr::case_when(
         # Mass, use tissue density conversion factor
         grepl("tissue", conversion_factor_type) ~ paste0(conc_units_original, " tissue conc"),
+        desired_units == "ug/m3" ~ paste0(conc_units_original, " air conc"),
         TRUE ~ conc_units_original
       )
     )
   
-  # TODO Split up between routes as well (ug/mL tissue and ug/m3 breath)
-  for(t in c("conc", "conc_sd", "conc_lower_bound", "conc_upper_bound")){
-    message("...normalizing ", t)
-    for(i in seq_len(nrow(out$convert_ready))){
-      # # Molecular Weight conversion (have to find MW first)
-      # # Units must be mol and dsstox_substance_id must be present
-      # MW=NA
-      # if(grepl("mol/", out$convert_ready[i,]$conc_units_original) && !is.na(out$convert_ready[i,]$dsstox_substance_id)){
-      #   # Pull MW from dictionary by DTXSID
-      #   MW <- MW_dict$mw[MW_dict$dtxsid == out$convert_ready[i,]$dsstox_substance_id]
-      # }
-      # # Tissue density lookup/conversion attempt
-      # if(out$convert_ready[i,]$conc_units_original %in% c("ug") |
-      #    grepl("/kg|/g|/mg|/ng|/ug", out$convert_ready[i,]$conc_units_original)){
-      #   if(!grepl("tissue conc", out$convert_ready[i,]$conc_units_original)){
-      #     # Flag as tissue conc unit conversion to use correct unit conversion logic
-      #     out$convert_ready[i,]$conc_units_original = paste0(out$convert_ready[i,]$conc_units_original, " tissue conc")  
-      #   }
-      #   
-      #   MW <- httk::tissue.data[httk::tissue.data$variable == "Density (g/cm^3)",] %>%
-      #     dplyr::filter(Tissue == out$convert_ready[i,]$conc_medium) %>%
-      #     dplyr::mutate(Species = tolower(Species)) %>%
-      #     dplyr::filter(Species == out$convert_ready[i,]$species) %>%
-      #     dplyr::pull(value)
-      #   # If not matching tissue density, set NA
-      #   if(!length(MW)) MW = NA
-      # }
-      out$convert_ready[i,] = convert_units(x=out$convert_ready[i,], 
-                                            num=t, 
-                                            units="conc_units_original", 
-                                            desired="ug/ml",
-                                            overwrite_units = FALSE,
-                                            conv_factor=out$convert_ready$conv_factor[i])
-    }
-  }
+  # Get generic full conv list to see if conversion factors are missing
+  conv_list_full = convert_get_conversion_factor(conv_factor = 1)
+  
+  message("...Converting conc values...")
+  # Get conversion equation
+  out$convert_ready = out$convert_ready %>%
+    dplyr::rowwise() %>%
+    dplyr::mutate(
+      conv_equ_raw = ifelse(is.null(conv_list_full[[conc_units_original]][[desired_units]]), 
+                            paste0("No conversion for: `", conc_units_original, "` = list(`", desired_units, '`=""),'), 
+                            convert_get_conversion_factor(conv_factor)[[conc_units_original]][[desired_units]]
+      ),
+      conv_equ = dplyr::case_when(
+        grepl("No conversion for", conv_equ_raw, fixed = TRUE) ~ "*NA",
+        TRUE ~ conv_equ_raw
+      )
+    ) %>%
+    dplyr::ungroup()
+  
+  # Calculate conversion across conc columns using conv_equ
+  out$convert_ready = out$convert_ready %>%
+    dplyr::rowwise() %>%
+    dplyr::mutate(
+      dplyr::across(dplyr::all_of(c("conc", "conc_sd", "conc_lower_bound", "conc_upper_bound")),
+                    ~ parse(text=paste0(., conv_equ)) %>% # parse the string
+                      eval() %>% # evaluate the string equation
+                      round(5))
+    ) %>%
+    dplyr::ungroup()
+  
+  # for(t in c("conc", "conc_sd", "conc_lower_bound", "conc_upper_bound")){
+  #   message("...normalizing ", t)
+  #   for(i in seq_len(nrow(out$convert_ready))){
+  #     out$convert_ready[i,] = convert_units(x = out$convert_ready[i,],
+  #                                           num = t,
+  #                                           units = "conc_units_original",
+  #                                           desired = out$convert_ready$desired_units[i],
+  #                                           overwrite_units = FALSE,
+  #                                           conv_factor = out$convert_ready$conv_factor[i])
+  #   }
+  # }
   
   # Convert Failed
   out = check_convert_failed(x=out, f=f, col="conc", log_path=log_path)

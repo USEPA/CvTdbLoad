@@ -54,6 +54,7 @@ bulk_update_age_normalization <- function(){
   
   # Filter to only entries that need updating
   df_out = df_update %>%
+    dplyr::mutate(age_category = as.character(age_category)) %>%
     # Can't compare NA values, so replace for now
     tidyr::replace_na(list(age_category_old = "-99999", age_category = "-99999")) %>%
     dplyr::filter(age_category_old != age_category) %>%

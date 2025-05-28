@@ -13,13 +13,16 @@ summarise_units_not_normalized <- function(){
                                "b.conc_original, b.conc, b.conc_sd_original, b.conc_lower_bound_original, b.conc_upper_bound_original, ",
                                "c.chemical_name_original, c.chemical_name_secondary_original, c.casrn_original, c.id as fk_analyzed_chemical_id, ",
                                "d.conc_medium_normalized, ",
+                               "f.test_environment_temperature, ",
                                "e.species ",
                                "FROM cvt.series a ",
                                "LEFT JOIN cvt.conc_time_values b ON a.id = b.fk_series_id ",
                                "LEFT JOIN cvt.chemicals c ON c.id = a.fk_analyzed_chemical_id ",
                                "LEFT JOIN cvt.conc_medium_dict d ON d.id = a.fk_conc_medium_id ",
                                "LEFT JOIN cvt.subjects e ON a.fk_subject_id = e.id ",
-                               "WHERE b.conc IS NULL and conc_original is NOT NULL AND conc_original NOT in ('ND', 'NA', 'NQ')"
+                               "LEFT JOIN cvt.studies f ON a.fk_study_id = f.id ",
+                               "WHERE b.conc IS NULL and b.conc_original is NOT NULL AND b.conc_original NOT in ('ND', 'NA', 'NQ') ",
+                               "AND d.conc_medium_normalized IS NOT NULL AND d.units IS NOT NULL"
     )),
     dose = db_query_cvt(paste0("SELECT b.id as study_id, a.fk_study_id, ",
                                "e.chemical_name_original as test_substance_name, b.dose_level_original as dose_level, ",
