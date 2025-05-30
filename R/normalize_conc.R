@@ -92,7 +92,7 @@ normalize_conc <- function(raw, f, log_path, debug = FALSE){
     log_CvT_doc_load(f=f, m="conc_conversion_needed_radioactive", log_path=log_path, val=out$radioactive$id)
   }
   # Rate units flag
-  out$rate_units = out$raw %>% dplyr::filter(grepl("/hour|/day|/minute|/second|/hr|/min|/s|/h|*h/", conc_units_original))
+  out$rate_units = out$raw %>% dplyr::filter(grepl("/hour|/day|/minute|/second|/hr|/min|/s|/h|*h/|/24h", conc_units_original))
   out$raw = out$raw %>% dplyr::filter(!tempID %in% out$rate_units$tempID)
   if(nrow(out$rate_units)){
     log_CvT_doc_load(f=f, m="conc_conversion_needed_rate", log_path=log_path, val=out$rate_units$id)
@@ -233,6 +233,16 @@ normalize_conc <- function(raw, f, log_path, debug = FALSE){
         grepl("tissue", conversion_factor_type) ~ paste0(conc_units_original, " tissue conc"),
         desired_units == "ug/m3" ~ paste0(conc_units_original, " air conc"),
         TRUE ~ conc_units_original
+      ),
+      # Handle desired_units for equivalent concentrations
+      desired_units = dplyr::case_when(
+        # Units contain "eq", "equiv", "equivalent"
+        grepl("eq", conc_units_original) & desired_units == "ug/ml" ~ "ugEq/ml",
+        grepl("eq", conc_units_original) & desired_units == "ug/m3" ~ "ugEq/m3",
+        # Analytes flagged as radiolabeled
+        radiolabeled == 1 & desired_units == "ug/m3" ~ "ugEq/m3",
+        radiolabeled == 1 & desired_units == "ug/m3" ~ "ugEq/m3",
+        TRUE ~ desired_units
       )
     )
   
@@ -254,6 +264,16 @@ normalize_conc <- function(raw, f, log_path, debug = FALSE){
       )
     ) %>%
     dplyr::ungroup()
+  
+  # Check missing conversions
+  if(any(grepl("No conversion for", out$convert_ready$conv_equ_raw))){
+    out$convert_ready %>% 
+      dplyr::filter(grepl("No conversion for", conv_equ_raw)) %>%
+      dplyr::pull(conv_equ_raw) %>%
+      unique() %>%
+      cat(sep = "\n")
+    browser()
+  }
   
   # Calculate conversion across conc columns using conv_equ
   out$convert_ready = out$convert_ready %>%

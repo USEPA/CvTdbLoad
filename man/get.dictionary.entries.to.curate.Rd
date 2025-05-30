@@ -4,7 +4,7 @@
 \alias{get.dictionary.entries.to.curate}
 \title{get.dictionary.entries.to.curate}
 \usage{
-get.dictionary.entries.to.curate(schema)
+get.dictionary.entries.to.curate(schema, full.report = FALSE)
 }
 \arguments{
 \item{schema}{Database schema for PostgreSQL}

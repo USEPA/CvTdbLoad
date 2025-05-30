@@ -10,7 +10,7 @@ bulk_update_conc_normalization <- function(){
                   "b.conc_original, b.conc, b.conc_sd_original, b.conc_lower_bound_original, b.conc_upper_bound_original, ",
                   "c.chemical_name_original, c.chemical_name_secondary_original, c.casrn_original, c.id as fk_analyzed_chemical_id, ",
                   "d.conc_medium_normalized, d.units as desired_units, a.conc_units_normalized as conc_units_normalized_old, ",
-                  "f.test_environment_temperature, ",
+                  "f.test_environment_temperature, a.radiolabeled, ",
                   "e.species ",
                   "FROM cvt.series a ",
                   "LEFT JOIN cvt.conc_time_values b ON a.id = b.fk_series_id ",
@@ -21,19 +21,43 @@ bulk_update_conc_normalization <- function(){
                   "WHERE b.conc_original IS NOT NULL AND d.conc_medium_normalized IS NOT NULL AND ",
                   "d.units IS NOT NULL"
   )
-
+  
   # Pull data to check
   df_raw <- db_query_cvt(query) %>%
     # Preserve previous conversion value
     dplyr::mutate(conc_old = conc,
                   conc_medium = conc_medium_normalized)
-    
+  
   # Collapse ID field to improve conversion speeds (only convert unique cases once)
   df_raw_zip <- df_raw %>%
     dplyr::group_by(dplyr::across(c(-id))) %>%  
     dplyr::summarise(id = toString(id)) %>%
     dplyr::ungroup()
   
+  # Check radiolabeling need
+  radiolabel_check = df_raw_zip %>%
+    dplyr::select(chemical_name_original, chemical_name_secondary_original, radiolabeled) %>%
+    dplyr::distinct() %>%
+    dplyr::filter(is.na(radiolabeled)) %>%
+    dplyr::mutate(
+      analyte_name_check = chemical_name_original,
+      analyte_name_secondary_check = chemical_name_secondary_original,
+      dplyr::across(
+        .cols = c(analyte_name_check, analyte_name_secondary_check),
+        .fns = ~ case_when(
+          # Check contains [14] (often [14]C)
+          grepl("\\[14\\]", .) ~ TRUE,
+          # Check contains [3] (often [3]H)
+          grepl("\\[3\\]", .) ~ TRUE,
+          # If contains a double digit, could be a radiolabeled substance - check
+          grepl("([1-9][0-9])", .) ~ TRUE,
+          TRUE ~ FALSE  
+        )
+      )
+    ) %>%
+    dplyr::filter(analyte_name_check == TRUE | analyte_name_secondary_check == TRUE)
+  
+  View(radiolabel_check, title = "radiolabel_check")
   # Normalized data
   df_normalized <- normalize_conc(raw=df_raw_zip) %>%
     dplyr::mutate(

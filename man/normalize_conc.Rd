@@ -9,7 +9,7 @@ normalize_conc(raw, f, log_path, debug = FALSE)
 \arguments{
 \item{raw}{A dataframe of weight information to normalize}
 
-\item{f}{The file name of the template being processed. Used for error logging. #'}
+\item{f}{The file name of the template being processed. Used for error logging.}
 }
 \value{
 Normalized version of the input \code{raw} parameter.
@@ -23,7 +23,7 @@ DETAILS
 \examples{
 \dontrun{
 if(interactive()){
- #EXAMPLE1
+ # EXAMPLE1
  }
 }
 }

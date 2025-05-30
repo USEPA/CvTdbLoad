@@ -4,7 +4,7 @@
 \alias{db_query_cvt}
 \title{FUNCTION_TITLE}
 \usage{
-db_query_cvt(query = NULL)
+db_query_cvt(query = NULL, query_type = "query")
 }
 \arguments{
 \item{query}{A SQL query string to query the database with}

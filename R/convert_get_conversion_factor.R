@@ -82,9 +82,13 @@ convert_get_conversion_factor <- function(conv_factor=1){
        `ug/l air conc` = list(`ug/m3`="*1000"),
        `umol/m^3 air conc` = list(`ug/m3` = paste0("*", conv_factor)),
        `umol/l air conc` = list(`ug/m3`=paste0("*", conv_factor, "*1000")),
-       `nmol/l air conc` = list(`ug/m3`=paste0("*", conv_factor)),
+       `nmol/l air conc` = list(`ug/m3`=paste0("*", conv_factor), `ugEq/m3`=paste0("*", conv_factor)),
        `ng/l air conc` = list(`ug/m3`="/1"),
-       `ug air conc`=list(`ug/m3`="*NA"),
+       `ug air conc`=list(`ug/m3`="*NA", `ugEq/m3`="*NA"),
+       
+       # Handle equivalent cases (radiolabeled)
+       `ugeq/g tissue conc` = list(`ugEq/ml`=paste0("*", conv_factor)),
+       `ngeq/g tissue conc` = list(`ugEq/ml`=paste0("*", conv_factor, "/1000")),
 
        # TODO Handle ppm and ppb cases
        `ppmm` = list(`ug/ml` = "*NA"),
@@ -93,24 +97,8 @@ convert_get_conversion_factor <- function(conv_factor=1){
        `ppbv air conc` = list(`ug/m3` = "*NA"),
        
        ## TODO Special ignore cases
-       `ng/24h` = list(`ug/ml` = "*NA"),
-       `ug/24h` = list(`ug/ml` = "*NA"),
        `ng/l / ng/kg tissue conc` = list(`ug/ml` = "*NA"),
-       `ngeq/g tissue conc` = list(`ug/ml` = "*NA"),
-       `mg eq/kg tissue conc` = list(`ug/ml` = "*NA"),
-       `ng-eq/ml` = list(`ug/ml` = "*NA"),
-       `ug equiv/g tissue conc` = list(`ug/ml` = "*NA"),
-       `ug equivalent 14c-k+pfos/ml` = list(`ug/ml` = "*NA"),
-       `ug 14c equiv/g tissue conc` = list(`ug/ml` = "*NA"),
-       `ug 14c equiv/g s tissue conc` = list(`ug/ml` = "*NA"),
-       `ug 14c equiv/total carcass` = list(`ug/ml` = "*NA"),
-       `ugeq/g tissue conc` = list(`ug/ml` = "*NA"),
-       `ug 4-cb/total carcass` = list(`ug/ml` = "*NA"),
-       `nmol eq/g tissue conc` = list(`ug/ml` = "*NA"),
-       `umol eq/g tissue conc` = list(`ug/ml` = "*NA"),
-       `umol eq/ml` = list(`ug/ml` = "*NA"),
-       `ug equivalent of fc-143-14c/ml` = list(`ug/ml` = "*NA"),
-       `ug equivalents of fc-143-14c/g tissue conc` = list(`ug/ml` = "*NA")
+       `ug 4-cb/total carcass` = list(`ug/ml` = "*NA")
   ) %>%
     return()
 }

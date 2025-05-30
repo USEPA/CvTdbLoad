@@ -13,7 +13,7 @@ summarise_units_not_normalized <- function(){
                                "b.conc_original, b.conc, b.conc_sd_original, b.conc_lower_bound_original, b.conc_upper_bound_original, ",
                                "c.chemical_name_original, c.chemical_name_secondary_original, c.casrn_original, c.id as fk_analyzed_chemical_id, ",
                                "d.conc_medium_normalized, ",
-                               "f.test_environment_temperature, ",
+                               "f.test_environment_temperature, a.radiolabeled, ",
                                "e.species ",
                                "FROM cvt.series a ",
                                "LEFT JOIN cvt.conc_time_values b ON a.id = b.fk_series_id ",
