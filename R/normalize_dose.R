@@ -41,7 +41,7 @@ normalize_dose <- function(raw, f, log_path, debug = FALSE){
     message("...normalize_dose dataframe empty...returning...")
     return(raw)
   }
-  #List of dataframe subsets
+  # List of dataframe subsets
   out = list()
   out$raw = normalization_prep(x=raw, newcols=c("dose_level_normalized"))
   
@@ -50,93 +50,278 @@ normalize_dose <- function(raw, f, log_path, debug = FALSE){
     dplyr::mutate(dose_level_units = dose_level_units %>%
                     # Remove the /day for mg/kg/day
                     gsub("mg/kg/day", "mg/kg", .))
-  #Set to convert column to maintain original
+  # Set to convert column to maintain original
   out$raw$dose_level_normalized = out$raw$dose_level
-  #out$raw$dose_level_units_original = out$raw$dose_level_units
   species_list = db_query_cvt("SELECT distinct species FROM cvt.subjects") %>%
     dplyr::pull(species)
-  #Remove species and "body weight" from units field
-  out$raw$dose_level_units = gsub(paste0(c("body weight", "bw", "b.w.",
-                                           paste0("/", species_list %>% unique()),
+  # Remove species from units field
+  out$raw$dose_level_units = gsub(paste0(c(paste0("/", species_list %>% unique()),
                                            species_list %>% unique()), collapse="|"), 
                                   "",
                                   out$raw$dose_level_units) %>%
     gsub(" per ", "/", .) %>% 
-    trimws()
-  #Remove parenthetical information from dose_level_normalized
+    stringr::str_squish()
+  
+  # Remove parenthetical information from dose_level_normalized
   if ("dose_level_normalized" %in% names(out$raw)) {
-    out$raw$dose_level_normalized = gsub("\\([^()]*\\)", "", out$raw$dose_level_normalized) %>% trimws()
+    out$raw$dose_level_normalized = gsub("\\([^()]*\\)", "", out$raw$dose_level_normalized) %>% stringr::str_squish()
   }
-  #Missing dose value
+  # Missing dose value
   out = check_missing(x=out, miss_col = "dose_level", f=f, flag=TRUE, log_path=log_path)
-
-  #Missing units
+  out$missing = out$missing %>%
+    dplyr::mutate(conversion_factor_type = "missing_dose")
+  
+  # Missing units
   out = check_missing_units(x=out, f=f, units_col="dose_level_units", log_path=log_path)
-  #Percentage units flag
-  out$percentage = out$raw %>% dplyr::filter(grepl("%|percent*", dose_level_units))
+  out$missing_units = out$missing_units %>%
+    dplyr::mutate(conversion_factor_type = "missing_dose_units")
+  
+  # Percentage units flag
+  out$percentage = out$raw %>% dplyr::filter(grepl("%|percent*", dose_level_units)) %>%
+    dplyr::mutate(conversion_factor_type = "percent")
   out$raw = out$raw %>% dplyr::filter(!tempID %in% out$percentage$tempID)
   if(nrow(out$percentage)){
     log_CvT_doc_load(f=f, m="dose_conversion_needed_percentage", log_path=log_path, val=out$percentage$id)
   }
-  #Concentration units flag
-  out$concentration = out$raw %>% dplyr::filter(grepl("/l|/ml|/L|/mL|/0.1mL", dose_level_units))
-  out$raw = out$raw %>% dplyr::filter(!tempID %in% out$concentration$tempID)
-  if(nrow(out$concentration)){
-    log_CvT_doc_load(f=f, m="dose_conversion_needed_concentration", log_path=log_path, val=out$concentration$id)
-  }
-  #Radioactive units flag
-  out$radioactive = out$raw %>% dplyr::filter(grepl("MBq|uCi", dose_level_units))
+  # # Concentration units flag
+  # out$concentration = out$raw %>% dplyr::filter(grepl("/l|/ml|/L|/mL|/0.1mL", dose_level_units))
+  # out$raw = out$raw %>% dplyr::filter(!tempID %in% out$concentration$tempID)
+  # if(nrow(out$concentration)){
+  #   log_CvT_doc_load(f=f, m="dose_conversion_needed_concentration", log_path=log_path, val=out$concentration$id)
+  # }
+  # Radioactive units flag
+  out$radioactive = out$raw %>% dplyr::filter(grepl("MBq|uCi", dose_level_units)) %>%
+    dplyr::mutate(conversion_factor_type = "radioactive")
   out$raw = out$raw %>% dplyr::filter(!tempID %in% out$radioactive$tempID)
   if(nrow(out$radioactive)){
     log_CvT_doc_load(f=f, m="dose_conversion_needed_radioactive", log_path=log_path, val=out$radioactive$id)
   }
-  #Rate units flag
-  out$rate_units = out$raw %>% dplyr::filter(grepl("/hour|/day|/minute|/second|/hr|/min|/s", dose_level_units))
+  # Rate units flag
+  out$rate_units = out$raw %>% dplyr::filter(grepl("/hour|/day|/minute|/second|/hr|/min|/s", dose_level_units)) %>%
+    dplyr::mutate(conversion_factor_type = "rate_units")
   out$raw = out$raw %>% dplyr::filter(!tempID %in% out$rate_units$tempID)
   if(nrow(out$rate_units)){
     log_CvT_doc_load(f=f, m="dose_conversion_needed_rate", log_path=log_path, val=out$rate_units$id)
   }
-  #Gas/Liquid units flag
-  out$gas_liquid = out$raw %>% dplyr::filter(grepl("gas|liquid", dose_level_units))
+  # Gas/Liquid units flag
+  out$gas_liquid = out$raw %>% dplyr::filter(grepl("gas|liquid", dose_level_units)) %>%
+    dplyr::mutate(conversion_factor_type = "gas_liquid")
   out$raw = out$raw %>% dplyr::filter(!tempID %in% out$gas_liquid$tempID)
   if(nrow(out$gas_liquid)){
     log_CvT_doc_load(f=f, m="dose_conversion_gas_liquid", log_path=log_path, val=out$gas_liquid$id)
   }
-  #Surface area conversion needed
-  out$surface_area_needed = out$raw %>% dplyr::filter(grepl("/cm2|/cm\\^|/m\\^", dose_level_units))
-  out$raw = out$raw %>% dplyr::filter(!tempID %in% out$surface_area_needed$tempID)
-  if(nrow(out$surface_area_needed)){
-    log_CvT_doc_load(f=f, m="dose_conversion_needed_surface_area", log_path=log_path, val=out$surface_area_needed$id)
-  }
-  #ppm/ppb conversion needed
-  out$parts_per = out$raw %>% dplyr::filter(grepl("ppm|ppb", dose_level_units))
-  out$raw = out$raw %>% dplyr::filter(!tempID %in% out$parts_per$tempID)
-  if(nrow(out$parts_per)){
-    log_CvT_doc_load(f=f, m="dose_conversion_needed_ppm_ppb", log_path=log_path, val=out$parts_per$id)
-  }
-  #List of doses
+  
+  # # ppm/ppb conversion needed
+  # out$parts_per = out$raw %>% dplyr::filter(grepl("ppm|ppb", dose_level_units))
+  # out$raw = out$raw %>% dplyr::filter(!tempID %in% out$parts_per$tempID)
+  # if(nrow(out$parts_per)){
+  #   log_CvT_doc_load(f=f, m="dose_conversion_needed_ppm_ppb", log_path=log_path, val=out$parts_per$id)
+  # }
+  # List of doses
   out = check_subject_list(x=out, f=f, col="dose_level_normalized", log_path=log_path)
+  
+  out$split_subject = out$split_subject %>%
+    dplyr::mutate(conversion_factor_type = "subject_list")
   # +/- Group
   out = check_unit_ci(x=out, f=f, col="dose_level_normalized", log_path=log_path)
-  #Dose range
+  out$ci = out$ci %>%
+      dplyr::mutate(conversion_factor_type = "ci")
+  # Dose range
   out = check_unit_range(x=out, f=f, col="dose_level_normalized", log_path=log_path)
-  #Ready for conversion
+  out$unit_range = out$unit_range %>%  
+    dplyr::mutate(conversion_factor_type = "unit_range")
+  # Contains "body weight"
+  out$bw = out$raw %>%
+    dplyr::filter(grepl("bw|bodyweight|body weight", dose_level_units)) %>%
+    dplyr::mutate(conversion_factor_type = "bw",
+                  dose_level_units = dose_level_units %>%
+                    # Clean-up body weight representation
+                    gsub(" body weight", "-bw", .) %>%
+                    gsub(" bw", "-bw", .),
+                  dose_level_normalized = as.numeric(dose_level_normalized))
+  out$raw = out$raw %>% dplyr::filter(!tempID %in% out$bw$tempID)
+  # Ready for conversion
   out$conversion = out$raw %>% 
     dplyr::mutate(dose_level_normalized = suppressWarnings(as.numeric(dose_level_normalized))) %>%
     dplyr::filter(!is.na(dose_level_normalized), !is.nan(dose_level_normalized))
   out$raw = out$raw %>% dplyr::filter(!tempID %in% out$conversion$tempID)
-  #Check unhandled cases
+  # Check unhandled cases
   if(nrow(out$raw)){
     message("...Unhandled cases for dose: ", paste0(out$raw$dose_level_normalized %>% unique(), collapse = "; "))
     log_CvT_doc_load(f=f, m="unhandled_dose_normalize_case", log_path=log_path, val=out$raw$id)
   }
-  #Dose needs weight (doesn't have / units)
-  out$need_per_weight = out$conversion %>% dplyr::filter(!grepl("/|per", dose_level_units))
+  # Dose needs weight (doesn't have / units)
+  out$need_per_weight = out$conversion %>% dplyr::filter(!grepl("/|per|ppm|ppb", dose_level_units) | 
+                                                           grepl("^nmol$|^nmole$", dose_level_units)) %>%
+    dplyr::mutate(conversion_factor_type = "need_per_weight")
   out$conversion = out$conversion %>% dplyr::filter(!tempID %in% out$need_per_weight$tempID)
+  # Get conversion factor body weight
+  out$need_per_weight = out$need_per_weight %>%
+    # Split up collapsed species information
+    tidyr::separate_longer_delim(subject_info, delim = ", ") %>%
+    tidyr::separate_wider_delim(cols = subject_info,
+                                names = c("species", "bw"),
+                                delim = ": ") %>%
+    dplyr::mutate(
+      dplyr::across(c(bw), as.numeric),
+      equ_const = bw
+    ) %>%
+    dplyr::group_by(id) %>%
+    dplyr::reframe(
+      # Retain non-group columns
+      dplyr::across(),
+      need_bw_min = suppressWarnings(min(equ_const, na.rm = TRUE)), 
+      need_bw_max = suppressWarnings(max(equ_const, na.rm = TRUE))
+    ) %>%
+    # Replace min/max Inf with NA
+    dplyr::mutate(
+      dplyr::across(dplyr::contains("need_bw"), 
+                    ~ replace(., is.infinite(.), NA)),
+      conversion_factor_type = "need_bw"
+    ) %>%
+    dplyr::select(-c(species, bw, equ_const)) %>%
+    dplyr::distinct()
   
-  # # Dose ignore cases
-  # out$ignored_cases = out$conversion %>% dplyr::filter(dose_level_units %in% c("mg/0.1mL"))
-  # out$conversion = out$conversion %>% dplyr::filter(!tempID %in% out$ignored_cases$tempID)
+  # Feed/Drinking water study
+  out$feed_drink = out$conversion %>%
+    dplyr::filter(
+      dplyr::if_any(c(administration_route_original, administration_route_normalized,
+                      administration_method_original, administration_method_normalized),
+                    ~ grepl("drink|water|\\bfeed\\b", .),
+                    # Ignore cases where already reported in /kg-bw
+                    !grepl("\\/kg-bw", dose_level_units))
+    ) %>%
+    dplyr::mutate(conversion_factor_type = dplyr::case_when(
+      grepl("\\bfeed\\b", administration_method_original) | grepl("\\bfeed\\b", administration_method_normalized) ~ "feed",
+      TRUE ~ "drinking"
+    ))
+  out$conversion = out$conversion %>%
+    dplyr::filter(!tempID %in% out$feed_drink$tempID)
+  
+  # Table 1-3 U.S. EPA. Recommendations For And Documentation Of Biological Values For Use In Risk Assessment. U.S. Environmental Protection Agency, Washington, DC, EPA/600/6-87/008 (NTIS PB88179874), 1988.
+  # feed = kg/day; drinking = L/day
+  feed_drink_rates = data.frame(
+    species = c("rat", "mouse", "hamster", "rabbit"),
+    type = c("feed", "feed", "feed", "feed",
+             "drinking", "drinking", "drinking", "drinking"),
+    f_d_equ = c("0.056*bw^0.6611", "0.056*bw^0.6611", "0.082*bw^0.9285", "0.041*bw^0.7898",
+                "0.10*bw^0.7377", "0.10*bw^0.7377", NA, NA)
+  )
+  # Calculate feed/drinking water consumption per body weight, store min and max by study ID groups
+  out$feed_drink = out$feed_drink %>%
+    # Split up collapsed species information
+    tidyr::separate_longer_delim(subject_info, delim = ", ") %>%
+    tidyr::separate_wider_delim(cols = subject_info,
+                                names = c("species", "bw"),
+                                delim = ": ") %>%
+    # Join to get rate equations
+    dplyr::left_join(feed_drink_rates,
+                     by = c("species", "conversion_factor_type"="type")) %>%
+    tidyr::separate_wider_delim(f_d_equ,
+                                names = c("equ_const", "equ_exp"),
+                                delim = "*bw^") %>%
+    dplyr::mutate(
+      dplyr::across(c(equ_const, bw, equ_exp, administration_term), as.numeric),
+      equ_term = dplyr::case_when(
+        administration_term_units %in% c("d", "day", "days") ~ administration_term,
+        administration_term_units %in% c("wk", "week", "weeks") ~ administration_term * 7,
+        administration_term_units %in% c("hr", "hrs", "hour", "hours") ~ administration_term / 24,
+        TRUE ~ NA
+      ),
+      consumption_bw = (equ_const * (bw ^ equ_exp) * equ_term) / bw
+      ) %>%
+    dplyr::group_by(id) %>%
+    dplyr::reframe(
+      # Retain non-group columns
+      dplyr::across(),
+      consumption_bw_min = suppressWarnings(min(consumption_bw, na.rm = TRUE)), 
+      consumption_bw_max = suppressWarnings(max(consumption_bw, na.rm = TRUE))
+      ) %>%
+    # Replace min/max Inf with NA
+    dplyr::mutate(
+      dplyr::across(dplyr::contains("consumption"), 
+                    ~ replace(., is.infinite(.), NA)),
+      conversion_factor_type = "feed_drink"
+      ) %>%
+    dplyr::select(-c(species, bw, equ_const, equ_exp, equ_term, consumption_bw)) %>%
+    dplyr::distinct()
+
+  # Oral /mL or /L units - use dose volume and subject weight to get mg/kg-bw
+  out$oral_vol = out$conversion %>%
+    dplyr::filter(administration_route_normalized %in% c("oral", "iv"),
+                  grepl("\\/ml|\\/l", dose_level_units, ignore.case = TRUE))
+  out$conversion = out$conversion %>% dplyr::filter(!tempID %in% out$oral_vol$tempID)
+  
+  out$oral_vol = out$oral_vol %>%
+    # Split up collapsed species information
+    tidyr::separate_longer_delim(subject_info, delim = ", ") %>%
+    tidyr::separate_wider_delim(cols = subject_info,
+                                names = c("species", "bw"),
+                                delim = ": ") %>%
+    dplyr::mutate(
+      dplyr::across(c(bw, dose_volume), as.numeric),
+      equ_const = dplyr::case_when(
+        # Already provided in ml/kg, so conversion to /kg-bw is multiply bw
+        dose_volume_units == "ml/kg" ~ dose_volume * bw,
+        TRUE ~ dose_volume / bw
+      )
+    ) %>%
+    dplyr::group_by(id) %>%
+    dplyr::reframe(
+      # Retain non-group columns
+      dplyr::across(),
+      oral_vol_min = suppressWarnings(min(equ_const, na.rm = TRUE)), 
+      oral_vol_max = suppressWarnings(max(equ_const, na.rm = TRUE))
+    ) %>%
+    # Replace min/max Inf with NA
+    dplyr::mutate(
+      dplyr::across(dplyr::contains("oral_vol"), 
+                    ~ replace(., is.infinite(.), NA)),
+      conversion_factor_type = "oral_vol",
+      # Convert back to character to recombine with out list later...
+      dose_volume = as.character(dose_volume)
+    ) %>%
+    dplyr::select(-c(species, bw, equ_const)) %>%
+    dplyr::distinct()
+  
+  out$dermal = out$conversion %>%
+    dplyr::filter(
+      grepl("\\/m\\^3|\\/l|\\/ml", dose_level_units, ignore.case = TRUE), 
+                  administration_route_normalized == "dermal"
+      )
+  out$conversion = out$conversion %>% dplyr::filter(!tempID %in% out$out$dermal$tempID)
+  
+  out$dermal = out$dermal %>%
+    # Split up collapsed species information
+    tidyr::separate_longer_delim(subject_info, delim = ", ") %>%
+    tidyr::separate_wider_delim(cols = subject_info,
+                                names = c("species", "bw"),
+                                delim = ": ") %>%
+    dplyr::mutate(
+      dplyr::across(c(bw, dose_volume), as.numeric),
+      equ_const = dplyr::case_when(
+        # Already provided in ml/kg, so conversion to /kg-bw is multiply bw
+        dose_volume_units == "L" & grepl("\\/ml", dose_level_units, ignore.case = TRUE) ~ dose_volume * 1000 / bw,
+        TRUE ~ dose_volume / bw
+      )
+    ) %>%
+    dplyr::group_by(id) %>%
+    dplyr::reframe(
+      # Retain non-group columns
+      dplyr::across(),
+      dermal_vol_min = suppressWarnings(min(equ_const, na.rm = TRUE)), 
+      dermal_vol_max = suppressWarnings(max(equ_const, na.rm = TRUE))
+    ) %>%
+    # Replace min/max Inf with NA
+    dplyr::mutate(
+      dplyr::across(dplyr::contains("dermal_vol"), 
+                    ~ replace(., is.infinite(.), NA)),
+      conversion_factor_type = "dermal_vol",
+      # Convert back to character to recombine with out list later...
+      dose_volume = as.character(dose_volume)
+    ) %>%
+    dplyr::select(-c(species, bw, equ_const)) %>%
+    dplyr::distinct()
   
   if (isTRUE(debug)) {
     return(out)
@@ -156,8 +341,10 @@ normalize_dose <- function(raw, f, log_path, debug = FALSE){
   # }
  
   # Convert dosages
-  out$convert_ready = dplyr::bind_rows(out$conversion, out$ci, out$unit_range)
-  out$conversion = NULL; out$ci = NULL; out$unit_range = NULL
+  out$convert_ready = dplyr::bind_rows(out$conversion, out$ci, out$unit_range, out$need_per_weight, 
+                                       out$feed_drink, out$bw, out$oral_vol, out$dermal, out$need_per_weight)
+  out$conversion = NULL; out$ci = NULL; out$unit_range = NULL; out$need_per_weight = NULL; out$feed_drink = NULL; out$bw=NULL
+  out$oral_vol = NULL; out$dermal = NULL; out$need_per_weight = NULL
   
   if(nrow(out$convert_ready)){
     # Map to chemical entries for DTXSID
@@ -180,27 +367,204 @@ normalize_dose <- function(raw, f, log_path, debug = FALSE){
     }
     
     out$convert_ready = out$convert_ready %>%
-      dplyr::mutate(dose_level_units = dose_level_units %>%
+      dplyr::mutate(
+        dose_level_units = dose_level_units %>%
                       # Remove all whitespace
                       gsub("[[:space:]]", "", .) %>%
                       # Replace unicode micro
-                      gsub("\u00b5", "u", .))
+                      gsub("\u00b5", "u", .) %>%
+                      # Lowercase for conversion
+                      tolower()
+                    )
+################################################################################
+    # View unique combinations of units by route
+    out$convert_ready %>%
+      dplyr::select(
+        dose_level_units,
+        # dose_level, dose_level_normalized,
+        administration_route_original, administration_method_original, administration_form_original,
+        administration_route_normalized, administration_method_normalized, administration_form_normalized
+        ) %>%
+      dplyr::distinct() %>%
+      View(title = "dose_admin")
     
-    for(i in seq_len(nrow(out$convert_ready))){
-      #Molecular Weight conversion (have to find MW first)
-      MW=NA
-      if(grepl("mol/", out$convert_ready[i,]$dose_level_units)){
-        # Pull MW from dictionary by DTXSID
-        MW <- MW_dict$mw[MW_dict$dtxsid == out$convert_ready[i,]$dsstox_substance_id]
-      }
-      #NEED subject weight to convert!
-      out$convert_ready[i,] = convert_units(x=out$convert_ready[i,], 
-                                            num="dose_level_normalized",
-                                            units="dose_level_units", 
-                                            desired="mg/kg",
-                                            overwrite_units = FALSE,
-                                            conv_factor=MW)
+    # Prep conversion factor ahead of time
+    out$convert_ready = out$convert_ready %>%
+      dplyr::left_join(MW_dict,
+                       by = c("dsstox_substance_id"="dtxsid")) %>%
+      dplyr::mutate(
+        # Append "tissue conc" to differentiate tissue density conversions
+        dose_level_units = dplyr::case_when(
+          conversion_factor_type == "need_bw" ~ paste0(dose_level_units, " need_bw"),
+          # Dermal with dose volume conversion_factor for mg/kg-bw
+          conversion_factor_type == "oral_vol" ~ paste0(dose_level_units, " dermal_vol"),
+          # Funnel oral_vol group to use correct conversion with conversion factor
+          conversion_factor_type == "oral_vol" ~ paste0(dose_level_units, " oral_vol"),
+          # Assumes ppm/ppb volume from chamber exposure
+          dose_level_units %in% c("ppm", "ppb") & 
+            administration_route_normalized %in% c("inhalation", "endotracheal") ~ paste0(dose_level_units, "v"),
+          # Assumes ppm/ppb volume from chamber exposure
+          dose_level_units %in% c("ppm", "ppb") & 
+            administration_form_original %in% c("vapor") ~ paste0(dose_level_units, "v"),
+          # Assumes ppm/ppb mass from feed
+          dose_level_units %in% c("ppm", "ppb") & grepl("\\bfeed\\b", administration_method_normalized) ~ paste0(dose_level_units, "m"),
+          # Feed study
+          grepl("\\bfeed\\b", administration_route_original) & !conversion_factor_type %in% c("bw") ~ paste0(dose_level_units, " feed"),
+          grepl("\\bfeed\\b", administration_method_original) & !conversion_factor_type %in% c("bw") ~ paste0(dose_level_units, " feed"),
+          grepl("\\bfeed\\b", administration_method_normalized) & !conversion_factor_type %in% c("bw") ~ paste0(dose_level_units, " feed"),
+          # Drinking water study
+          grepl("drink|water", administration_route_original) & !conversion_factor_type %in% c("bw") ~ paste0(dose_level_units, " drinking"),
+          grepl("drink|water", administration_method_original) & !conversion_factor_type %in% c("bw") ~ paste0(dose_level_units, " drinking"),
+          grepl("drink|water", administration_method_normalized) & !conversion_factor_type %in% c("bw") ~ paste0(dose_level_units, " drinking"),
+          TRUE ~ dose_level_units
+        ) %>%
+          # Append "dose" to all units to help differentiate during unit conversion
+          paste0(., " dose"),
+        conversion_factor_type = dplyr::case_when(
+          # Case of need body weight denominator but numerator in moles
+          conversion_factor_type == "need_bw" & grepl("mol", dose_level_units) ~ "mw_need_bw",
+          # Case of denominator in bw but numerator in moles
+          conversion_factor_type == "bw" & grepl("mol\\/", dose_level_units) ~ "mw_bw",
+          # Set previously during screening/grouping
+          !is.na(conversion_factor_type) ~ conversion_factor_type,
+          dose_level_units %in% c("ppbv","ppmv") & administration_route_normalized %in% c("inhalation", "endotracheal") ~ "ppb_ppm_v_inh",
+          dose_level_units %in% c("ppbv","ppmv") & administration_route_normalized %in% c("oral") ~ "ppb_ppm_v_oral",
+          # /m^3, /l, /mL
+          grepl("\\/m\\^3|\\/l|\\/ml", dose_level_units) & administration_route_normalized == "inhalation" ~ "inhalation_exp_conc",
+          # molar /m^3
+          grepl("mol\\/m\\^3", dose_level_units) & administration_route_normalized == "inhalation" ~ "inhalation_exp_conc_mol",
+          # TODO determine how to handle this case
+          grepl("\\/cm^2", dose_level_units) & administration_route_normalized == "dermal" ~ "dermal_sa",
+          # Molar units, needs molecular weight
+          grepl("mol/", dose_level_units) ~ "mw_only",
+          TRUE ~ NA
+        ),
+        # Min is the default, or the minimum in a range
+        conv_factor_min = dplyr::case_when(
+          conversion_factor_type == "mw_bw" ~ mw,
+          # Molar units, needs molecular weight
+          conversion_factor_type == "mw_only" ~ mw,
+          conversion_factor_type == "inhalation_exp_conc_mol" ~ mw,
+          # TODO handle ppmv/ppbv inhalation conversion factor
+          # TODO handle ppmv/ppbv oral conversion factor
+          # feed consumption / bw min
+          conversion_factor_type == "feed dose" ~ consumption_bw_min,
+          # drinking consumption / bw min
+          conversion_factor_type == "drinking dose" ~ consumption_bw_min,
+          # oral studies reporting dosages per volume
+          conversion_factor_type == "oral_vol" ~ oral_vol_min,
+          # Dermal dose volume conversion
+          conversion_factor_type == "dermal_vol" ~ dermal_vol_min,
+          # Reported just as weight, conversion_factor is body_weight
+          conversion_factor_type == "need_bw" ~ need_bw_min,
+          # Reported just as molar weight, conversion_factor is mw/body_weight
+          conversion_factor_type == "mw_need_bw" ~ mw/need_bw_min,
+          TRUE ~ NA
+        ),
+        # Max is only used for cases where dose may be a range
+        conv_factor_max = dplyr::case_when(
+          # feed consumption / bw max
+          conversion_factor_type == "feed dose" ~ consumption_bw_max,
+          # drinking consumption / bw max
+          conversion_factor_type == "drinking dose" ~ consumption_bw_max,
+          # oral studies reporting dosages per volume
+          conversion_factor_type == "oral_vol" ~ oral_vol_max,
+          # Dermal dose volume conversion
+          conversion_factor_type == "dermal_vol" ~ dermal_vol_max,
+          # Reported just as weight, conversion_factor is body_weight
+          conversion_factor_type == "need_bw" ~ need_bw_max,
+          # Reported just as molar weight, conversion_factor is mw/body_weight
+          conversion_factor_type == "mw_need_bw" ~ mw/need_bw_max,
+          TRUE ~ NA
+        ),
+        desired_units = dplyr::case_when(
+          conversion_factor_type %in% c("inhalation_exp_conc", 
+                                        "inhalation_exp_conc_mol") ~ "ug/m3",
+          TRUE ~ "mg/kg-bw"
+          )
+      )
+    
+    # TODO For feed/drinking water studies, set dose_level_target as dose_level and replace dose_level with new calculation, if dose_level_target is NULL
+    # TODO collapse into range where needed/possible for cases with multiple subjects
+    
+    # Get generic full conv list to see if conversion factors are missing
+    conv_list_full = convert_get_conversion_factor(conv_factor = 1)
+    
+    message("...Converting dose values...")
+    # Get conversion equation
+    out$convert_ready = out$convert_ready %>%
+      dplyr::rowwise() %>%
+      dplyr::mutate(
+        # Minimum calculation (default or range minimum)
+        conv_min_equ_raw = ifelse(is.null(conv_list_full[[dose_level_units]][[desired_units]]), 
+                              paste0("No conversion for: `", dose_level_units, "` = list(`", desired_units, '`=""),'), 
+                              convert_get_conversion_factor(conv_factor_min)[[dose_level_units]][[desired_units]]
+        ),
+        conv_min_equ = dplyr::case_when(
+          grepl("No conversion for", conv_min_equ_raw, fixed = TRUE) ~ "*NA",
+          TRUE ~ conv_min_equ_raw
+        ),
+        # Maximum calculation (only used if a maximum value exists)
+        conv_max_equ_raw = ifelse(is.null(conv_list_full[[dose_level_units]][[desired_units]]), 
+                                  paste0("No conversion for: `", dose_level_units, "` = list(`", desired_units, '`=""),'), 
+                                  convert_get_conversion_factor(conv_factor_max)[[dose_level_units]][[desired_units]]
+        ),
+        conv_max_equ = dplyr::case_when(
+          grepl("No conversion for", conv_max_equ_raw, fixed = TRUE) ~ "*NA",
+          TRUE ~ conv_max_equ_raw
+        )
+      ) %>%
+      dplyr::ungroup()
+    
+    # Check missing conversions
+    if(any(grepl("No conversion for", out$convert_ready$conv_min_equ_raw))){
+      out$convert_ready %>% 
+        dplyr::filter(grepl("No conversion for", conv_min_equ_raw)) %>%
+        dplyr::pull(conv_min_equ_raw) %>%
+        unique() %>%
+        cat(sep = "\n")
+      browser()
     }
+    
+    # Calculate conversion across conc columns using conv_equ
+    out$convert_ready = out$convert_ready %>%
+      dplyr::rowwise() %>%
+      dplyr::mutate(
+          dose_level_normalized_min = parse(text=paste0(dose_level_normalized, 
+                                                        conv_min_equ)) %>% # parse the string
+                        eval() %>% # evaluate the string equation
+                        round(5),
+          dose_level_normalized_max = parse(text=paste0(dose_level_normalized, 
+                                                        conv_max_equ)) %>% # parse the string
+            eval() %>% # evaluate the string equation
+            round(5)
+      ) %>%
+      dplyr::ungroup() %>%
+      tidyr::unite(col = "dose_level_normalized_final",
+                   dose_level_normalized_min, dose_level_normalized_max,
+                   sep = "-",
+                   na.rm = TRUE,
+                   remove = FALSE)
+    
+    # TODO Draft logic to combine dosages in ranges as needed
+    
+################################################################################
+      
+    # for(i in seq_len(nrow(out$convert_ready))){
+    #   #Molecular Weight conversion (have to find MW first)
+    #   MW=NA
+    #   if(grepl("mol/", out$convert_ready[i,]$dose_level_units)){
+    #     # Pull MW from dictionary by DTXSID
+    #     MW <- MW_dict$mw[MW_dict$dtxsid == out$convert_ready[i,]$dsstox_substance_id]
+    #   }
+    #   #NEED subject weight to convert!
+    #   out$convert_ready[i,] = convert_units(x=out$convert_ready[i,], 
+    #                                         num="dose_level_normalized",
+    #                                         units="dose_level_units", 
+    #                                         desired="mg/kg",
+    #                                         overwrite_units = FALSE,
+    #                                         conv_factor=MW)
+    # }
   }
   
   # Convert Failed

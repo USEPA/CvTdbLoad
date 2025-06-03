@@ -1,5 +1,5 @@
 
-bulk_update_conc_normalization <- function(){
+bulk_update_conc_normalization <- function(report.only = TRUE){
   # Set global variable for debugging (skip logging)
   ENV_DEBUG <<- TRUE
   API_AUTH <<- Sys.getenv("API_AUTH")
@@ -128,27 +128,30 @@ bulk_update_conc_normalization <- function(){
     dplyr::select(id, fk_series_id, conc, conc_sd, conc_lower_bound, conc_upper_bound, conc_units_normalized) %>%
     dplyr::distinct()
   
-  if(nrow(df_out)){
-    # Push updated values to Conc_Time_Values sheet based on "id" field
-    db_update_tbl(df=df_out %>%
-                    dplyr::select(-conc_units_normalized) %>%
-                    dplyr::mutate(qc_notes = "normalized conc updated"),
-                  tblName = "conc_time_values")  
+  # Only push updates if report.only is FALSE
+  if(!report.only){
+    if(nrow(df_out)){
+      # Push updated values to Conc_Time_Values sheet based on "id" field
+      db_update_tbl(df=df_out %>%
+                      dplyr::select(-conc_units_normalized) %>%
+                      dplyr::mutate(qc_notes = "normalized conc updated"),
+                    tblName = "conc_time_values")  
+    } else {
+      message("No conc normalization updates to push")
+    }
+    
+    if(nrow(compare_norm_units)){
+      # Push updated conc_units_normalized
+      db_update_tbl(df = compare_norm_units %>%
+                      dplyr::select(id = fk_series_id, conc_units_normalized) %>%
+                      dplyr::distinct() %>%
+                      dplyr::mutate(qc_notes = "conc_units_normalized updated"),
+                    tblName = "series")  
+    } else {
+      message("No conc unit normalization updates to push")
+    }
   } else {
-    message("No conc normalization updates to push")
+    # Return updated values
+    return(df_out) 
   }
-  
-  if(nrow(compare_norm_units)){
-    # Push updated conc_units_normalized
-    db_update_tbl(df = compare_norm_units %>%
-                    dplyr::select(id = fk_series_id, conc_units_normalized) %>%
-                    dplyr::distinct() %>%
-                    dplyr::mutate(qc_notes = "conc_units_normalized updated"),
-                  tblName = "series")  
-  } else {
-    message("No conc unit normalization updates to push")
-  }
-  
-  # Return updated values
-  return(df_out)
 }

@@ -34,13 +34,12 @@ convert_get_conversion_factor <- function(conv_factor=1){
        min=list(hr="/60"),
        hr=list(hr="/1"),
        `mg/kg`=list(`mg/kg`="/1", `ug/ml`= paste0("*", conv_factor)), #1 mg/kg*conv_factor kg/L*1L/1000mL*1000ug/mg=ug/mL --> using httk density value for conv_factor variable (refactor name)
+       # TODO Handle special dosed feed and drinking water cases
+       `mg/kg feed dose` = list(`mg/kg`="*NA"),
+       `mg/kg drinking dose` = list(`mg/kg`="*NA"),
        `ng/g`=list(`ug/kg`="/1", `ug/ml`= paste0("*", conv_factor, "/1000")), # ug/mL from httk g/mL tissue density
-       `ug/g`=list(`ug/kg`="*1000", `mg/kg`="/1"),
-       `ug/kg`=list(`ug/kg`="/1", `mg/kg`="/1000", `ug/ml`=paste0("*", conv_factor, "/1000")), # ug/mL from httk g/mL tissue density
-       `µg/kg` = list(`ug/ml`=paste0("*", conv_factor, "/1000")), 
-       `g/kg`=list(`mg/kg`="*1000"),
-       `ug/250g`=list(`mg/kg`="*4/1000"),
-       `ug/ml`=list(`ug/ml`="/1"),
+       # TODO potentially remove
+       `ug/kg`=list(`ug/ml`=paste0("*", conv_factor, "/1000")), # ug/mL from httk g/mL tissue density
        `ug/l`=list(`ug/ml`="/1000"),
        `ng/ml`=list(`ug/ml`="/1000"),
        `pg/ml`=list(`ug/ml`="/1000000"),
@@ -59,7 +58,7 @@ convert_get_conversion_factor <- function(conv_factor=1){
        `pmol/ml` = list(`ug/ml`=paste0("*",conv_factor,"/1000000")), #1 pmol/ml*(1mol/1000000000000pmol)*(conv_factor g/1mol)*(1000000ug/1g)=1*conv_factor/1000000
        `ug/g tissue conc` = list(`ug/g`="/1", `ug/ml`=paste0("*", conv_factor)), #1 ug/g*1000g/kg*conv_factor kg/L*1L/1000mL=ug/mL --> using httk density value for conv_factor variable (refactor name)
        `ug/g wet wt tissue conc` = list(`ug/ml`=paste0("*", conv_factor)),
-       `umol/kg` = list(`mg/kg`= paste0("*", conv_factor, "/1000")), # conv_factor is g/mol, which is the same as mg/mmol or ug/umol
+       `umol/kg dose` = list(`mg/kg-bw`= paste0("*", conv_factor, "/1000")), # conv_factor is g/mol, which is the same as mg/mmol or ug/umol
        # Molarity
        `x 10^-3 mol/l` = list(`ug/ml`=paste0("*", conv_factor)), # M * MW
        # Tissue density conversions (Density = g/mL from httk)
@@ -85,6 +84,39 @@ convert_get_conversion_factor <- function(conv_factor=1){
        `nmol/l air conc` = list(`ug/m3`=paste0("*", conv_factor), `ugEq/m3`=paste0("*", conv_factor)),
        `ng/l air conc` = list(`ug/m3`="/1"),
        `ug air conc`=list(`ug/m3`="*NA", `ugEq/m3`="*NA"),
+       
+       # Dose conversions
+       `g/kg dose`=list(`mg/kg-bw`="*1000"),
+       `mg/kg dose` = list(`mg/kg-bw`="/1"),
+       `ug/g dose`=list(`mg/kg-bw`="/1"),
+       `mg/kg-bw dose` = list(`mg/kg-bw`="/1"),
+       `ug/250g-bw dose` = list(`mg/kg-bw`="*4/1000"),
+       `ug/kg dose`=list(`mg/kg-bw`="/1000"),
+       `ng/kg-bw drinking dose` = list(`mg/kg-bw`="/1000000"),
+       
+       # Doses reported as masses without denominators (conv_factor is bw or mw/bw)
+       `g need_bw dose` = list(`mg/kg-bw` = paste0("/", conv_factor, "*1000")),
+       `mg need_bw dose` = list(`mg/kg-bw` = paste0("/", conv_factor)),
+       `ug need_bw dose` = list(`mg/kg-bw` = paste0("/", conv_factor, "/1000")),
+       `nmol need_bw dose` = list(`mg/kg-bw` = paste0("*", conv_factor, "/1000000")),
+       `nmole need_bw dose` = list(`mg/kg-bw` = paste0("*", conv_factor, "/1000000")),
+       
+       # Oral dose with volume conversions
+       `ug/ml oral_vol dose` = list(`mg/kg-bw`=paste0("*", conv_factor, "/1000")),
+       `mg/ml oral_vol dose` = list(`mg/kg-bw`=paste0("*", conv_factor)),
+       `umol/kg-bw dose` = list(`mg/kg-bw`=paste0("*", conv_factor, "/1000")),
+       
+       # Inhalation dose conversions
+       `mg/m^3 dose` = list(`ug/m3`="*1000"),
+       `mmol/m^3 dose` = list(`ug/m3`=paste0("*", conv_factor, "*1000")),
+       `mg/l dose` = list(`ug/m3`="*1000000"),
+       `mg/ml dose` = list(`ug/m3`="*1000000000"),
+       `ug/m^3 dose` = list(`ug/m3`="/1"),
+       
+       # Dermal dose conversions
+       # dermal_vol conv_factor is dose volume ml/kg-bw, so just convert numerator to mg
+       `ug/ml dermal_vol dose` = list(`mg/kg-bw`= paste0("*", conv_factor, "/1000")),
+       `mg/ml dermal_vol dose` = list(`mg/kg-bw`= paste0("*", conv_factor)),
        
        # Handle equivalent cases (radiolabeled)
        `ugeq/g tissue conc` = list(`ugEq/ml`=paste0("*", conv_factor)),

@@ -210,7 +210,7 @@ normalize_conc <- function(raw, f, log_path, debug = FALSE){
         conc_units_original %in% c("ppbv","ppmv") & desired_units == "ug/m3" ~ "ppb_ppm_v",
         TRUE ~ NA
       ),
-      # Calculate Liters per mole constant fpr ppmv and ppbv (only assume STP if no test environment temp provided)
+      # Calculate Liters per mole constant for ppmv and ppbv (only assume STP if no test environment temp provided)
       # TODO insert logic to calculate based on PV = nRT --> V/n = RT/P (R = 0.0821, P = 1atm, T = Kelvin)
       # TODO normalized study temperature field and convert to Kelvin
       # TODO set liters_per_mol_gas_const as case_when if temperature is available
@@ -224,7 +224,6 @@ normalize_conc <- function(raw, f, log_path, debug = FALSE){
         conversion_factor_type == "tissue" ~ tissue_density,
         # Needs molecular weight to convert ppm/ppb to ug/m3
         conversion_factor_type == "ppb_ppm_v" ~ mw/liters_per_mol_gas_const,
-        # Default 1 conversion factor, because it doesn't change anything
         TRUE ~ NA
       ),
       # Append "tissue conc" to differentiate tissue density conversions
