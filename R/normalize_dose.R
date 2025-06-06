@@ -125,7 +125,7 @@ normalize_dose <- function(raw, f, log_path, debug = FALSE){
   # +/- Group
   out = check_unit_ci(x=out, f=f, col="dose_level_normalized", log_path=log_path)
   out$ci = out$ci %>%
-      dplyr::mutate(conversion_factor_type = "ci")
+    dplyr::mutate(conversion_factor_type = "ci")
   # Dose range
   out = check_unit_range(x=out, f=f, col="dose_level_normalized", log_path=log_path)
   out$unit_range = out$unit_range %>%  
@@ -229,23 +229,23 @@ normalize_dose <- function(raw, f, log_path, debug = FALSE){
         TRUE ~ NA
       ),
       consumption_bw = (equ_const * (bw ^ equ_exp) * equ_term) / bw
-      ) %>%
+    ) %>%
     dplyr::group_by(id) %>%
     dplyr::reframe(
       # Retain non-group columns
       dplyr::across(),
       consumption_bw_min = suppressWarnings(min(consumption_bw, na.rm = TRUE)), 
       consumption_bw_max = suppressWarnings(max(consumption_bw, na.rm = TRUE))
-      ) %>%
+    ) %>%
     # Replace min/max Inf with NA
     dplyr::mutate(
       dplyr::across(dplyr::contains("consumption"), 
                     ~ replace(., is.infinite(.), NA)),
       conversion_factor_type = "feed_drink"
-      ) %>%
+    ) %>%
     dplyr::select(-c(species, bw, equ_const, equ_exp, equ_term, consumption_bw)) %>%
     dplyr::distinct()
-
+  
   # Oral /mL or /L units - use dose volume and subject weight to get mg/kg-bw
   out$oral_vol = out$conversion %>%
     dplyr::filter(administration_route_normalized %in% c("oral", "iv"),
@@ -287,8 +287,8 @@ normalize_dose <- function(raw, f, log_path, debug = FALSE){
   out$dermal = out$conversion %>%
     dplyr::filter(
       grepl("\\/m\\^3|\\/l|\\/ml", dose_level_units, ignore.case = TRUE), 
-                  administration_route_normalized == "dermal"
-      )
+      administration_route_normalized == "dermal"
+    )
   out$conversion = out$conversion %>% dplyr::filter(!tempID %in% out$out$dermal$tempID)
   
   out$dermal = out$dermal %>%
@@ -339,7 +339,7 @@ normalize_dose <- function(raw, f, log_path, debug = FALSE){
   #   #Divide by weight (given or extrapolated)
   #   out$need_per_weight$dose_level_normalized = out$need_per_weight$dose_level_normalized / out$need_per_weight$weight_kg
   # }
- 
+  
   # Convert dosages
   out$convert_ready = dplyr::bind_rows(out$conversion, out$ci, out$unit_range, out$need_per_weight, 
                                        out$feed_drink, out$bw, out$oral_vol, out$dermal, out$need_per_weight)
@@ -369,14 +369,14 @@ normalize_dose <- function(raw, f, log_path, debug = FALSE){
     out$convert_ready = out$convert_ready %>%
       dplyr::mutate(
         dose_level_units = dose_level_units %>%
-                      # Remove all whitespace
-                      gsub("[[:space:]]", "", .) %>%
-                      # Replace unicode micro
-                      gsub("\u00b5", "u", .) %>%
-                      # Lowercase for conversion
-                      tolower()
-                    )
-################################################################################
+          # Remove all whitespace
+          gsub("[[:space:]]", "", .) %>%
+          # Replace unicode micro
+          gsub("\u00b5", "u", .) %>%
+          # Lowercase for conversion
+          tolower()
+      )
+    ################################################################################
     # View unique combinations of units by route
     out$convert_ready %>%
       dplyr::select(
@@ -384,7 +384,7 @@ normalize_dose <- function(raw, f, log_path, debug = FALSE){
         # dose_level, dose_level_normalized,
         administration_route_original, administration_method_original, administration_form_original,
         administration_route_normalized, administration_method_normalized, administration_form_normalized
-        ) %>%
+      ) %>%
       dplyr::distinct() %>%
       View(title = "dose_admin")
     
@@ -481,7 +481,7 @@ normalize_dose <- function(raw, f, log_path, debug = FALSE){
           conversion_factor_type %in% c("inhalation_exp_conc", 
                                         "inhalation_exp_conc_mol") ~ "ug/m3",
           TRUE ~ "mg/kg-bw"
-          )
+        )
       )
     
     # TODO For feed/drinking water studies, set dose_level_target as dose_level and replace dose_level with new calculation, if dose_level_target is NULL
@@ -497,8 +497,8 @@ normalize_dose <- function(raw, f, log_path, debug = FALSE){
       dplyr::mutate(
         # Minimum calculation (default or range minimum)
         conv_min_equ_raw = ifelse(is.null(conv_list_full[[dose_level_units]][[desired_units]]), 
-                              paste0("No conversion for: `", dose_level_units, "` = list(`", desired_units, '`=""),'), 
-                              convert_get_conversion_factor(conv_factor_min)[[dose_level_units]][[desired_units]]
+                                  paste0("No conversion for: `", dose_level_units, "` = list(`", desired_units, '`=""),'), 
+                                  convert_get_conversion_factor(conv_factor_min)[[dose_level_units]][[desired_units]]
         ),
         conv_min_equ = dplyr::case_when(
           grepl("No conversion for", conv_min_equ_raw, fixed = TRUE) ~ "*NA",
@@ -530,26 +530,126 @@ normalize_dose <- function(raw, f, log_path, debug = FALSE){
     out$convert_ready = out$convert_ready %>%
       dplyr::rowwise() %>%
       dplyr::mutate(
-          dose_level_normalized_min = parse(text=paste0(dose_level_normalized, 
-                                                        conv_min_equ)) %>% # parse the string
-                        eval() %>% # evaluate the string equation
-                        round(5),
-          dose_level_normalized_max = parse(text=paste0(dose_level_normalized, 
-                                                        conv_max_equ)) %>% # parse the string
-            eval() %>% # evaluate the string equation
-            round(5)
+        dose_level_normalized_min = parse(text=paste0(dose_level_normalized, 
+                                                      conv_min_equ)) %>% # parse the string
+          eval() %>% # evaluate the string equation
+          round(5),
+        dose_level_normalized_max = parse(text=paste0(dose_level_normalized, 
+                                                      conv_max_equ)) %>% # parse the string
+          eval() %>% # evaluate the string equation
+          round(5)
       ) %>%
-      dplyr::ungroup() %>%
-      tidyr::unite(col = "dose_level_normalized_final",
-                   dose_level_normalized_min, dose_level_normalized_max,
-                   sep = "-",
-                   na.rm = TRUE,
-                   remove = FALSE)
+      dplyr::ungroup()
+    
+    test = out$convert_ready %>%
+      # TODO do not naively combine, min/max would be swapped due to conversion factor sizes
+      # tidyr::unite(col = "dose_level_normalized_final",
+      #              dose_level_normalized_min, dose_level_normalized_max,
+      #              sep = "-",
+      #              na.rm = TRUE,
+      #              remove = FALSE) %>%
+      dplyr::rowwise() %>%
+      dplyr::mutate(
+        dose_normalized_range = dplyr::case_when(
+          all(is.na(dose_level_normalized_min), is.na(dose_level_normalized_max)) ~ NA,
+          !is.na(dose_level_normalized_min) & is.na(dose_level_normalized_max) ~ as.character(dose_level_normalized_min),
+          is.na(dose_level_normalized_min) & !is.na(dose_level_normalized_max) ~ "UNHANDLED CASE",
+          dose_level_normalized_min == dose_level_normalized_max ~ as.character(dose_level_normalized_min),
+          # Create range from min and max of the two columns
+          TRUE ~ paste0(
+            min(c(dose_level_normalized_min, dose_level_normalized_max), na.rm = TRUE),
+            "-",
+            max(c(dose_level_normalized_min, dose_level_normalized_max), na.rm = TRUE)
+        )
+      ))
     
     # TODO Draft logic to combine dosages in ranges as needed
+    # Logic:
+    # For dermal, inhalation, and cases with ranges, if dose_target is NA, set it to be the same as dose_level
+    # If dose_level is range, set dose_normalized as the average
+    test = out$convert_ready %>%
+      dplyr::mutate(
+        dose_level_target_final = dplyr::case_when(
+          all(
+            is.na(dose_level_target),
+            !is.na(dose_level_normalized_min),
+            !is.na(dose_level_normalized_max),
+            dose_level_normalized_min != dose_level_normalized_max
+          ) ~ dose_level,
+          TRUE ~ dose_level_target
+        ),
+        dose_level_target_units_final = dplyr::case_when(
+          all(
+            is.na(dose_level_target),
+            !is.na(dose_level_normalized_min),
+            !is.na(dose_level_normalized_max),
+            dose_level_normalized_min != dose_level_normalized_max
+          ) ~ dose_level_units,
+          TRUE ~ dose_level_target_units
+        ),
+        # Replace originally reported dose as a range or as-is
+        dose_level_final = dplyr::case_when(
+          all(!is.na(dose_level_normalized_max), 
+              dose_level_normalized_min != dose_level_normalized_max)  ~ paste0(min(c(dose_level_normalized_min, dose_level_normalized_max)), 
+                                                                                "-", 
+                                                                                max(c(dose_level_normalized_min, dose_level_normalized_max))),
+          TRUE ~ dose_level
+        ),
+        # Replace originally reported dose as a range or as-is
+        dose_level_units_final = dplyr::case_when(
+          all(!is.na(dose_level_normalized_max), 
+              dose_level_normalized_min) != dose_level_normalized_max  ~ desired_units,
+          TRUE ~ dose_level_units
+        ),
+        dose_level_normalized_final = dplyr::case_when(
+          # If both NA, return NA
+          is.na(dose_level_normalized_min) & is.na(dose_level_normalized_max) ~ NA,
+          # If range present, report mean
+          !is.na(dose_level_normalized_min) & !is.na(dose_level_normalized_max) ~ mean(c(dose_level_normalized_min, dose_level_normalized_max)),
+          # Report min (default for cases without ranges)
+          TRUE ~ dose_level_normalized_min
+        )
+      ) %>%
+      dplyr::select(
+        id, conversion_factor_type, 
+        dose_level_normalized_min,
+        dose_level_normalized_max,
+        dose_level_target, dose_level_target_units,
+        dose_level, dose_level_units,
+        dose_level_normalized, dose_level_units_normalized = desired_units,
+        dose_level_target_final, dose_level_target_units_final,
+        dose_level_final, dose_level_units_final,
+        dose_level_normalized_final
+      ) %>%
+      dplyr::distinct() %>%
+      tidyr::pivot_longer(
+        cols = -dplyr::all_of(c("id", "conversion_factor_type", "dose_level_normalized_min", "dose_level_normalized_max")),
+        names_to = "col_name",
+        values_transform = as.character
+      ) %>%
+      dplyr::mutate(comp_group = dplyr::case_when(
+        grepl("_final$", col_name) ~ "new",
+        TRUE ~ "old"
+      )) %>%
+      dplyr::mutate(col_name = col_name %>%
+                      gsub("_final", "", .)) %>%
+      tidyr::pivot_wider(
+        # id_cols = -dplyr::all_of(c("comp_group", "value")),
+        id_cols = c("id", "conversion_factor_type", "dose_level_normalized_min", "dose_level_normalized_max", "col_name"),
+        names_from = comp_group,
+        values_from = value
+      ) %>%
+      dplyr::mutate(
+        compare = dplyr::case_when(
+          is.na(old) & is.na(new) ~ TRUE,
+          is.na(old) & !is.na(new) ~ FALSE,
+          !is.na(old) & is.na(new) ~ FALSE,
+          TRUE ~ old == new
+        )
+      )
     
-################################################################################
-      
+    ################################################################################
+    
     # for(i in seq_len(nrow(out$convert_ready))){
     #   #Molecular Weight conversion (have to find MW first)
     #   MW=NA

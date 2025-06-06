@@ -22,7 +22,9 @@ bulk_update_dose_normalization <- function(report.only=TRUE){
                   "LEFT JOIN cvt.administration_method_dict f ON b.fk_administration_method_id = f.id ",
                   "LEFT JOIN cvt.administration_form_dict g ON b.fk_administration_form_id = g.id ",
                   "LEFT JOIN cvt.chemicals e ON b.fk_dosed_chemical_id = e.id ",
-                  "WHERE b.dose_level_original is not null"
+                  "WHERE b.dose_level_original is not null ",
+                  # Temporarily not normalizing dermal route doses - figuring out best units and conversions
+                  "AND d.administration_route_normalized not in ('dermal')"
   )
 
   # Pull data to check
