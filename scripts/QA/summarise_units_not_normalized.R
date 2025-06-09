@@ -41,7 +41,9 @@ summarise_units_not_normalized <- function(){
                                "LEFT JOIN cvt.administration_method_dict f ON b.fk_administration_method_id = f.id ",
                                "LEFT JOIN cvt.administration_form_dict g ON b.fk_administration_form_id = g.id ",
                                "LEFT JOIN cvt.chemicals e ON b.fk_dosed_chemical_id = e.id ",
-                               "WHERE b.dose_level_normalized is NULL and b.dose_level_original is NOT NULL"
+                               "WHERE b.dose_level_normalized is NULL and b.dose_level_original is NOT NULL ",
+                               # Temporarily not normalizing dermal route doses - figuring out best units and conversions
+                               "AND d.administration_route_normalized not in ('dermal')"
     )),
     height = db_query_cvt(paste0("SELECT id as subject_id, height, height_units, height_cm FROM cvt.subjects ",
                                  "WHERE height_cm is NULL and height is NOT NULL")),
