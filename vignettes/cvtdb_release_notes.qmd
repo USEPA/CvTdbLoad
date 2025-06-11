@@ -60,7 +60,7 @@ version_palette = c("v1.0.0"="#4454C4FF",
 
 ## Background
 
-The Concentration versus Time Database (CvTdb) contains manually curated time-series data and associated metadata for *in vivo* toxicokinetic ("TK") studies on organic chemicals available in the scientific literature. The database has been developed in close coordination with leading researchers at the EPA with specialties relating to toxicology and toxicokinetic modeling. These data inform chemical safety analysis and allow evaluation of the relationship between administered doses and internal concentrations of a substance. These data can also be used to build or evaluate physiologically based pharmacokinetic (PBPK) and physiologically-based (PBTK) models (such as the [*httk*](https://cran.r-project.org/web/packages/httk/index.html) R package), which simulate the absorption, distribution, metabolism, and elimination of a chemical. The database also contains toxicokinetic parameters, including volume of distribution and elimination half-life, which are calculated across all data associated with a particular compound using the publicly available pharmacokinetic curve-fitting software [*invivoPKfit*](https://CRAN.R-project.org/package=invivoPKfit). This version 2.0.0 release builds upon the original v1.0.0 “legacy” database released with Sayre, Wambaugh, and Grulke (2020) and the minor v1.1.0 database release from 2021 (**Add GitHub release link**) that added the Showa Pharmaceutical University dataset. The code, documentation, and vignettes associated with the database release are available on GitHub ([CompTox-PK-CvTdb](https://github.com/USEPA/CompTox-PK-CvTdb); [CvTdbLoad](https://github.com/USEPA/cvtdbload)). The database is also available for download through the public CCTE EPA Clowder repository (**Add FigShare link**) (no user account required).
+The Concentration versus Time Database (CvTdb) contains manually curated time-series data and associated metadata for *in vivo* toxicokinetic ("TK") studies on organic chemicals available in the scientific literature. The database has been developed in close coordination with leading researchers at the EPA with specialties relating to toxicology and toxicokinetic modeling. These data inform chemical safety analysis and allow evaluation of the relationship between administered doses and internal concentrations of a substance. These data can also be used to build or evaluate physiologically based pharmacokinetic (PBPK) and physiologically-based (PBTK) models (such as the [*httk*](https://cran.r-project.org/web/packages/httk/index.html) R package), which simulate the absorption, distribution, metabolism, and elimination of a chemical. The database also contains toxicokinetic parameters, including volume of distribution and elimination half-life, which are calculated across all data associated with a particular compound using the publicly available pharmacokinetic curve-fitting software [*invivoPKfit*](https://CRAN.R-project.org/package=invivoPKfit). This version 2.0.0 release builds upon the original [v1.0.0](https://github.com/USEPA/CompTox-PK-CvTdb/releases/tag/v1.0.0) “legacy” database released with Sayre, Wambaugh, and Grulke (2020) and the minor [v1.1.0](https://github.com/USEPA/CompTox-PK-CvTdb/releases/tag/v1.1.0) database release from 2021 that added the Showa Pharmaceutical University dataset. The code, documentation, and vignettes associated with the database release are available on GitHub ([CompTox-PK-CvTdb](https://github.com/USEPA/CompTox-PK-CvTdb); [CvTdbLoad](https://github.com/USEPA/cvtdbload)). The database is also available for download through the public CCTE EPA Clowder repository (**Add FigShare link**) (no user account required).
 
 > **Note:** Since a variety of chemicals are considered of interest for CvTdb, beyond pharmaceutical substances, the term "toxicokinetic" (TK) is used preferentially over the term "pharmacokinetic" (PK). However, there may be instances where PK and TK are used interchangeably. We recognize that there are slight differences, but for practicality purposes, the terms may be interchangeably used within discussions.
 
@@ -72,42 +72,46 @@ The CvTdb v2.0.0 2025 data release has largely increased the subset of time-seri
 
 Studies (and the data from those studies) must meet certain criteria in order to be used in CvTdb. It is important that the studies from which we extract data can be accurately described and represented within the framework of the database. This allows for higher confidence in the modeling results generated from this data.
 
-Currently, CvTdb only extracts data that can be used by the *httk* modeling package. Therefore, experimental designs that can be extracted are limited by what can be purposefully used in *httk*. 
+Currently, CvTdb only extracts data that can be used by the *httk* modeling package. Therefore, experimental designs that can be extracted are limited by what can be purposefully used in *httk*.
 
-To determine whether a study is suitable for CvTdb, one can ask: 
+To determine whether a study is suitable for CvTdb, one can ask:
 
-Does the study... 
+Does the study...
 
-*  ...depict *in-vivo* TK studies dose-response time series?
-*  ...use mammalian subjects?
-    * Aquatic species are currently not suitable.
-* ...administer a single substance during exposure?
-    * Currently, studies that co-administer substances are not suitable. 
-*  ...measure chemicals that are either:
-    * the dosed chemical itself, or
-    * a substructure of the dosed chemical, or
-    * a transformation product?  
-    * (This excludes bio-markers, generally speaking.)
-*  ...take measurements in biological media?
-*  ...report the dose level(s) as during the exposure (constant within reasonable variation)?
-    * Occupational exposure studies, where dose is not given as a specific dose, are not suitable. 
-    * Indirect exposures (e.g. fetal exposure during gestational time) are currently not suitable.
-*  ...implement a dosing schedule with predictable and regular intervals (which can include both single and multiple dosing regimens)?
-    * Any dosing regimen too complex to be incorporated into our standardized template is not be suitable.
-    
-### CvTdb GitHub Files 
-| File Name                    | Description          | File Type |
-|------------------------------|----------------------|-----------|
-|     CvTdb_Curation_SOP       |     In depth guide to procedures and best practices for extracting (“curating”) data from published papers into templates for upload to the database.    | .pdf      |
-|     CvTdb_QC_SOP             |     Guide for the specific process designed for going through previously uploaded templates and updating them for compliance with CvTdb 2024 Release               | .pdf      |
-|     CvT_curation_template    |     Template for extracting data from papers for upload in the database                                                                                  | .xlsx     |
-|     CvT_QC_template          |     Template for "QC" worfklow, containing fields for "qc_flags", "qc_notes", etc.                                                                       | .xlsx     |
+-   ...depict *in-vivo* TK studies dose-response time series?
+-   ...use mammalian subjects?
+    -   Aquatic species are currently not suitable.
+-   ...administer a single substance during exposure?
+    -   Currently, studies that co-administer substances are not suitable.
+-   ...measure chemicals that are either:
+    -   the dosed chemical itself, or
+    -   a substructure of the dosed chemical, or
+    -   a transformation product?\
+    -   (This excludes bio-markers, generally speaking.)
+-   ...take measurements in biological media?
+-   ...report the dose level(s) as during the exposure (constant within reasonable variation)?
+    -   Occupational exposure studies, where dose is not given as a specific dose, are not suitable.
+    -   Indirect exposures (e.g. fetal exposure during gestational time) are currently not suitable.
+-   ...implement a dosing schedule with predictable and regular intervals (which can include both single and multiple dosing regimens)?
+    -   Any dosing regimen too complex to be incorporated into our standardized template is not be suitable.
+
+### CvTdb GitHub Files
+
+| File Name | Description | File Type |
+|--------------------------------|------------------------|-----------------|
+| CvTdb_Curation_SOP | In depth guide to procedures and best practices for extracting (“curating”) data from published papers into templates for upload to the database. | .pdf |
+| CvTdb_QC_SOP | Guide for the specific process designed for going through previously uploaded templates and updating them for compliance with CvTdb 2024 Release | .pdf |
+| CvT_curation_template | Template for extracting data from papers for upload in the database | .xlsx |
+| CvT_QC_template | Template for "QC" worfklow, containing fields for "qc_flags", "qc_notes", etc. | .xlsx |
 
 ### Querying CvTdb
-**Add reference and link to the vignette**
+
+A vignette is provided with the data release to guide users through how to query the provided SQLite database. This includes a variety of sample queries as demonstration.
 
 ### CvTdb Field and Unit Normalization
-Where possible, original reported values are converted to standard terms and units. For normalized terms, review the "_dict" dictionary tables that are linked to the main database tables by foreign keys.
+
+Where possible, original reported values are converted to standard terms and units. For normalized terms, review the *"\_dict"* dictionary tables that are linked to the main database tables by foreign keys.
+
 ```{r}
 #| label: "tbl-cvt-normalized-units"
 #| tbl-cap: "Summary of Normalized Units by Table"
@@ -175,7 +179,7 @@ norm_tbl = list(
   data.frame(
     table = "conc_time_values",
     category = "conc",
-    `normalized units` = "ug/mL",
+    `normalized units` = "ug/mL<br>ug/m3 (inhalation)",
     fields = "conc, conc_sd, conc_lower_bound, conc_upper_bound (with *_original fields), conc_units_original (series)",
     `original units` = db_query_cvt(paste0("SELECT distinct conc_units_original, conc_units_normalized ",
                                  "FROM cvt.series WHERE id in (",
@@ -189,8 +193,18 @@ norm_tbl = list(
     data.frame(
     table = "studies",
     category = "dose",
-    `normalized units` = "mg/kg",
-    fields = "dose_level_original, dose_level_normalized, dose_level_units_original",
+    `normalized units` = db_query_cvt(paste0("SELECT distinct a.dose_level_units_normalized, ",
+                                             "b.administration_route_normalized ",
+                                             "FROM cvt.studies a ",
+                                             "LEFT JOIN cvt.administration_route_dict b ",
+                                             "ON a.fk_administration_route_id = b.id "# ,
+                                             # "WHERE a.dose_level_units_normalized IS NOT NULL"
+                                             )) %>%
+      dplyr::mutate(administration_route_normalized = paste0("<b>", administration_route_normalized, "</b>")) %>%
+        tidyr::unite(col = "route_norm_units", administration_route_normalized, dose_level_units_normalized, sep = " :") %>%
+      dplyr::pull(route_norm_units) %>%
+      paste0(collapse = "<br>"),
+    fields = "dose_level_target, dose_level_target_units, dose_level_original, dose_level_units_original, dose_level_normalized, dose_level_units_normalized",
     `original units` = db_query_cvt(paste0("SELECT distinct dose_level_units_original ",
                                  "FROM cvt.studies WHERE dose_level_normalized IS NOT NULL ",
                                 "AND dose_level_normalized NOT IN ('NA', 'ND', 'NQ')")) %>%
@@ -232,9 +246,35 @@ DT::datatable(norm_tbl,
               escape = FALSE
               )
 ```
+Special considerations for unit normalization:
+
+-   Overall
+    -   Units reported with a confidence interval were converted by ignoring the confidence interval.
+    -   Units reported with a range were converted by calculating the mean of the range.
+-   Conc
+    -   Only series with a normalized concentration medium value in the conc_medium_dict table had normalized conc units calculated.
+    -   Units reported relative to tissue mass were converted by using the tissue densities from the *httk* package's "Density (g/cm3)" tissue data by species and reported concentration medium (conc_medium) tissue.
+    -   Radioactivity units reported as "equivalent" were reported with "Eq" (e.g., ugEq/ml, ugEq/m3).
+-   Dose
+    -   Feed and drinking water studies had normalized doses calculated by using EPA recommended allometric equations for food and water consumption rates (U.S. EPA 1988) to calculate kilograms or liters consumed per day based on reported species, body weight (kg), and administration term (if present).
+    -   If a reported dose_level_original required subject information (often body weight), a range may be provided if multiple subjects were present for a study. The dose_level_target is then updated with the originally reported value, the dose_level updated to the range, and the normalized value updated to the mean of the range. This often occurred for feed and drinking water studies or doses reported as a mass without a subject body weight.
+
+Future Conversions
+
+Future conversions are planned following additional record QC and revisions to curate required metadata to successfully calculate a unit conversion based on the study design.
+
+-   Conc
+    -   ppmm, ppmv, ppbm, ppbv
+-   Dose
+    -   Dermal route (ug/m2)
+    -   ppmm, ppmv, ppbm, ppbv
+
 ## CvTdb: Database Summary
+
 ### Summary Counts
+
 CvTdb contains data for various chemicals, species, and administration routes. Top routes include oral and intravenous, with inhalation and dermal routes being newly added to CvTdb v2.0.0 2025 Release. The breakdown of the counts from various tables and fields of interest can be explored below.
+
 ```{r}
 #| label: "cvt-summary-text"
 #| echo: FALSE
@@ -275,14 +315,9 @@ cvt_summary_out = cvt_summary %>%
 
 #### Version Comparison
 
-Quick notes on past versions:
--   v1.0.0
-    -   The original database released with the Sayre, Wambaugh, and Grulke (2020) manuscript.
--   v1.1.0
-    -   Release with minor changes to add/update conc_time_values normalizations, fix a couple study normalized administration routes, and add a new chemicals table to split off chemical information from the studies and series tables.
+Quick notes on past versions: - v1.0.0 - The original database released with the Sayre, Wambaugh, and Grulke (2020) manuscript. - v1.1.0 - Release with minor changes to add/update conc_time_values normalizations, fix a couple study normalized administration routes, and add a new chemicals table to split off chemical information from the studies and series tables.
 
 The following tabs of tables summarize count differences between CvTdb versions.
-
 
 ```{r}
 #| include: FALSE
@@ -392,7 +427,8 @@ for(stat in names(vc_plots)){
 
 <!-- End of tabset -->
 :::
-i. Total Subjects changes dramatically between v1.1.0 and v2.0.0 due to an effort to shift towards creating unique subject table entries per extraction document, rather than having documents share the same subject entry. This helped untangle and prevent cases where a document is QC'd and subject information is updated, causing subject information to be incorrect for other linked documents. This also helped support packages like *invivopkfit*, where curve fitting could treat each subject's timecourse as unique. Also, NTP documents were re-extracted to report on a per-subject basis, often having hundreds of entries.
+
+i.  Total Subjects changed dramatically between v1.1.0 and v2.0.0 due to an effort to shift towards creating unique subject table entries per extraction document, rather than having documents share the same subject entry. This helped untangle and prevent cases where a document is QC'd and subject information is updated, causing subject information to be incorrect for other linked documents. This also helped support packages like *invivopkfit*, where curve fitting could treat each subject's timecourse as unique. Also, NTP documents were re-extracted to report on a per-subject basis, often having hundreds of entries.
 
 ```{r}
 #| label: "tbl-cvt-chemical_route_species_summary"
@@ -500,14 +536,15 @@ DT::datatable(chemical_route_species_summary,
                                      rep("lightgrey", length(route_unique_values)))
   )
 ```
-i. Note, counts are by unique studies, where a single study may have dosed through an administration route to multiple subject species. Therefore, by DTXSID, the sum of administration route counts may not equal the sum of species counts.
+
+i.  Note, counts are by unique studies, where a single study may have dosed through an administration route to multiple subject species. Therefore, by DTXSID, the sum of administration route counts may not equal the sum of species counts.
 
 ## New Datasets
 
--   Showa dataset (~200 reference documents)
+-   Showa dataset (\~200 reference documents)
     -   Showa Pharmaceutical University/EPA Material Transfer Agreement, as described in Kamiya et al. 2020.
 -   CEBS NTP documents (New and Updated) (\> 50)
-    -   The Chemical Effects in Biological Systems (CEBS) database is a comprehensive, publicly available database hosted by the National Toxicology Program (NTP). The data sourced from CEBS is primarily focused on oral gavage and intravenous routes of administration to rats and mice. This also included QC updates and re-extraction of documents, including remapping NTP study identifiers for document metadata (e.g., C55301B -> K55301B). All re-extractions started with a scripted autoextraction of the NTP XLSX raw data files into a CvTdb template, which was then reviewed by a curator for completeness.
+    -   The Chemical Effects in Biological Systems (CEBS) database is a comprehensive, publicly available database hosted by the National Toxicology Program (NTP). The data sourced from CEBS is primarily focused on oral gavage and intravenous routes of administration to rats and mice. This also included QC updates and re-extraction of documents, including remapping NTP study identifiers for document metadata (e.g., C55301B -\> K55301B). All re-extractions started with a scripted autoextraction of the NTP XLSX raw data files into a CvTdb template, which was then reviewed by a curator for completeness.
 -   PK Working Group identified documents (\> 55)
     -   The PK Working Group (PKWG) as part of the US Environmental Protection Agency’s Integrated Risk Information System (IRIS) toxicokinetic assessments. These data contain toxicity values for chronic exposures and identifies and characterizes the health hazards of environmentally relevant chemicals. Chemicals included were PCBs, PFOS, PFOA, and PFAS.
 -   3M documents (31)
@@ -553,7 +590,6 @@ i. Note, counts are by unique studies, where a single study may have dosed throu
         -   percentage, radioactive (dpm/ml), rates (pmol/min), weights (nmol)
 
 ## References
-**CHECK IF ALL REFERENCES ARE USED**
 
 -   Kamiya, Y., Otsuka, S., Miura, T., Yoshizawa, M., Nakano, A., Iwasaki, M., Kobayashi, Y., Shimizu, M., Kitajima, M., Shono, F., Funatsu, K., and Yamazaki, H. (2020). Physiologically Based Pharmacokinetic Models Predicting Renal and Hepatic Concentrations of Industrial Chemicals after Virtual Oral Doses in Rats. Chemical Research in Toxicology 33 (7), 1736-1751 DOI: 10.1021/acs.chemrestox.0c00009.
 -   Linakis, M. W., Sayre, R. R., Pearce, R. G., Sfeir, M. A., Sipes, N. S., Pangburn, H. A., Gearhart, J. M., & Wambaugh, J. F. (2020). Development and evaluation of a high throughput inhalation model for organic chemicals. Journal of exposure science & environmental epidemiology, 30(5), 866–877. https://doi.org/10.1038/s41370-020-0238-y.
@@ -563,16 +599,15 @@ i. Note, counts are by unique studies, where a single study may have dosed throu
 -   Rowan, E. G., Huse, L., Aboabdo, J., Casey, W., Correa, V., Kesic, B. et al. (2024). Methods to Expand and Improve CvTdb: A Publicly Available Resource of Toxicokinetic Data. North Carolina Society of Toxicology 2024 Conference. Poster. https://doi.org/10.23645/epacomptox.28314863.v1.
 -   Sayre, R. R., Wambaugh, J. F. & Grulke, C. M. (2020). Database of pharmacokinetic time-series data and parameters for 144 environmental chemicals. Sci Data 7(122). https://doi.org/10.1038/s41597-020-0455-1.
 -   Thompson, C. V., Firman, J. W., Goldsmith, M. R., et al. (2021). A Systematic Review of Published Physiologically-based Kinetic Models and an Assessment of their Chemical Space Coverage. Alternatives to Laboratory Animals. 49(5):197-208. doi:10.1177/02611929211060264.
+-   U.S. EPA. Recommendations For And Documentation Of Biological Values For Use In Risk Assessment. U.S. Environmental Protection Agency, Washington, DC, EPA/600/6-87/008 (NTIS PB88179874), 1988.
 -   Wambaugh, J. F., Wetmore, B. A., Pearce, R., Strope, C., Goldsmith, R., Sluka, J. P., Sedykh, A., Tropsha, A., Bosgra, S., Shah, I., Judson, R., Thomas, R. S., Setzer, R. W. (2015). Toxicokinetic Triage for Environmental Chemicals. Toxicol Sci. 147(1):55-67. doi: 10.1093/toxsci/kfv118.
 -   Wambaugh, J., Ring, C., Padilla Mercado, G., Cook, C. (2025). invivoPKfit: Fits Toxicokinetic Models to In Vivo PK Data Sets. R package version 2.0.1, https://CRAN.R-project.org/package=invivoPKfit.
--   **NEED TO ADD Reference to Lanacus, first paper to use/reference CvTdb**
-
 
 ## Contributors
+
 CvTdb has required a huge undertaking from several teams, and we have a lot of contributors to thank for their role in improving the robustness and quality of the database.
 
-Special thanks to team members who contributed to CvTdb as a data curator:
-Michael F. Hughes, Lucas Albrecht, Grace Cary, Brenda Edwards, Nancy M. Hanley, Anna Jarnagin, Tirumala D. Kodavanti, Evgenia Korol-Bexell, Anna Kreutz, Mayla Ngo, Caitlyn Patullo, Hiroshi Yamazaki, Evelyn G. Rowan, L. McKenna Huse, Veronica A. Correa, Branislav Kesic, Robert "Will" Casey, Jennat Aboabdo, Kaitlyn Wolf, Jasmine Hope.
+Special thanks to team members who contributed to CvTdb as a data curator: Michael F. Hughes, Lucas Albrecht, Grace Cary, Brenda Edwards, Nancy M. Hanley, Anna Jarnagin, Tirumala D. Kodavanti, Evgenia Korol-Bexell, Anna Kreutz, Mayla Ngo, Caitlyn Patullo, Hiroshi Yamazaki, Evelyn G. Rowan, L. McKenna Huse, Veronica A. Correa, Branislav Kesic, Robert "Will" Casey, Jennat Aboabdo, Kaitlyn Wolf, Jasmine Hope.
 
 Additional thanks to Evelyn G. Rowan and L. McKenna Huse for scoping and implementing the data model expansion to include dermal and inhalation studies.
 
