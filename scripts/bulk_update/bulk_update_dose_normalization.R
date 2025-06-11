@@ -30,7 +30,7 @@ bulk_update_dose_normalization <- function(report.only=TRUE){
   # Pull data to check
   df_raw <- db_query_cvt(query) %>%
     # Preserve previous conversion value
-    dplyr::mutate(dose_old = dose_level_normalized) %>%
+    dplyr::mutate(dose_level_normalized_old = dose_level_normalized) %>%
     dplyr::distinct() %>%
     # Collapse multiple subjects
     tidyr::unite(col="subject_info",
@@ -58,22 +58,23 @@ bulk_update_dose_normalization <- function(report.only=TRUE){
   
   # Normalized data
   df_normalized <- normalize_dose(raw=df_raw_zip) %>%
-    dplyr::mutate(
-      # Set as desired_units from conc_medium_dict table
-      dose_level_units_normalized = desired_units
-    )
+    dplyr::mutate(dose_level_units_normalized_final = desired_units) %>%
+    dplyr::rename(dose_level_target_old = dose_level_target, 
+                  dose_level_target_units_old = dose_level_target_units,
+                  dose_level_old = dose_level,
+                  dose_level_units_old = dose_level_units)
   
-  # Filter to those where "dose_old" does not equal the new "dose_level_normalized"
+  # Filter to those where "dose_level_normalized_old" does not equal the new "dose_level_normalized"
   compare <- df_normalized %>% 
     # Round to 3 decimal places to help with comparison
-    dplyr::mutate(dplyr::across(c(dose_old, dose_level_normalized), ~round(as.numeric(.), 3))) %>%
-    dplyr::filter(xor(is.na(dose_old), is.na(dose_level_normalized))|dose_old != dose_level_normalized)
+    dplyr::mutate(dplyr::across(c(dose_level_normalized_old, dose_level_normalized_final), ~round(as.numeric(.), 3))) %>%
+    dplyr::filter(xor(is.na(dose_level_normalized_old), is.na(dose_level_normalized_final))|dose_level_normalized_old != dose_level_normalized_final)
   
   # Units with conversions before, but not now
   message("Missing old logic unit conversions: ")
   compare %>% 
-    dplyr::filter(!is.na(dose_old), is.na(dose_level_normalized)) %>%
-    dplyr::pull(dose_level_units) %>%
+    dplyr::filter(!is.na(dose_level_normalized_old), is.na(dose_level_normalized_final)) %>%
+    dplyr::pull(dose_level_units_old) %>%
     unique() %>%
     paste0("- ", ., sep="\n") %>%
     cat()
@@ -81,66 +82,101 @@ bulk_update_dose_normalization <- function(report.only=TRUE){
   # Units with conversions now, but not before
   message("Newly covered unit conversions: ")
   compare %>% 
-    dplyr::filter(is.na(dose_old), !is.na(dose_level_normalized)) %>%
-    dplyr::pull(dose_level_units) %>%
+    dplyr::filter(is.na(dose_level_normalized_old), !is.na(dose_level_normalized_final)) %>%
+    dplyr::pull(dose_level_units_old) %>%
     unique() %>%
     paste0("- ", ., sep="\n") %>%
     cat()
   
   # Expand back out the ID field
   df_update <- df_normalized %>%
-    tidyr::separate_rows(id, sep = ", ")
+    tidyr::separate_rows(id, sep = ", ") %>%
+    dplyr::distinct()
   
   if(nrow(df_update) != nrow(df_raw)){
     message("Error with normalization, input rows do not equal output...")
     browser()
     stop("Error with normalization, input rows do not equal output...")
   }
+  ##############################################################################
+  ### Check for updates to dose_target, level, and normalized field pairs
+  ##############################################################################
+  # List to store output
+  df_out_list = list(normalized_full=df_update)
+  # List of num-unit field pairs to check
+  dose_list = list(
+    normalized = c("dose_level_units_normalized", "dose_level_normalized"),
+    target = c("dose_level_target_units", "dose_level_target"),
+    dose_level = c("dose_level_units", "dose_level")
+  )
   
-  compare_norm_units = df_update %>%
-    dplyr::mutate(compare = dplyr::case_when(
-      is.na(dose_level_units_normalized_old) & is.na(dose_level_units_normalized) ~ TRUE,
-      !is.na(dose_level_units_normalized_old) & is.na(dose_level_units_normalized) ~ FALSE,
-      is.na(dose_level_units_normalized_old) & !is.na(dose_level_units_normalized) ~ FALSE,
-      TRUE ~ dose_level_units_normalized_old == dose_level_units_normalized
-    )) %>%
-    dplyr::filter(compare == FALSE) %>%
-    dplyr::select(id, dose_level_units_normalized, dose_level_units_normalized_old, dose_level_units_normalized) %>%
-    dplyr::distinct()
-  
-  # Filter to only entries that need updating
-  df_out = df_update %>%
-    dplyr::mutate(dose_level_normalized = as.character(dose_level_normalized)) %>%
-    # Can't compare NA values, so replace for now
-    tidyr::replace_na(list(dose_old = "-99999", dose_level_normalized = "-99999")) %>%
-    dplyr::filter(dose_old != dose_level_normalized) %>%
-    dplyr::filter(dose_level_normalized != "-99999") %>%
-    dplyr::select(id, dose_level_normalized) %>%
-    dplyr::distinct() %>%
-    dplyr::mutate(qc_notes = "normalized dose updated")
-  
-  # Only push updates if report.only is FALSE
-  if(!report.only){
-    if(nrow(df_out)){
-      # Push updated values to Studies sheet based on "id" field
-      db_update_tbl(df=df_out,
-                    tblName = "studies")  
-    } else {
-      message("No dose normalization updates to push...")
-    }
+  # Loop through and dynamically select the num-unit field pairs as needed from dose_list
+  for(dose_n in names(dose_list)){
+    d_unit = dose_list[[dose_n]][1]
+    d_num = dose_list[[dose_n]][2]
     
-    if(nrow(compare_norm_units)){
-      # Push updated conc_units_normalized
-      db_update_tbl(df = compare_norm_units %>%
-                      dplyr::select(id, dose_level_units_normalized) %>%
-                      dplyr::distinct() %>%
-                      dplyr::mutate(qc_notes = "dose_level_units_normalized updated"),
-                    tblName = "studies")
+    # Compare normalized units
+    compare_norm_units = df_update %>%
+      dplyr::mutate(compare = dplyr::case_when(
+        is.na(!!as.name(paste0(d_unit, "_old"))) & is.na(!!as.name(paste0(d_unit, "_final"))) ~ TRUE,
+        !is.na(!!as.name(paste0(d_unit, "_old"))) & is.na(!!as.name(paste0(d_unit, "_final"))) ~ FALSE,
+        is.na(!!as.name(paste0(d_unit, "_old"))) & !is.na(!!as.name(paste0(d_unit, "_final"))) ~ FALSE,
+        TRUE ~ !!as.name(paste0(d_unit, "_old")) == !!as.name(paste0(d_unit, "_final"))
+      )) %>%
+      dplyr::filter(compare == FALSE) %>%
+      dplyr::select(dplyr::all_of(c("id", paste0(d_unit, "_final")))) %>%
+      dplyr::distinct() %>%
+      dplyr::mutate(qc_notes = paste0(dose_n, " dose units updated"))
+    
+    # Remove "_final" stem and rename to database field
+    names(compare_norm_units) <- names(compare_norm_units) %>% 
+      gsub("_final", "", .) %>%
+      gsub("\\bdose_level_units\\b", "dose_level_units_original", .)
+    
+    # Filter to only entries that need updating
+    df_out = df_update %>%
+      dplyr::mutate("{paste0(d_num, '_final')}" := as.character(!!as.name(paste0(d_num, "_final"))),
+                    # Can't compare NA values, so replace for now
+                    dplyr::across(dplyr::all_of(c(paste0(d_num, "_old"), paste0(d_num, "_final"))),
+                                  ~tidyr::replace_na(., "-99999"))) %>%
+      # tidyr::replace_na(list(!!as.name(paste0(d_num, "_old")) = "-99999", 
+      #                        !!as.name(paste0(d_num, "_final")) = "-99999")) %>%
+      dplyr::filter(!!as.name(paste0(d_num, "_old")) != !!as.name(paste0(d_num, "_final"))) %>%
+      dplyr::filter(!!as.name(paste0(d_num, "_final")) != "-99999") %>%
+      dplyr::select(dplyr::all_of(c("id", paste0(d_num, "_final")))) %>%
+      dplyr::distinct() %>%
+      dplyr::mutate(qc_notes = paste0(dose_n, " dose updated"))
+    
+    # Remove "_final" stem and rename to database field
+    names(df_out) <- names(df_out) %>%
+      gsub("_final", "", .) %>%
+      gsub("\\bdose_level\\b", "dose_level_original", .)
+    
+    # Only push updates if report.only is FALSE
+    if(!report.only){
+      if(nrow(df_out)){
+        # Push updated values to Studies sheet based on "id" field
+        db_update_tbl(df=df_out,
+                      tblName = "studies")
+      } else {
+        message("No dose normalization updates to push...")
+      }
+      
+      if(nrow(compare_norm_units)){
+        # Push updated conc_units_normalized
+        db_update_tbl(df = compare_norm_units,
+                      tblName = "studies")
+      } else {
+        message("No dose unit normalization updates to push")
+      }  
     } else {
-      message("No conc unit normalization updates to push")
-    }  
-  } else {
-    # Return updated values
-    return(df_out) 
+      # Append to list to return
+      df_out_list = append(df_out_list, 
+                           list(df_out, 
+                                compare_norm_units) %T>% { names(.) <- c(dose_n, paste0(dose_n, "_units")) })
+    }
   }
+  
+  # Return list of df_out to review
+  if(report.only) return(df_out_list)
 }

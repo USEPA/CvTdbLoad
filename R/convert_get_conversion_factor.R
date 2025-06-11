@@ -110,7 +110,9 @@ convert_get_conversion_factor <- function(conv_factor=1){
        `mg/m^3 dose` = list(`ug/m3`="*1000"),
        `mmol/m^3 dose` = list(`ug/m3`=paste0("*", conv_factor, "*1000")),
        `mg/l dose` = list(`ug/m3`="*1000000"),
+       `ug/l dose` = list(`ug/m3`="*1000"),
        `mg/ml dose` = list(`ug/m3`="*1000000000"),
+       `ug/ml dose` = list(`ug/m3`="*1000000"),
        `ug/m^3 dose` = list(`ug/m3`="/1"),
        
        # Dermal dose conversions
