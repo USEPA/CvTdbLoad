@@ -107,5 +107,15 @@ cvt_queue_unit_groups <- function(in_unit_type = c("doses", "conc")){
       writexl::write_xlsx(log, file.path(unit_group_dir, 
                                          paste0(unit_file_name, "_unit_log.xlsx")))
     } 
+    
+    # Delete duplicate templates generated on the Document level
+    qc_temp_list = list.files(outputDir, recursive = TRUE, full.names = TRUE) %>%
+      data.frame(filepath = .) %>%
+      dplyr::mutate(filename = basename(filepath)) %>%
+      dplyr::filter(duplicated(filename))
+    # Delete if there are duplicates
+    if(nrow(qc_temp_list)){
+      invisible(file.remove(qc_temp_list$filepath))  
+    }
   }
 }
