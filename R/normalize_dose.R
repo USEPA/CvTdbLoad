@@ -413,9 +413,9 @@ normalize_dose <- function(raw, f, log_path, debug = FALSE){
           grepl("\\bfeed\\b", administration_method_original) & !conversion_factor_type %in% c("bw") ~ paste0(dose_level_units, " feed"),
           grepl("\\bfeed\\b", administration_method_normalized) & !conversion_factor_type %in% c("bw") ~ paste0(dose_level_units, " feed"),
           # Drinking water study
-          grepl("drink|water", administration_route_original) & !conversion_factor_type %in% c("bw") ~ paste0(dose_level_units, " drinking"),
-          grepl("drink|water", administration_method_original) & !conversion_factor_type %in% c("bw") ~ paste0(dose_level_units, " drinking"),
-          grepl("drink|water", administration_method_normalized) & !conversion_factor_type %in% c("bw") ~ paste0(dose_level_units, " drinking"),
+          grepl("drink|water", administration_route_original) & !conversion_factor_type %in% c("bw", "unit_range") ~ paste0(dose_level_units, " drinking"),
+          grepl("drink|water", administration_method_original) & !conversion_factor_type %in% c("bw", "unit_range") ~ paste0(dose_level_units, " drinking"),
+          grepl("drink|water", administration_method_normalized) & !conversion_factor_type %in% c("bw", "unit_range") ~ paste0(dose_level_units, " drinking"),
           TRUE ~ dose_level_units
         ) %>%
           # Append "dose" to all units to help differentiate during unit conversion
@@ -479,8 +479,11 @@ normalize_dose <- function(raw, f, log_path, debug = FALSE){
         ),
         desired_units = dplyr::case_when(
           conversion_factor_type %in% c("inhalation_exp_conc", 
-                                        "inhalation_exp_conc_mol") ~ "ug/m3",
-          TRUE ~ "mg/kg-bw"
+                                        "inhalation_exp_conc_mol") ~ "mg/m3",
+          conversion_factor_type %in% c("feed_drink") ~ "mg/kg BW-day",
+          # TODO Add dermal normalization when ready
+          # grepl("dermal", conversion_factor_type) ~ "mg/m2",
+          TRUE ~ "mg/kg BW"
         )
       )
     
