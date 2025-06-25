@@ -4,7 +4,7 @@ author: Taylor Wall
 description: >
   The following are sample code and queries to use to query the CvTdb SQLite database.
 resource_files:
-- images/CvTdb_EER.jpg
+- images/CvTdb_EER.png
 format: 
   html:
     embed-resources: TRUE # https://quarto.org/docs/output-formats/html-basics.html#self-contained
@@ -40,7 +40,7 @@ if(!file.exists("res_cvtdb.sqlite")){
   if(!file.exists("../output/release/res_cvtdb.sqlite")){
     get_cvtdb_sqlite("cvt", outdir=getwd())
   }
-  file.copy("../output/release/res_cvtdb.sqlite", "res_cvtdb.sqlite")
+  invisible(file.copy("../output/release/res_cvtdb.sqlite", "res_cvtdb.sqlite"))
 }
 # https://stackoverflow.com/questions/37755037/how-to-add-code-folding-to-output-chunks-in-rmarkdown-html-documents
 # https://stackoverflow.com/questions/56550878/in-r-markdown-how-to-output-sortable-table-while-r-chunk-is-set-to-results-a
@@ -50,11 +50,9 @@ if(!file.exists("res_cvtdb.sqlite")){
 
 ### CvTdb Summary
 
-The Concentration versus Time Database (CvTdb) contains manually curated time-series data and associated metadata for in vivo studies on organic chemicals available in the scientific literature. These data inform chemical safety analysis and allow evaluation of the relationship between administered doses and internal concentrations of a substance. These data can also be used to build or evaluate physiologically based pharmacokinetic (PBPK) models, which simulate the absorption, distribution, metabolism, and elimination of a chemical. The database also contains toxicokinetic parameters, including volume of distribution and elimination half-life, which are calculated across all data associated with a particular compound using the publicly available pharmacokinetic curve-fitting software invivoPKfit. This version 2 release builds upon the original “legacy” database released with Sayre, Wambaugh, and Grulke (2020).
+The Concentration versus Time Database (CvTdb) contains manually curated time-series data and associated metadata for in vivo studies on organic chemicals available in the scientific literature. These data inform chemical safety analysis and allow evaluation of the relationship between administered doses and internal concentrations of a substance. These data can also be used to build or evaluate physiologically based pharmacokinetic (PBPK) models, which simulate the absorption, distribution, metabolism, and elimination of a chemical. The database also contains toxicokinetic parameters, including volume of distribution and elimination half-life, which are calculated across all data associated with a particular compound using the publicly available pharmacokinetic curve-fitting software invivoPKfit. This version 2.0.0 release builds upon the original [v1.0.0](https://github.com/USEPA/CompTox-PK-CvTdb/releases/tag/v1.0.0) “legacy” database released with Sayre, Wambaugh, and Grulke (2020) and the minor [v1.1.0](https://github.com/USEPA/CompTox-PK-CvTdb/releases/tag/v1.1.0) database release from 2021 that added the Showa Pharmaceutical University dataset. The code, documentation, and vignettes associated with the database release are available on GitHub ([CompTox-PK-CvTdb](https://github.com/USEPA/CompTox-PK-CvTdb); [CvTdbLoad](https://github.com/USEPA/cvtdbload)). The database is also available for download through the public CCTE EPA Clowder repository (**Add FigShare link**) (no user account required).
 
-The code, documentation, and vignettes associated with the database release are available on GitHub ([CvTdbLoad](https://github.com/USEPA/CvTdbLoad "Link to CvTdbLoad GitHub repository")). The database is also available for download through the public CCTE EPA Clowder repository (no user account required).
-
-Sayre, R.R., Wambaugh, J.F. & Grulke, C.M (2020). Database of pharmacokinetic time-series data and parameters for 144 environmental chemicals. Sci Data 7(122). https://doi.org/10.1038/s41597-020-0455-1.
+> Sayre, R.R., Wambaugh, J.F. & Grulke, C.M (2020). Database of pharmacokinetic time-series data and parameters for 144 environmental chemicals. Sci Data 7(122). https://doi.org/10.1038/s41597-020-0455-1.
 
 ### Credential Security
 
@@ -65,10 +63,10 @@ Although credentials are not required to use the provided CvTdb SQLite database,
 An example .Renviron (R) or .env (Python) looks like the following, replacing the appropriate placeholders with their respective values:
 
 ```         
-user=username-here
-password=password-here
-host=host-here
-database=database-here
+user = "username-here"
+password = "password-here"
+host = "host-here"
+database = "database-name-here"
 ```
 
 ### Querying Databases in R
@@ -262,7 +260,7 @@ All sample queries below provide the pure `SQL` and `dplyr` approaches in tabbed
 #| echo: FALSE
 query <- paste0("SELECT pmid, year, first_author, title ",
                 "FROM documents WHERE first_author IS NOT NULL AND ",
-                "title IS NOT NULL LIMIT 15 ")
+                "title IS NOT NULL LIMIT 15")
 df_sql <- query_db(query = query, con_type = "sqlite")
 ```
 
@@ -308,7 +306,7 @@ compare = compare_sql_dbplyr()
 ```         
 query <- paste0("SELECT pmid, year, first_author, title ",
                 "FROM documents WHERE first_author IS NOT NULL AND ",
-                "title IS NOT NULL LIMIT 15 ")
+                "title IS NOT NULL LIMIT 15")
 
 df_sql <- query_db(query = query, con_type = "sqlite")
 ```
@@ -437,8 +435,12 @@ compare = compare_sql_dbplyr()
 pmid_list <- c('43370', '422270', '422271', '538758', '629888', '731724', '734422', '843463', '843464', '926203')
             
             # Select columns of interest
-query <- paste0("SELECT distinct e.pmid, b.analyte_name_original, c.dose_level_original, c.dose_level_units_original, ",
-            "d.species, b.conc_medium_original, a.time_original, b.time_units_original, a.conc_original, b.conc_units_original ",
+query <- paste0(
+            "SELECT distinct e.pmid, b.analyte_name_original, 
+            c.dose_level_original, c.dose_level_units_original, ",
+            "d.species, b.conc_medium_original, 
+            a.time_original, b.time_units_original, 
+            a.conc_original, b.conc_units_original ",
             "FROM conc_time_values a ",
             # Join to series table by series ID
             "LEFT JOIN series b on b.id = a.fk_series_id ",
