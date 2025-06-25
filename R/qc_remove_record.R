@@ -4,14 +4,17 @@
 #' @param df Input dataframe of id, qc_notes, and qc_flags for records to remove
 #' @param tbl_name Name of table the records are from
 #' @param reset_extraction Boolean whether to reset_extraction or remove whole record. Defaul FALSE.
+#' @param del_qc_note Optional note to add to qc_notes and qc_flags field for tbl_name records.
 #' @export
 #' @return None.
-qc_remove_record <- function(df, tbl_name, reset_extraction = FALSE){
+qc_remove_record <- function(df, tbl_name, reset_extraction = FALSE, del_qc_note = NULL){
   
   if(!nrow(df)){
     message("...no records to remove for ", tbl_name, " sheet...")
     return()
   }
+  
+  if(!is.null(del_qc_note)) del_qc_note = paste0(" - ", del_qc_note)
   
   # Set defaults
   del_ids = list(documents = NULL,
@@ -46,19 +49,34 @@ qc_remove_record <- function(df, tbl_name, reset_extraction = FALSE){
   
   # Remove NULL values
   del_ids = del_ids %>%
+    purrr::discard(is.null) %>%
     purrr::compact()
+  
+  print(del_ids)
   
   for(del_tbl in rev(names(del_ids))){
     
     # If not from the provided df table, set generic message for cascade removal qc_notes/flags
     if(del_tbl != tolower(tbl_name)){
+      tbl_qc_note = paste0('Removed due to foreign key association to removed record in ', tbl_name, 
+                           ' table (', toString(del_ids[[tolower(tbl_name)]]), ")",
+                           del_qc_note)
+      
       del_df = data.frame(id = del_ids[[del_tbl]]) %>% 
-        dplyr::mutate(qc_notes = paste0('Removed due to foreign key association to removed record in ', tbl_name, 
-                                        ' table (', toString(del_ids[[tolower(tbl_name)]]), ")"),
-                      qc_flags = paste0('Removed due to foreign key association to removed record in ', tbl_name, 
-                                        ' table (', toString(del_ids[[tolower(tbl_name)]]), ")"))
+        dplyr::mutate(
+          qc_notes = tbl_qc_note,
+          qc_flags = tbl_qc_note
+        )
     } else {
-      del_df = df
+      tbl_qc_note = paste0("Removed ", tbl_name, 
+                           " id ", toString(del_ids[[tolower(tbl_name)]]),
+                           del_qc_note)
+      
+      del_df = df %>%
+        dplyr::mutate(
+          qc_notes = tbl_qc_note,
+          qc_flags = tbl_qc_note
+        )
     }
     
     # Skip deleting document records if just resetting extraction
@@ -74,11 +92,14 @@ qc_remove_record <- function(df, tbl_name, reset_extraction = FALSE){
       tk_df = db_query_cvt(paste0("SELECT id, fk_study_id FROM cvt.tk_parameters WHERE fk_study_id IN (", toString(del_ids[[tolower(del_tbl)]]), ")"))
       
       if(nrow(tk_df)){
+        tbl_qc_note = paste0('Removed due to foreign key association to removed record in ', del_tbl, 
+                             ' table (', fk_study_id, ")",
+                             del_qc_note)
         tk_df = tk_df %>%
-          dplyr::mutate(qc_notes = paste0('Removed due to foreign key association to removed record in ', del_tbl, 
-                                          ' table (', fk_study_id, ")"),
-                        qc_flags = paste0('Removed due to foreign key association to removed record in ', del_tbl, 
-                                          ' table (', fk_study_id, ")"))
+          dplyr::mutate(
+            qc_notes = tbl_qc_note,
+            qc_flags = tbl_qc_note
+          )
         # Update database entry twice:
         # once to audit old record
         db_update_tbl(df = tk_df, tblName = "tk_parameters")
@@ -93,11 +114,14 @@ qc_remove_record <- function(df, tbl_name, reset_extraction = FALSE){
       tk_df = db_query_cvt(paste0("SELECT id, fk_series_id FROM cvt.tk_parameters WHERE fk_series_id IN (", toString(del_ids[[tolower(del_tbl)]]), ")"))
       
       if(nrow(tk_df)){
+        tbl_qc_note = paste0('Removed due to foreign key association to removed record in ', del_tbl, 
+                             ' table (', fk_series_id, ")",
+                             del_qc_note)
         tk_df = tk_df %>%
-          dplyr::mutate(qc_notes = paste0('Removed due to foreign key association to removed record in ', del_tbl, 
-                                          ' table (', fk_series_id, ")"),
-                        qc_flags = paste0('Removed due to foreign key association to removed record in ', del_tbl, 
-                                          ' table (', fk_series_id, ")"))
+          dplyr::mutate(
+            qc_notes = tbl_qc_note,
+            qc_flags = tbl_qc_note
+            )
         # Update database entry twice:
         # once to audit old record
         db_update_tbl(df = tk_df, tblName = "tk_parameters")
@@ -116,7 +140,18 @@ qc_remove_record <- function(df, tbl_name, reset_extraction = FALSE){
     db_update_tbl(df = del_df, tblName = del_tbl)
     # twice to audit QC'd record
     db_update_tbl(df = del_df, tblName = del_tbl)
-    # Delete database entries
-    db_query_cvt(paste0("DELETE FROM cvt.", del_tbl, " WHERE id IN (", toString(del_df$id), ")"))
+    # Check if audit worked
+    curr_rec = db_query_cvt(paste0("SELECT id, version FROM cvt.", del_tbl, 
+                                   " WHERE id in (", toString(del_df$id), ")"))
+    audit_check = db_query_cvt(paste0("SELECT * FROM cvt.cvt_audit WHERE fk_table_id in (", 
+                                      toString(del_df$id), ") AND fk_table_name = '", del_tbl,"' AND ",
+                                      "version in (", toString(unique(curr_rec$version) - 1), ")"))
+    # If audit successful, delete the record
+    if(nrow(audit_check)){
+      # Delete database entries
+      db_query_cvt(paste0("DELETE FROM cvt.", del_tbl, " WHERE id IN (", toString(del_df$id), ")"))  
+    } else {
+      stop("Record not audited as expected...record not deleted...")
+    }
   }
 }

@@ -24,6 +24,8 @@ convert_units <- function(x, num, units, desired, conv_factor=NA, overwrite_unit
   #Convert units based on input string equation
   if(is.null(conv[[x[[units]]]][[desired]])){
     #No matching desired output
+    message("No conversion for: `", x[[units]], "` = list(`", desired, '`=""),')
+    browser()
     x[[num]] = NA
   } else {
     #Get the conversion equation (e.g. 20 days to weeks is '20/7')

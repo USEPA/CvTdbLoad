@@ -5,7 +5,7 @@ bulk_update_age_normalization <- function(){
   API_AUTH <<- Sys.getenv("API_AUTH")
   
   # Query with needed columns
-  query <- paste0("SELECT * FROM cvt.subjects WHERE age_category is not NULL")
+  query <- paste0("SELECT * FROM cvt.subjects WHERE age is NOT NULL and age_category is NULL")
   
   # Pull data to check
   df_raw <- db_query_cvt(query) %>%
@@ -54,6 +54,7 @@ bulk_update_age_normalization <- function(){
   
   # Filter to only entries that need updating
   df_out = df_update %>%
+    dplyr::mutate(age_category = as.character(age_category)) %>%
     # Can't compare NA values, so replace for now
     tidyr::replace_na(list(age_category_old = "-99999", age_category = "-99999")) %>%
     dplyr::filter(age_category_old != age_category) %>%

@@ -16,11 +16,20 @@
 #' @rdname db_query_cvt
 #' @export 
 #' @importFrom RPostgres dbGetQuery dbDisconnect
-db_query_cvt <- function(query=NULL){
+db_query_cvt <- function(query=NULL, query_type = "query"){
   if(is.null(query)) return(message("...Must provide a query to send"))
   con = db_connect_to_CvT()
   query_result = tryCatch({
-    RPostgres::dbGetQuery(con, query)
+    if(query_type == "query"){
+      RPostgres::dbGetQuery(con, query)  
+    } else if (query_type == "statement"){
+      rs = RPostgres::dbSendStatement(con, query)
+      dbClearResult(rs)
+    } else {
+      stop("Unknown query_type '", query_type, "'")
+    }
+    
+    
     #dbSendQuery(con, query) %T>% #run query
     #{ dbFetch(.) ->> tmp } %>% #save intermediate variable, critical tee-operator
     #  dbClearResult() #clear result

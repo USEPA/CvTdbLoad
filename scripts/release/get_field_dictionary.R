@@ -17,7 +17,10 @@ get_field_dictionary <- function(schema, old_dict){
     if(file.exists(old_dict) && tools::file_ext(old_dict) == "xlsx"){
       field_list = field_list %>%
         dplyr::left_join(readxl::read_xlsx(old_dict),
-                         by = c("table_name", "column_name"))
+                         by = c("table_name", "column_name")) %>%
+        # Add ending period if needed for select columns
+        dplyr::mutate(dplyr::across(c("short_description", "notes"),
+                                    ~ sub("([^.])$", "\\1.", .)))
     }
   }
   

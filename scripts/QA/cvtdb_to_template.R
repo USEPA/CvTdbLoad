@@ -145,6 +145,11 @@ get_cvt_by_doc_id <- function(id){
   }
   
   cat("...getting series data...\n")
+  study_id_list = toString(study_data$id)
+  # If no study ID, query by impossible value to get empty dataframe (no SQL error)
+  if(!length(study_id_list)) {
+    study_id_list = "-999"
+  }
   series_data = db_query_cvt(paste0("SELECT a.*, ",
                                     "b.conc_medium_original, b.conc_medium_normalized ",
                                     "FROM cvt.series a ",
@@ -152,11 +157,18 @@ get_cvt_by_doc_id <- function(id){
                                     "WHERE fk_study_id in (", 
                                     toString(study_data$id), 
                                     ")"))
-  cat("...getting subject data...\n")
-  subject_data = db_query_cvt(paste0("SELECT * FROM cvt.subjects WHERE id in (", toString(unique(series_data$fk_subject_id)), ")"))
-  cat("...getting conc data...\n")
-  conc_data = db_query_cvt(paste0("SELECT * FROM cvt.conc_time_values WHERE fk_series_id in (", toString(series_data$id), ")"))
-  cat("...returning...\n")
+  if(nrow(series_data)){
+    cat("...getting subject data...\n")
+    subject_data = db_query_cvt(paste0("SELECT * FROM cvt.subjects WHERE id in (", toString(unique(series_data$fk_subject_id)), ")"))
+    cat("...getting conc data...\n")
+    conc_data = db_query_cvt(paste0("SELECT * FROM cvt.conc_time_values WHERE fk_series_id in (", toString(series_data$id), ")"))
+    cat("...returning...\n")  
+  } else {
+    # Case of no series data
+    subject_data = NULL
+    conc_data = NULL
+  }
+  
   list(Documents = doc_data %>%
          dplyr::bind_rows(ref_doc_data) %>% 
          dplyr::distinct(),
@@ -170,6 +182,9 @@ get_cvt_by_doc_id <- function(id){
 convert_cvt_to_template <- function(in_dat=NULL, template=NULL, map=NULL, include_foreign_keys=NULL){
   # Map field names to template
   in_dat = lapply(names(in_dat), function(s){
+    if(is.null(in_dat[[s]])){
+      return(template[[s]])
+    }
     # If include foreign_keys, add them to the template and map
     if(include_foreign_keys){
       # Add to template
@@ -177,7 +192,7 @@ convert_cvt_to_template <- function(in_dat=NULL, template=NULL, map=NULL, includ
       fk_list = fk_list[!fk_list %in% names(template[[s]])]
       template[[s]] = template[[s]] %>%
         cbind(
-          data.frame(matrix(ncol=length(fk_list),nrow=0, dimnames=list(NULL, fk_list)))
+          data.frame(matrix(ncol=length(fk_list), nrow=0, dimnames=list(NULL, fk_list)))
         )
       # Add to map
       fk_list = names(in_dat[[s]])[grepl("^fk_", names(in_dat[[s]]))] 

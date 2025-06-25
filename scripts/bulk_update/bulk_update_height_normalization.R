@@ -63,7 +63,8 @@ bulk_update_height_normalization <- function(){
     dplyr::filter(height_cm != -99999) %>%
     dplyr::select(id, height_cm) %>%
     dplyr::distinct() %>%
-    dplyr::mutate(qc_notes = "normalized height updated")
+    dplyr::mutate(qc_notes = "normalized height updated",
+                  height_cm = round(height_cm, 3))
   
   if(nrow(df_out)){
     # Push updated values to Subjects sheet based on "id" field

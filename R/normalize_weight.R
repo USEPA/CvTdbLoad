@@ -18,7 +18,6 @@
 #' @importFrom dplyr mutate filter bind_rows arrange select
 normalize_weight <- function(raw, f, log_path, debug=FALSE){
   message("...normalizing weight...")
-  #weight_estimated --> 0 = No estimation (just conversion); 1 = extrapolated; 2 = range mean
   # tmp = lapply(fileList, function(f){
   #   s_list = load_sheet_group(fileName = f, template_path = template_path)
   #   s_list$Subjects %>% select(species, subtype, weight, weight_units) %>% distinct() %>%
@@ -32,7 +31,7 @@ normalize_weight <- function(raw, f, log_path, debug=FALSE){
   }
   #List of dataframe subsets
   out = list()
-  out$raw = normalization_prep(x=raw, newcols=c("weight_kg", "weight_estimated"))
+  out$raw = normalization_prep(x=raw, newcols=c("weight_kg"))
   #Set to convert column to maintain original
   out$raw$weight_kg = out$raw$weight
   #Extract units
@@ -53,14 +52,13 @@ normalize_weight <- function(raw, f, log_path, debug=FALSE){
   #List of weights
   out = check_subject_list(x=out, f=f, col="weight_kg", log_path=log_path)
   # +/- Group
-  out = check_unit_ci(x=out, f=f, col="weight_kg", estimated="weight_estimated", log_path=log_path)
+  out = check_unit_ci(x=out, f=f, col="weight_kg", log_path=log_path)
   #Weight range
-  out = check_unit_range(x=out, f=f, col="weight_kg", estimated="weight_estimated", log_path=log_path)
+  out = check_unit_range(x=out, f=f, col="weight_kg", log_path=log_path)
   #Ready for conversion
   out$conversion = out$raw %>% 
     dplyr::mutate(weight_kg = suppressWarnings(as.numeric(weight_kg))) %>%
-    dplyr::filter(!is.na(weight_kg)) %>%
-    dplyr::mutate(weight_estimated = 0)
+    dplyr::filter(!is.na(weight_kg))
   out$raw = out$raw %>% dplyr::filter(!tempID %in% out$conversion$tempID)
   
   if(nrow(out$raw)){

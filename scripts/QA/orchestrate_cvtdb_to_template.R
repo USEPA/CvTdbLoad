@@ -16,8 +16,10 @@
 #' orchestrate_cvtdb_to_template(id_list=id_list)
 orchestrate_cvtdb_to_template <- function(id_list, 
                               template_path="input/CvT_data_template_articles.xlsx", 
-                              template_map="input/qa_template_map.xlsx"){
-  
+                              template_map="input/qa_template_map.xlsx",
+                              export = TRUE){
+  # List of export templates, if export is FALSE
+  export_list = list()
   # Check if input id_list is the expected format
   allowed_doc_id = c("id", "pmid", "other_study_identifier")
   if(is.null(id_list)) stop(paste0("Must provide document id information as named list of options: ", toString(allowed_doc_id)))
@@ -46,21 +48,28 @@ orchestrate_cvtdb_to_template <- function(id_list,
         message("Error '", id_type, "' with value '", id, "' does not exist")
         next
       }
-      # Check if file already generated (note it is date dependent due to date stamp)
-      if(file.exists(paste0("output/CVTDB_QC/", 
-                            id_check$id, 
-                            "_PMID", id_check$pmid,
-                            "_otherID_", id_check$other_study_identifier,
-                            "_",
-                            Sys.Date() %>% gsub("-", "", .),
-                            ".xlsx"))){
-        next
+      if(export){
+        # Check if file already generated (note it is date dependent due to date stamp)
+        if(file.exists(paste0("output/CVTDB_QC/", 
+                              id_check$id, 
+                              "_PMID", id_check$pmid,
+                              "_otherID_", id_check$other_study_identifier,
+                              "_",
+                              Sys.Date() %>% gsub("-", "", .),
+                              ".xlsx"))){
+          next
+        }
       }
+
       message("Converting document ID '", id_type, "' of value ",  id)
       # Pull data based on input ID values
       out = cvtdb_to_template(id=list(id) %T>% { names(.) <- id_type}, 
                               template_path=template_path, 
                               template_map=template_map)
+      if(!export){
+        export_list = append(export_list, list(out) %T>% { names(.) <- paste0("doc_", id)})
+        next
+      }
       # Export pulled data to an Excel file named with identifiers and date stamped
       writexl::write_xlsx(out, paste0("output/CVTDB_QC/", 
                                       out$Documents$id, 
@@ -71,6 +80,8 @@ orchestrate_cvtdb_to_template <- function(id_list,
                                       ".xlsx"))
     } 
   }
+  
+  if(!export) return(export_list)
 }
 
 #'@title get_jira_queued_cvt_qc

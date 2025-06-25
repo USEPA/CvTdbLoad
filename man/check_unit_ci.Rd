@@ -4,7 +4,7 @@
 \alias{check_unit_ci}
 \title{FUNCTION_TITLE}
 \usage{
-check_unit_ci(x, f, col, estimated, log_path)
+check_unit_ci(x, f, col, log_path)
 }
 \arguments{
 \item{x}{Input list of datasets being normalized}
@@ -12,8 +12,6 @@ check_unit_ci(x, f, col, estimated, log_path)
 \item{f}{Filename for flagging purposes}
 
 \item{col}{The column being checked/normalized}
-
-\item{estimated}{The column for *_estimated flags (0, 1, 2) #'}
 }
 \value{
 Modified version of the input \code{x} parameter

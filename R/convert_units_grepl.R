@@ -1,5 +1,5 @@
 #' @title convert_units_grepl
-#' @description Function to get various grepl statements for unit extraction/convertion
+#' @description Function to get various grepl statements for unit extraction/conversion
 #' @param unit_type PARAM_DESCRIPTION
 #' @return OUTPUT_DESCRIPTION
 #' @details DETAILS
@@ -13,70 +13,30 @@
 #' @export 
 convert_units_grepl <- function(unit_type){
   switch(unit_type, 
-         "weight" = list(kg = "kg|kilogram|kilo",
-                         mg = "mg|milligram",
-                         g = "g|gram",
-                         lb = "lb|pound",
-                         rm_list = c("kilogram", "kilograms", "kg", 
-                                     "milligram", "milligrams", "mg", 
-                                     "gram", "grams", "g",
-                                     "pound", "pounds", "lb", "lbs")
-                         ),
-         "height" = list(cm = "cm|centimeter",
-                         mm = "millimeter|mm",
-                         m = "m|meter",
-                         `in`="in|inch",
-                         ft="ft|foot|feet",
-                         rm_list = c("cm", "centimeter", "centimeters", 
-                                     "mm", "millimeter", "millimeters", 
-                                     "m", "meter", "meters",
-                                     "in", "inch", "inches",
-                                     "ft", "foot", "feet")
-                         ),
-         "age" = list(week = "week|weeks|wk|wks",
-                      year = "years old|year|years|yr|yrs",
-                      day = "day|days|GD|gestation",
-                      month = "month|months",
-                      rm_list = c("week", "weeks","wk","wks",
-                                  "month",
-                                  "years","year","-year","yr","yrs",
-                                  "day","days","GD","gestational day","gestational days")),
-         "dose_duration" = list(day = "day|days|GD",
-                                week = "week|weeks|wk|wks",
-                                month = "month|months",
-                                min = "min|mins",
-                                hr = "hour|hours|hr|hrs|h",
-                                s = "sec|s|second|seconds",
-                                rm_list= c("within", "day",
-                                           "week", "wk", "wks",
-                                           "month",
-                                           "min", "mins",
-                                           "hour", "hr", "hrs", "h",
-                                           "sec", "s"))#,
-         # # Default case
-         # list(
-         #   kg = "kg|kilogram|kilo",
-         #   mg = "mg|milligram",
-         #   g = "g|gram",
-         #   lb = "lb|pound",
-         #   cm = "cm|centimeter",
-         #   mm = "millimeter|mm",
-         #   m = "m|meter",
-         #   `in`="in|inch",
-         #   ft="ft|foot|feet",
-         #   week = "week|weeks|wk|wks",
-         #   year = "years old|year|years|yr|yrs",
-         #   day = "day|days|GD|gestation",
-         #   month = "month|months",
-         #   s = "sec|s|second|seconds",
-         #   rm_list = c("kilogram", "kilograms", "kg", "milligram", "milligrams", "mg", "gram", "grams",           
-         #               "g", "pound", "pounds", "lb", "lbs", "cm", "centimeter", "centimeters",
-         #               "mm", "millimeter", "millimeters", "m", "meter", "meters", "in", "inch", 
-         #               "inches", "ft", "foot", "feet", "week", "weeks", "wk", "wks", 
-         #               "month", "years", "year", "-year", "yr", "yrs", "day", "days", 
-         #               "GD", "gestational day", "gestational days", "within", "min", "mins", "hour", "hr", 
-         #               "hrs", "h", "sec", "s")
-         # )
-         ) %>%
+         "weight" = list(kg = c("kg",  "kilo", "kilogram", "kilograms"),
+                         mg = c("mg", "milligram", "miligrams"),
+                         g = c("g", "gm", "gram", "grams"),
+                         lb = c("lb", "lbs", "pound", "pounds")
+         ),
+         "height" = list(cm = c("cm", "centimeter", "centimenters"),
+                         mm = c("mm", "millimeter", "millimeters"),
+                         m = c("m", "meter", "meters"),
+                         `in`= c("in", "inch", "inches"),
+                         ft= c("ft", "foot", "feet")
+         ),
+         "age" = list(week = c("wk", "wks", "week", "weeks"),
+                      year = c("yr", "yrs", "year", "years", "year old", "years old"),
+                      day = c("GD", "day", "days", "gestation"),
+                      month = c("month", "months")
+         ),
+         "dose_duration" = list(day = c("GD", "day", "days"),
+                                week = c("wk", "wks", "week", "weeks"),
+                                month = c("month", "months"),
+                                min = c("min", "mins", "minute", "minutes"),
+                                hr = c("h", "hr", "hrs", "hour", "hours"),
+                                s = c("s", "sec", "secs", "second", "seconds")
+         ),
+         "conc" = list(`mmol/l` = c("mmol/L"))
+  ) %>%
     return()
 }

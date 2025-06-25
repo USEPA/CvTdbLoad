@@ -27,13 +27,18 @@ db_update_tbl <- function(df=NULL, tblName=NULL){
     message("No data passed to push to CvT...returning")
     return()
   }
-  # Filter out NA fields (which will automatically be NULL in the database)
-  df = df[ , colSums(is.na(df)) < nrow(df)]
+  # # Filter out NA fields (which will automatically be NULL in the database)
+  # # Only if there are multiple columns
+  # if(length(df) > 1){
+  #   df = df[ , colSums(is.na(df)) < nrow(df)]  
+  # }
+  
   tryCatch({
     # Drop temp table if exists
-    db_query_cvt("DROP TABLE IF EXISTS cvt.z_updated_df")
+    db_query_cvt("DROP TABLE IF EXISTS cvt.z_updated_df", query_type = "statement")
     # Create temp table to store data for update
-    db_query_cvt(paste0("CREATE TABLE cvt.z_updated_df (LIKE cvt.",tblName," INCLUDING ALL)"))
+    db_query_cvt(paste0("CREATE TABLE cvt.z_updated_df (LIKE cvt.",tblName," INCLUDING ALL)"),
+                 query_type = "statement")
     
     con = db_connect_to_CvT()
     # DBI Issues with schema references

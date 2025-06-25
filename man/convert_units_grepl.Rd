@@ -13,7 +13,7 @@ convert_units_grepl(unit_type)
 OUTPUT_DESCRIPTION
 }
 \description{
-Function to get various grepl statements for unit extraction/convertion
+Function to get various grepl statements for unit extraction/conversion
 }
 \details{
 DETAILS

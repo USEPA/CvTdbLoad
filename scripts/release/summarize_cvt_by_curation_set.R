@@ -28,6 +28,7 @@ get_cvt_curation_qc_stats <- function(){
                          "or id in (select fk_reference_document_id from cvt.studies))")
     }
     docs = db_query_cvt(doc_query)
+    if(!nrow(docs)) return(NULL)
     # Pull studies
     studies = db_query_cvt(paste0("SELECT * FROM cvt.studies WHERE fk_extraction_document_id in (", toString(docs$id), ") ",
                                   "OR fk_reference_document_id in (", toString(docs$id), ")"))
