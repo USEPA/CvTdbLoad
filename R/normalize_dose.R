@@ -397,7 +397,7 @@ normalize_dose <- function(raw, f, log_path, debug = FALSE){
         dose_level_units_tagged = dplyr::case_when(
           conversion_factor_type == "need_bw" ~ paste0(dose_level_units, " need_bw"),
           # Dermal with dose volume conversion_factor for mg/kg-bw
-          conversion_factor_type == "oral_vol" ~ paste0(dose_level_units, " dermal_vol"),
+          conversion_factor_type == "dermal_vol" ~ paste0(dose_level_units, " dermal_vol"),
           # Funnel oral_vol group to use correct conversion with conversion factor
           conversion_factor_type == "oral_vol" ~ paste0(dose_level_units, " oral_vol"),
           # Assumes ppm/ppb volume from chamber exposure
@@ -637,8 +637,11 @@ normalize_dose <- function(raw, f, log_path, debug = FALSE){
       ),
       # Replace originally reported dose as a range or as-is
       dose_level_units_final = dplyr::case_when(
-        all(!is.na(dose_level_normalized_max), 
-            dose_level_normalized_min != dose_level_normalized_max)  ~ desired_units,
+        all(
+          # No NA normalized Value
+          !is.na(dose_level_normalized_max), 
+          # min and max not equal  
+          dose_level_normalized_min != dose_level_normalized_max)  ~ desired_units,
         TRUE ~ dose_level_units
       ),
       dose_level_normalized_final = dplyr::case_when(
@@ -648,7 +651,14 @@ normalize_dose <- function(raw, f, log_path, debug = FALSE){
         !is.na(dose_level_normalized_min) & !is.na(dose_level_normalized_max) ~ mean(c(dose_level_normalized_min, dose_level_normalized_max)),
         # Report min (default for cases without ranges)
         TRUE ~ dose_level_normalized_min
-      )
+      ),
+      dose_level_units_normalized_final = dplyr::case_when(
+        # NA normalized value, NA units
+        is.na(dose_level_normalized_final) ~ NA,
+        # No conversion (probably a case covered by NA), NA units
+        grepl("No conversion", conv_max_equ_raw) ~ NA,
+        TRUE ~ desired_units
+      ) 
     ) # %>%
   # Debug logic to compare old to new to see what was reassigned
   # dplyr::select(

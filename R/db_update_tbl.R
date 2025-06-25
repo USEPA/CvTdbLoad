@@ -27,11 +27,11 @@ db_update_tbl <- function(df=NULL, tblName=NULL){
     message("No data passed to push to CvT...returning")
     return()
   }
-  # Filter out NA fields (which will automatically be NULL in the database)
-  # Only if there are multiple columns
-  if(length(df) > 1){
-    df = df[ , colSums(is.na(df)) < nrow(df)]  
-  }
+  # # Filter out NA fields (which will automatically be NULL in the database)
+  # # Only if there are multiple columns
+  # if(length(df) > 1){
+  #   df = df[ , colSums(is.na(df)) < nrow(df)]  
+  # }
   
   tryCatch({
     # Drop temp table if exists

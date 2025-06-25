@@ -58,7 +58,6 @@ bulk_update_dose_normalization <- function(report.only=TRUE){
   
   # Normalized data
   df_normalized <- normalize_dose(raw=df_raw_zip) %>%
-    dplyr::mutate(dose_level_units_normalized_final = desired_units) %>%
     dplyr::rename(dose_level_target_old = dose_level_target, 
                   dose_level_target_units_old = dose_level_target_units,
                   dose_level_old = dose_level,
@@ -159,7 +158,7 @@ bulk_update_dose_normalization <- function(report.only=TRUE){
         db_update_tbl(df=df_out,
                       tblName = "studies")
       } else {
-        message("No dose normalization updates to push...")
+        message("No dose ", dose_n, " updates to push...")
       }
       
       if(nrow(compare_norm_units)){
@@ -167,7 +166,7 @@ bulk_update_dose_normalization <- function(report.only=TRUE){
         db_update_tbl(df = compare_norm_units,
                       tblName = "studies")
       } else {
-        message("No dose unit normalization updates to push")
+        message("No dose ", dose_n, " unit updates to push")
       }  
     } else {
       # Append to list to return
@@ -178,5 +177,5 @@ bulk_update_dose_normalization <- function(report.only=TRUE){
   }
   
   # Return list of df_out to review
-  if(report.only) return(df_out_list)
+  return(df_out_list)
 }

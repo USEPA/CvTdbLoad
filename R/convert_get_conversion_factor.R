@@ -37,6 +37,7 @@ convert_get_conversion_factor <- function(conv_factor=1){
        # TODO Handle special dosed feed and drinking water cases
        `mg/kg feed dose` = list(`mg/kg BW-day`="/1"),
        `mg/kg drinking dose` = list(`mg/kg BW-day`="/1"),
+       `mg/kgbw dose` = list(`mg/kg BW`="/1"),
        
        `ng/g`=list(`ug/kg`="/1", `ug/ml`= paste0("*", conv_factor, "/1000")), # ug/mL from httk g/mL tissue density
        # TODO potentially remove
