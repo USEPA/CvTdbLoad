@@ -57,11 +57,12 @@ bulk_update_conc_normalization <- function(report.only = TRUE){
     ) %>%
     dplyr::filter(analyte_name_check == TRUE | analyte_name_secondary_check == TRUE)
   
-  View(radiolabel_check, title = "radiolabel_check")
+  # View(radiolabel_check, title = "radiolabel_check")
   # Normalized data
   df_normalized <- normalize_conc(raw=df_raw_zip) %>%
     dplyr::mutate(
       # Set as desired_units from conc_medium_dict table
+      # Cannot check for NA conc due to multiple conc for a given series
       conc_units_normalized = desired_units
     )
   
@@ -150,8 +151,18 @@ bulk_update_conc_normalization <- function(report.only = TRUE){
     } else {
       message("No conc unit normalization updates to push")
     }
-  } else {
-    # Return updated values
-    return(df_out) 
-  }
+  } 
+  
+  # Return updated values
+  list(
+    conc_full = df_update %>%
+      dplyr::select(id, conversion_factor_type, conc,	conc_units_normalized, desired_units, 
+                    conc_sd, conc_lower_bound, conc_upper_bound, conv_factor, conv_equ_raw, conv_equ,
+                    dplyr::everything()) %>%
+      dplyr::mutate(checked = 0),
+    conc_norm = df_out,
+    conc_norm_units = compare_norm_units
+  ) %>%
+  return(df_out) 
+  
 }

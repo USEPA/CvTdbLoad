@@ -28,30 +28,31 @@ convert_get_conversion_factor <- function(conv_factor=1){
        mm = list(cm="/10"), #Only care to convert to cm for all heights
        cm = list(cm="/1"),
        m = list(cm="*100"),
-       `in`=list(cm="*2.54"),
-       ft=list(cm="*12*2.54"),
-       s=list(hr="/60/60"), #Only care to convert to hr f time
-       min=list(hr="/60"),
-       hr=list(hr="/1"),
-       `mg/kg`=list(`mg/kg`="/1", `ug/ml`= paste0("*", conv_factor)), #1 mg/kg*conv_factor kg/L*1L/1000mL*1000ug/mg=ug/mL --> using httk density value for conv_factor variable (refactor name)
+       `in` = list(cm="*2.54"),
+       ft = list(cm="*12*2.54"),
+       s = list(hr="/60/60"), #Only care to convert to hr f time
+       min = list(hr="/60"),
+       hr = list(hr="/1"),
+       `mg/kg` = list(`mg/kg`="/1", `ug/ml`= paste0("*", conv_factor)), #1 mg/kg*conv_factor kg/L*1L/1000mL*1000ug/mg=ug/mL --> using httk density value for conv_factor variable (refactor name)
        # TODO Handle special dosed feed and drinking water cases
        `mg/kg feed dose` = list(`mg/kg BW-day`="/1"),
        `mg/kg drinking dose` = list(`mg/kg BW-day`="/1"),
        `mg/kgbw dose` = list(`mg/kg BW`="/1"),
        
-       `ng/g`=list(`ug/kg`="/1", `ug/ml`= paste0("*", conv_factor, "/1000")), # ug/mL from httk g/mL tissue density
+       `ng/g` = list(`ug/kg`="/1", `ug/ml`= paste0("*", conv_factor, "/1000")), # ug/mL from httk g/mL tissue density
        # TODO potentially remove
-       `ug/kg`=list(`ug/ml`=paste0("*", conv_factor, "/1000")), # ug/mL from httk g/mL tissue density
-       `ug/l`=list(`ug/ml`="/1000"),
-       `ng/ml`=list(`ug/ml`="/1000"),
-       `pg/ml`=list(`ug/ml`="/1000000"),
-       `ng/l`=list(`ug/ml`="/1000000"),
-       `mg/ml`=list(`ug/ml`="*1000"),
-       `mg/l`=list(`ug/ml`="/1"),
-       `mg/L`=list(`ug/ml`="/1"),
-       `ng/kg`=list(`mg/kg`="/1000000"),
-       `g/dl`=list(`ug/ml`="*10000"),
-       `ug/dl`=list(`ug/ml`="/100"),
+       `ug/kg` = list(`ug/ml`=paste0("*", conv_factor, "/1000")), # ug/mL from httk g/mL tissue density
+       `ug/ml` = list(`ug/ml`="/1"),
+       `ug/l` = list(`ug/ml`="/1000"),
+       `ng/ml` = list(`ug/ml`="/1000"),
+       `pg/ml` = list(`ug/ml`="/1000000"),
+       `ng/l` = list(`ug/ml`="/1000000"),
+       `mg/ml` = list(`ug/ml`="*1000"),
+       `mg/l` = list(`ug/ml`="/1"),
+       `mg/L` = list(`ug/ml`="/1"),
+       `ng/kg` = list(`mg/kg`="/1000000"),
+       `g/dl` = list(`ug/ml`="*10000"),
+       `ug/dl` = list(`ug/ml`="/100"),
        `nmol/l` = list(`ug/ml`=paste0("*",conv_factor,"/1000000")), #1 nmol/L*(1mol/1000000000nmol)*(conv_factor g/1mol)*(1000000ug/1g)*(1L/1000mL)=1*conv_factor/1000000
        `mmol/l` = list(`ug/ml`=paste0("*",conv_factor)),
        `nmol/ml` = list(`ug/ml`=paste0("*",conv_factor,"/1000")),
@@ -78,23 +79,23 @@ convert_get_conversion_factor <- function(conv_factor=1){
        `umol/kg tissue conc` = list(`ug/ml`=paste0("*", conv_factor, "/1000")),
        
        # Air conversions
-       `ug/ml air conc` = list(`mg/m3`="*1000"),
-       `mg/l air conc` = list(`mg/m3`="*1000"),
-       `ug/l air conc` = list(`mg/m3`="/1"),
-       `umol/m^3 air conc` = list(`mg/m3` = paste0("*", conv_factor, "/1000")),
-       `umol/l air conc` = list(`mg/m3`=paste0("*", conv_factor)),
-       `nmol/l air conc` = list(`mg/m3`=paste0("*", conv_factor, "/1000"), `mgEq/m3`=paste0("*", conv_factor, "/1000")),
-       `ng/l air conc` = list(`mg/m3`="/1000"),
-       `ug air conc`=list(`mg/m3`="*NA", `mgEq/m3`="*NA"),
+       `ug/ml air conc` = list(`ug/m3`="*1000000"),
+       `mg/l air conc` = list(`ug/m3`="*1000000"),
+       `ug/l air conc` = list(`ug/m3`="*1000"),
+       `umol/m^3 air conc` = list(`ug/m3` = paste0("*", conv_factor)),
+       `umol/l air conc` = list(`ug/m3`=paste0("*", conv_factor, "*1000")),
+       `nmol/l air conc` = list(`ug/m3`=paste0("*", conv_factor), `ugEq/m3`=paste0("*", conv_factor)),
+       `ng/l air conc` = list(`ug/m3`="/1"),
+       `ug air conc` = list(`ug/m3`="*NA", `ugEq/m3`="*NA"),
        
        # Dose conversions
-       `g/kg dose`=list(`mg/kg BW`="*1000"),
+       `g/kg dose` = list(`mg/kg BW`="*1000"),
        `mg/kg dose` = list(`mg/kg BW`="/1"),
-       `ug/g dose`=list(`mg/kg BW`="/1"),
+       `ug/g dose` = list(`mg/kg BW`="/1"),
        `mg/kg-bw dose` = list(`mg/kg BW`="/1"),
        `ng/kg-bw dose` = list(`mg/kg BW`="/1000000"),
        `ug/250g-bw dose` = list(`mg/kg BW`="*4/1000"),
-       `ug/kg dose`=list(`mg/kg BW`="/1000"),
+       `ug/kg dose` = list(`mg/kg BW`="/1000"),
        
        # Doses reported as masses without denominators (conv_factor is bw or mw/bw)
        `g need_bw dose` = list(`mg/kg BW` = paste0("/", conv_factor, "*1000")),
@@ -129,8 +130,8 @@ convert_get_conversion_factor <- function(conv_factor=1){
        # TODO Handle ppm and ppb cases
        `ppmm` = list(`ug/ml` = "*NA"),
        `ppbm` = list(`ug/ml` = "*NA"),
-       `ppmv air conc` = list(`mg/m3` = "*NA"),
-       `ppbv air conc` = list(`mg/m3` = "*NA"),
+       `ppmv air conc` = list(`ug/m3` = "*NA"),
+       `ppbv air conc` = list(`ug/m3` = "*NA"),
        
        ## TODO Special ignore cases
        `ng/l / ng/kg tissue conc` = list(`ug/ml` = "*NA"),
