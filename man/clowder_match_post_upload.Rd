@@ -29,5 +29,4 @@ if(interactive()){
 }
 \seealso{
 \link[dplyr:filter]{filter}, \link[dplyr:select]{select}
-\link[RPostgres:dbWriteTable]{dbWriteTable}, \link[RPostgres:dbDisconnect]{dbDisconnect}
 }

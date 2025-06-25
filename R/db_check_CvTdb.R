@@ -9,18 +9,18 @@
 #'  }
 #' }
 #' @seealso 
-#'  [dbListTables][RPostgres::dbListTables], [dbDisconnect][RPostgres::dbDisconnect]
+#'  [dbListTables][DBI::dbListTables], [dbDisconnect][DBI::dbDisconnect]
 #'  [tbl][dplyr::tbl], [collect][dplyr::collect]
 #' @rdname db_check_CvTdb
 #' @export 
-#' @importFrom RPostgres dbListTables dbDisconnect
+#' @importFrom DBI dbListTables dbDisconnect
 #' @importFrom dplyr tbl collect
 db_check_CvTdb <- function(){
   con = db_connect_to_CvT()
-  t_list = RPostgres::dbListTables(con)
+  t_list = DBI::dbListTables(con)
   df = lapply(t_list, function(x){
     dplyr::tbl(con, x) %>% dplyr::collect()
   }) %T>% { names(.) <- t_list }
-  RPostgres::dbDisconnect(con)
+  DBI::dbDisconnect(con)
   return(df)
 }

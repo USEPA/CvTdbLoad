@@ -15,10 +15,10 @@
 #'  }
 #' }
 #' @seealso 
-#'  [dbWriteTable][RPostgres::dbWriteTable], [dbSendQuery][RPostgres::dbSendQuery], [dbDisconnect][RPostgres::dbDisconnect]
+#'  [dbWriteTable][DBI::dbWriteTable], [dbSendQuery][DBI::dbSendQuery], [dbDisconnect][DBI::dbDisconnect]
 #' @rdname db_push_tbl_to_db
 #' @export 
-#' @importFrom RPostgres dbWriteTable dbSendQuery dbDisconnect
+#' @importFrom DBI dbWriteTable dbSendQuery dbDisconnect
 db_push_tbl_to_db <- function(dat=NULL, tblName=NULL, fieldTypes=NULL, overwrite=FALSE,
                            customSQL=NULL, append=FALSE){
   if(is.null(dat)) stop("...Error: User must provide data to write to database")
@@ -31,9 +31,9 @@ db_push_tbl_to_db <- function(dat=NULL, tblName=NULL, fieldTypes=NULL, overwrite
   
   out <- tryCatch({
     message("...Trying to write, '", tblName, "' to CvTdb")
-    RPostgres::dbWriteTable(con, value=dat, name=tblName, overwrite=overwrite,
+    DBI::dbWriteTable(con, value=dat, name=tblName, overwrite=overwrite,
                  field.types=fieldTypes, row.names=FALSE, append=append)
-    if(!is.null(customSQL)) { RPostgres::dbSendQuery(con, customSQL) } #Send custom SQL statement
+    if(!is.null(customSQL)) { DBI::dbSendQuery(con, customSQL) } #Send custom SQL statement
   },
   error=function(cond) { 
     message("...Error message for ",tblName,": ", cond); return(NA)
@@ -41,7 +41,7 @@ db_push_tbl_to_db <- function(dat=NULL, tblName=NULL, fieldTypes=NULL, overwrite
   warning=function(cond) { 
     message("...Warning message for ",tblName,": ", cond); return(NULL)
     },
-  finally={ RPostgres::dbDisconnect(con)
+  finally={ DBI::dbDisconnect(con)
   })
   return(0)
 }

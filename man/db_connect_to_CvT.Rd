@@ -23,5 +23,5 @@ if(interactive()){
 }
 }
 \seealso{
-\link[RPostgres:dbConnect]{dbConnect}, \link[RPostgres:PostgreSQL]{PostgreSQL}
+\link[DBI:dbConnect]{dbConnect}, \link[RPostgres:Postgres]{PostgreSQL}
 }

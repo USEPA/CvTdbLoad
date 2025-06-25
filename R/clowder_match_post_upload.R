@@ -13,11 +13,10 @@
 #' }
 #' @seealso 
 #'  [filter][dplyr::filter], [select][dplyr::select]
-#'  [dbWriteTable][RPostgres::dbWriteTable], [dbDisconnect][RPostgres::dbDisconnect]
 #' @rdname clowder_match_post_upload
 #' @export 
 #' @importFrom dplyr filter select
-#' @importFrom RPostgres dbWriteTable dbDisconnect
+#' @importFrom DBI dbWriteTable dbDisconnect
 clowder_match_post_upload <- function(dsID = NULL, apiKey = NULL){
   # Get all documents in CvT without Clowder ID
   docs = db_query_cvt("SELECT id, pmid, other_study_identifier FROM cvt.documents where clowder_file_id is NULL") %>%

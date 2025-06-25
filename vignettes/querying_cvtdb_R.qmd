@@ -19,7 +19,6 @@ format:
     code-copy: TRUE
     page-layout: full
 html-table-processing: none # https://quarto.org/docs/prerelease/1.4/ast.html#finer-control-over-table-processing
-editor: visual
 ---
 
 ```{r}

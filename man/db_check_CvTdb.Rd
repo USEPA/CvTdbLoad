@@ -23,6 +23,6 @@ if(interactive()){
 }
 }
 \seealso{
-\link[RPostgres:dbListTables]{dbListTables}, \link[RPostgres:dbDisconnect]{dbDisconnect}
+\link[DBI:dbListTables]{dbListTables}, \link[DBI:dbDisconnect]{dbDisconnect}
 \link[dplyr:tbl]{tbl}, \link[dplyr:compute]{collect}
 }

@@ -12,18 +12,18 @@
 #'  }
 #' }
 #' @seealso 
-#'  [dbGetQuery][RPostgres::dbGetQuery], [dbDisconnect][RPostgres::dbDisconnect]
+#'  [dbGetQuery][DBI::dbGetQuery], [dbDisconnect][DBI::dbDisconnect]
 #' @rdname db_query_cvt
 #' @export 
-#' @importFrom RPostgres dbGetQuery dbDisconnect
+#' @importFrom DBI dbGetQuery dbDisconnect
 db_query_cvt <- function(query=NULL, query_type = "query"){
   if(is.null(query)) return(message("...Must provide a query to send"))
   con = db_connect_to_CvT()
   query_result = tryCatch({
     if(query_type == "query"){
-      RPostgres::dbGetQuery(con, query)  
+      DBI::dbGetQuery(con, query)  
     } else if (query_type == "statement"){
-      rs = RPostgres::dbSendStatement(con, query)
+      rs = DBI::dbSendStatement(con, query)
       dbClearResult(rs)
     } else {
       stop("Unknown query_type '", query_type, "'")
@@ -37,6 +37,6 @@ db_query_cvt <- function(query=NULL, query_type = "query"){
   },
   error=function(cond){ message("...Error message: ", cond); return(NA) },
   warning=function(cond){ message("...Warning message: ", cond); return(NULL) },
-  finally={ RPostgres::dbDisconnect(con) })
+  finally={ DBI::dbDisconnect(con) })
   return(query_result)
 }

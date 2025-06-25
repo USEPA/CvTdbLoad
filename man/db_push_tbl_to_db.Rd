@@ -43,5 +43,5 @@ if(interactive()){
 }
 }
 \seealso{
-\link[RPostgres:dbWriteTable]{dbWriteTable}, \link[RPostgres:dbSendQuery]{dbSendQuery}, \link[RPostgres:dbDisconnect]{dbDisconnect}
+\link[DBI:dbWriteTable]{dbWriteTable}, \link[DBI:dbSendQuery]{dbSendQuery}, \link[DBI:dbDisconnect]{dbDisconnect}
 }
