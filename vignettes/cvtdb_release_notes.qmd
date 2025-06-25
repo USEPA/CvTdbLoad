@@ -70,7 +70,7 @@ The CvTdb v2.0.0 2025 data release has largely increased the subset of time-seri
 
 ### Data Currently Suitable for Use in CvTdb
 
-Studies (and the data from those studies) must meet certain criteria in order to be used in CvTdb. It is important that the studies from which we extract data can be accurately described and represented within the framework of the database. This allows for higher confidence in the modeling results generated from this data.
+Studies (and the data from those studies) must meet certain criteria to be included in CvTdb. It is important that the studies from which we extract data can be accurately described and represented within the framework of the database. This allows for higher confidence in the modeling results generated from this data.
 
 Currently, CvTdb only extracts data that can be used by the *httk* modeling package. Therefore, experimental designs that can be extracted are limited by what can be purposefully used in *httk*.
 
@@ -106,7 +106,7 @@ Does the study...
 
 ### Querying CvTdb
 
-A vignette is provided with the data release to guide users through how to query the provided SQLite database. This includes a variety of sample queries as demonstration.
+A vignette is provided with the data release to guide users through how to query the provided SQLite database. This includes a variety of sample queries for demonstration.
 
 ### CvTdb Field and Unit Normalization
 
@@ -122,7 +122,8 @@ norm_tbl = list(
     table = "subjects",
     category = "weight",
     `normalized units` = "kg",
-    fields = "weight, weight_kg, weight_units",
+    fields = c("> weight", "> weight_units", "> weight_kg") %>%
+      paste0(collapse = "<br>"),
     `original units` = db_query_cvt(paste0("SELECT distinct weight_units ",
                                 "FROM cvt.subjects ",
                                 "WHERE weight_kg IS NOT NULL")) %>%
@@ -135,7 +136,8 @@ norm_tbl = list(
     table = "subjects",
     category = "height",
     `normalized units` = "cm",
-    fields = "height, height_cm, height_units",
+    fields = c("> height", "> height_units", "> height_cm") %>%
+      paste0(collapse = "<br>"),
     `original units` = db_query_cvt(paste0("SELECT distinct height_units ",
                                  "FROM cvt.subjects WHERE weight_units IS NOT NULL")) %>%
     dplyr::pull(height_units) %>%
@@ -168,7 +170,8 @@ norm_tbl = list(
         paste0(., "s"), 
       collapse = "</br>"
       ),
-    fields = "age, age_category, age_units",
+    fields = c("> age", "> age_units", "> age_category") %>%
+      paste0(collapse = "<br>"),
     `original units` = db_query_cvt(paste0("SELECT distinct age_units ",
                                  "FROM cvt.subjects WHERE age_units IS NOT NULL")) %>%
     dplyr::pull(age_units) %>%
@@ -179,12 +182,13 @@ norm_tbl = list(
   data.frame(
     table = "conc_time_values",
     category = "conc",
-    `normalized units` = "ug/mL<br>ug/m3 (inhalation)",
-    fields = "conc, conc_sd, conc_lower_bound, conc_upper_bound (with *_original fields), conc_units_original (series)",
+    `normalized units` = "> ug/mL<br>> ug/m3 (inhalation)",
+    fields = c("> conc", "> conc_sd", "> conc_lower_bound", "> conc_upper_bound (with *_original fields)", "> conc_units_original (series)") %>%
+      paste0(collapse = "<br>"),
     `original units` = db_query_cvt(paste0("SELECT distinct conc_units_original, conc_units_normalized ",
                                  "FROM cvt.series WHERE id in (",
                                 "SELECT fk_series_id FROM cvt.conc_time_values WHERE conc IS NOT NULL ",
-                                "AND conc NOT IN ('NA', 'ND', 'NQ')", ")")) %>%
+                                "AND conc NOT IN ('NA', 'ND', 'NQ', 'NS', 'NE', '.')", ")")) %>%
     dplyr::pull(conc_units_original) %>%
       .[!. %in% c(NA, "missing_units")] %>%
       sort() %>%
@@ -193,18 +197,20 @@ norm_tbl = list(
     data.frame(
     table = "studies",
     category = "dose",
-    `normalized units` = db_query_cvt(paste0("SELECT distinct a.dose_level_units_normalized, ",
-                                             "b.administration_route_normalized ",
-                                             "FROM cvt.studies a ",
-                                             "LEFT JOIN cvt.administration_route_dict b ",
-                                             "ON a.fk_administration_route_id = b.id "# ,
-                                             # "WHERE a.dose_level_units_normalized IS NOT NULL"
-                                             )) %>%
-      dplyr::mutate(administration_route_normalized = paste0("<b>", administration_route_normalized, "</b>")) %>%
-        tidyr::unite(col = "route_norm_units", administration_route_normalized, dose_level_units_normalized, sep = " :") %>%
-      dplyr::pull(route_norm_units) %>%
+    # `normalized units` = db_query_cvt(paste0("SELECT distinct a.dose_level_units_normalized, ",
+    #                                          "b.administration_route_normalized ",
+    #                                          "FROM cvt.studies a ",
+    #                                          "LEFT JOIN cvt.administration_route_dict b ",
+    #                                          "ON a.fk_administration_route_id = b.id ",
+    #                                          "WHERE a.dose_level_units_normalized IS NOT NULL"
+    #                                          )) %>%
+    #   dplyr::mutate(administration_route_normalized = paste0("<b>", administration_route_normalized, "</b>")) %>%
+    #     tidyr::unite(col = "route_norm_units", administration_route_normalized, dose_level_units_normalized, sep = ": ") %>%
+    #   dplyr::pull(route_norm_units) %>%
+    #   paste0(collapse = "<br>"),
+    `normalized units` = "> mg/kg BW<br>> mg/m3 (inhalation)<br>> mg/kg BW-day (feed/drinking water)<br>> mg/m2 (dermal)",
+    fields = c("> dose_level_target", "> dose_level_target_units", "> dose_level_original", "> dose_level_units_original", "> dose_level_normalized", "> dose_level_units_normalized") %>%
       paste0(collapse = "<br>"),
-    fields = "dose_level_target, dose_level_target_units, dose_level_original, dose_level_units_original, dose_level_normalized, dose_level_units_normalized",
     `original units` = db_query_cvt(paste0("SELECT distinct dose_level_units_original ",
                                  "FROM cvt.studies WHERE dose_level_normalized IS NOT NULL ",
                                 "AND dose_level_normalized NOT IN ('NA', 'ND', 'NQ')")) %>%
@@ -217,7 +223,8 @@ norm_tbl = list(
     table = "conc_time_values",
     category = "time",
     `normalized units` = "hr",
-    fields = "time_original, time_hr, time_units_original (series)",
+    fields = c("> time_original", "> time_hr", "> time_units_original (series)") %>%
+    paste0(collapse = "<br>"),
     `original units` = db_query_cvt(paste0("SELECT distinct time_units_original ",
                                  "FROM cvt.series WHERE id in (",
                                 "SELECT fk_series_id FROM cvt.conc_time_values WHERE time_hr IS NOT NULL)")) %>%
@@ -266,7 +273,7 @@ Future conversions are planned following additional record QC and revisions to c
 -   Conc
     -   ppmm, ppmv, ppbm, ppbv
 -   Dose
-    -   Dermal route (ug/m2)
+    -   Dermal route (mg/m2)
     -   ppmm, ppmv, ppbm, ppbv
 
 ## CvTdb: Database Summary
@@ -315,9 +322,12 @@ cvt_summary_out = cvt_summary %>%
 
 #### Version Comparison
 
-Quick notes on past versions: - v1.0.0 - The original database released with the Sayre, Wambaugh, and Grulke (2020) manuscript. - v1.1.0 - Release with minor changes to add/update conc_time_values normalizations, fix a couple study normalized administration routes, and add a new chemicals table to split off chemical information from the studies and series tables.
+-   v1.0.0 
+    -   The original database released with the Sayre, Wambaugh, and Grulke (2020) manuscript.
+-   v1.1.0
+    -   Release with minor changes to add/update conc_time_values normalizations, fix a couple study normalized administration routes, and add a new chemicals table to split off chemical information from the studies and series tables.
 
-The following tabs of tables summarize count differences between CvTdb versions.
+The following tabs summarize count differences between CvTdb versions.
 
 ```{r}
 #| include: FALSE
@@ -553,7 +563,7 @@ i.  Note, counts are by unique studies, where a single study may have dosed thro
     -   Expanded dermal and inhalation route study metadata data model.
     -   Documents as referenced in Thompson et al. 2021.
     -   Curated dermal data used in Meade et al. 2023 SOT poster.
-    -   **Upcoming publication from Celia Schacht**
+    -   Upcoming publication from Celia Schacht
 -   Inhalation study documents (14)
 -   TK Parameter documents (16)
     -   Curation of 43 documents with TK parameters reported, 16 with CvTdb relevant studies, series, and conc_time_values. Note, these were included in the release although they did not complete the standard QC review due to time and resource constraints.
