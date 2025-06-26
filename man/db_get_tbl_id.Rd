@@ -2,35 +2,20 @@
 % Please edit documentation in R/db_get_tbl_id.R
 \name{db_get_tbl_id}
 \alias{db_get_tbl_id}
-\title{FUNCTION_TITLE}
+\title{db_get_tbl_id}
 \usage{
 db_get_tbl_id(tblName = NULL, idFilter = NULL)
 }
 \arguments{
-\item{tblName}{PARAM_DESCRIPTION, Default: NULL}
+\item{tblName}{The name of the table to pull the ID from.}
 
-\item{idFilter}{PARAM_DESCRIPTION, Default: NULL}
+\item{idFilter}{A SQL WHERE statement to filter idName column to. If empty, pulls all data.}
 }
 \value{
-A list of ID values from the specified database table
-
-OUTPUT_DESCRIPTION
+A list of ID values from the specified database table.
 }
 \description{
-FUNCTION_DESCRIPTION
-}
-\details{
-#'@description A function to pull table fk identification from a specified table
-by a SQL filter statement, or the entire table.
-
-DETAILS
-}
-\examples{
-\dontrun{
-if(interactive()){
- #EXAMPLE1
- }
-}
+A function to pull table fk identification from a specified table by a SQL filter statement, or the entire table.
 }
 \seealso{
 \link[DBI:dbSendQuery]{dbSendQuery}, \link[DBI:dbClearResult]{dbClearResult}, \link[DBI:dbDisconnect]{dbDisconnect}

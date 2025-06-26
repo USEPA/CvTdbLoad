@@ -1,8 +1,15 @@
-#' get_mw_chemicals_api
-#' Function to get MW dictionary from CCTE Chemicals API in batches
-#' @param api_key API key for the CCTE Chemicals API
-#' @param dtxsid_list List of DTXSIDs to query
-#' @return dataframe of MW information by DTXSID
+#' @title get_mw_chemicals_api
+#' @description Function to get molecular weight dictionary from CCTE Chemicals API in batches.
+#' @param api_key API key for the CCTE Chemicals API.
+#' @param dtxsid_list List of DTXSIDs to query.
+#' @return Dataframe of molecular weight information by DTXSID.
+#' @seealso 
+#'  \code{\link[httr]{GET}}, \code{\link[httr]{content}}, \code{\link[httr]{POST}}, \code{\link[httr]{content_type}}, \code{\link[httr]{add_headers}}
+#'  \code{\link[dplyr]{bind_rows}}, \code{\link[dplyr]{select}}, \code{\link[dplyr]{filter}}
+#' @rdname get_mw_chemicals_api
+#' @export 
+#' @importFrom httr GET content POST accept_json content_type_json add_headers
+#' @importFrom dplyr bind_rows select filter
 get_mw_chemicals_api <- function(dtxsid_list, api_key){
 
   # Test of API is up and running

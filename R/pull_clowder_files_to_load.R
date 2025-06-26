@@ -1,5 +1,18 @@
-#' pull_clowder_files_to_load
-#' Function to pull Clowder templates to process based on metadata "cvt_to_load"
+#' @title pull_clowder_files_to_load
+#' @description Function to pull Clowder templates to process based on metadata "cvt_to_load"
+#' @param dsID Clowder dataset identifier.
+#' @param baseurl Clowder base URL.
+#' @param apiKey Clowder API token.
+#' @param curation_set_tag String curation dataset tag to filter pulled files to.
+#' @param metadata_filter_tag String vector of metadata fields to filter/select to for pulled files.
+#' @return Dataframe of Clowder file metadata.
+#' @seealso 
+#'  \code{\link[dplyr]{mutate}}, \code{\link[dplyr]{rename}}, \code{\link[dplyr]{mutate-joins}}, \code{\link[dplyr]{filter}}, \code{\link[dplyr]{select}}, \code{\link[dplyr]{bind_rows}}, \code{\link[dplyr]{distinct}}
+#'  \code{\link[tidyr]{separate}}, \code{\link[tidyr]{pivot_longer}}
+#' @rdname pull_clowder_files_to_load
+#' @export 
+#' @importFrom dplyr mutate rename left_join filter select bind_rows distinct
+#' @importFrom tidyr separate pivot_longer
 pull_clowder_files_to_load <- function(dsID, baseurl, apiKey, curation_set_tag, metadata_filter_tag=NULL){
   # Pull full list of Clowder folders to help with data provenance labeling
   c_folders_list <- clowder_get_dataset_folders(dsID, baseurl, apiKey) %>%

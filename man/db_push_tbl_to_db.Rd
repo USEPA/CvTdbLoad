@@ -14,33 +14,23 @@ db_push_tbl_to_db(
 )
 }
 \arguments{
-\item{dat}{PARAM_DESCRIPTION, Default: NULL}
+\item{dat}{A dataframe to write to the database, Default: NULL}
 
-\item{tblName}{PARAM_DESCRIPTION, Default: NULL}
+\item{tblName}{Name of database table to create or append and fill with input \code{dat} dataframe data, Default: NULL}
 
-\item{fieldTypes}{PARAM_DESCRIPTION, Default: NULL}
+\item{fieldTypes}{Named list of field types for columns, Default: NULL}
 
-\item{overwrite}{PARAM_DESCRIPTION, Default: FALSE}
+\item{overwrite}{Boolean of whether to overwrite the \code{tblName} table with input \code{dat} dataframe data, Default: FALSE}
 
-\item{customSQL}{PARAM_DESCRIPTION, Default: NULL}
+\item{customSQL}{Optional custom SQL statement to push, Default: NULL}
 
-\item{append}{PARAM_DESCRIPTION, Default: FALSE}
+\item{append}{Boolean of whether to append the \code{tblName} table with input \code{dat} dataframe data, Default: FALSE}
 }
 \value{
-OUTPUT_DESCRIPTION
+None. Updates are pushed to the database.
 }
 \description{
-FUNCTION_DESCRIPTION
-}
-\details{
-DETAILS
-}
-\examples{
-\dontrun{
-if(interactive()){
- #EXAMPLE1
- }
-}
+A function to push a dataframe to a specified table in the database.
 }
 \seealso{
 \link[DBI:dbWriteTable]{dbWriteTable}, \link[DBI:dbSendQuery]{dbSendQuery}, \link[DBI:dbDisconnect]{dbDisconnect}

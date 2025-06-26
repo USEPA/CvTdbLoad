@@ -7,10 +7,17 @@
 get_dict_update_ids(sheet_list, schema)
 }
 \arguments{
-\item{sheet_list}{Dataframe list to rename with original columns}
+\item{sheet_list}{Dataframe list of template sheets with dictionary columns to process and receive database dictionary table ID matches.}
 
 \item{schema}{String for the PostgreSQL schema information to pull.}
 }
+\value{
+Named list of dataframes with modified columns mapping input identifiers to database identifiers if present. If not present, new database entries are created and the ID returned.
+}
 \description{
-Update database dictionaries and match foreign keys
+Update database dictionaries and match foreign keys to input identifiers.
+}
+\seealso{
+\code{\link[dplyr]{rename}}, \code{\link[dplyr]{filter}}, \code{\link[dplyr]{reexports}}, \code{\link[dplyr]{select}}, \code{\link[dplyr]{distinct}}, \code{\link[dplyr]{mutate}}, \code{\link[dplyr]{across}}, \code{\link[dplyr]{mutate-joins}}
+\code{\link[tidyr]{unite}}
 }

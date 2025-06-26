@@ -7,12 +7,18 @@
 get.dictionary.entries.to.curate(schema, full.report = FALSE)
 }
 \arguments{
-\item{schema}{Database schema for PostgreSQL}
+\item{schema}{Database schema for PostgreSQL.}
+
+\item{full.report}{Boolean of whether to generate a full report and include foreign key connections to provide additional context, Default: FALSE.}
 }
 \value{
-Dataframe list of dictionaries
+Dataframe list of dictionaries.
 }
 \description{
 Function to generate file of dictionary entries to curate
-normalized field values. Includes foreign key identifiers to help query database
+normalized field values. Includes foreign key identifiers to help query database.
+}
+\seealso{
+\code{\link[purrr]{flatten}}, \code{\link[purrr]{keep}}
+\code{\link[writexl]{write_xlsx}}
 }

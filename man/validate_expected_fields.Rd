@@ -2,34 +2,26 @@
 % Please edit documentation in R/validate_expected_fields.R
 \name{validate_expected_fields}
 \alias{validate_expected_fields}
-\title{Check expected fields}
+\title{validate_expected_fields}
 \usage{
 validate_expected_fields(df, f, log_path, template_path, verbose = FALSE)
 }
 \arguments{
-\item{df}{List of dataframes for the sheets within an extraction template}
+\item{df}{Input named list of dataframes.}
 
-\item{f}{Filename for flagging purposes}
+\item{f}{Filename for logging purposes.}
 
-\item{log_path}{File path where to save the log file. Default "output/template_normalization_log.xlsx"}
+\item{log_path}{Path to log.}
 
-\item{template_path}{File path to the location of a blank template for comparison}
+\item{template_path}{Path to blank template file for comparison.}
+
+\item{verbose}{Boolean of whether to print additional console messages, Default: FALSE.}
 }
 \value{
-None. Logs any flags
+Boolean of whether the input template passed the validation.
 }
 \description{
 Function to check if processed document's column names appropriately match the blank template.
-}
-\details{
-DETAILS
-}
-\examples{
-\dontrun{
-if(interactive()){
- #EXAMPLE1
- }
-}
 }
 \seealso{
 \link[validate:validator]{validator}

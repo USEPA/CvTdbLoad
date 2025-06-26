@@ -1,16 +1,9 @@
-#' @description A function to push a dataframe to a specified table in a database
-#' @param df A dataframe to write to the database
-#' @param tblName The name of the table to write the df data to
+#' @title db_push_to_CvT
+#' @description A function to push a dataframe to a specified table in the database.
+#' @param df A dataframe to write to the database.
+#' @param tblName The name of the table to create and populate with `df` data.
 #' @import DBI
-#' @return None
-#' @title FUNCTION_TITLE
-#' @details DETAILS
-#' @examples 
-#' \dontrun{
-#' if(interactive()){
-#'  #EXAMPLE1
-#'  }
-#' }
+#' @return None. Updates are pushed to the database.
 #' @seealso 
 #'  [dbWriteTable][DBI::dbWriteTable], [dbClearResult][DBI::dbClearResult], [dbDisconnect][DBI::dbDisconnect]
 #'  [dbSendStatement][DBI::dbSendStatement]

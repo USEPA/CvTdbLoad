@@ -3,8 +3,14 @@
 #' get.dictionary.entries.to.curate().
 #' @param schema Database schema for PostgreSQL.
 #' @param in_file Input file with dictionary updates to process.
-#' @export
-#' @return Dataframe list of dictionaries
+#' @export 
+#' @return Dataframe list of dictionaries.
+#' @seealso 
+#'  \code{\link[readxl]{excel_sheets}}
+#'  \code{\link[dplyr]{select}}, \code{\link[dplyr]{reexports}}
+#' @rdname update.dictionary.entries.from.file
+#' @importFrom readxl excel_sheets
+#' @importFrom dplyr select any_of
 update.dictionary.entries.from.file <- function(schema, in_file){
   # Load input file if it exists
   if(file.exists(in_file)){

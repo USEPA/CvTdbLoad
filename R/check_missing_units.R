@@ -1,18 +1,11 @@
-#' @description Helper function to check for missing units for desired metric column.
-#' @param x Input list of datasets being normalized
-#' @param f Filename for flagging purposes
-#' @param units_col The units column to check #'
+#' @title check_missing_units
+#' @description Function to check for missing units for input column.
+#' @param x Input list of datasets being processed.
+#' @param f Optional filename for logging purposes.
+#' @param units_col String of the name of the column to check.
 #' @param log_path File path where to save the log file.
-#' @param flag Whether to log a flag for the missing column #'
-#' @return Modified version of the input `x` parameter
-#' @title FUNCTION_TITLE
-#' @details DETAILS
-#' @examples 
-#' \dontrun{
-#' if(interactive()){
-#'  #EXAMPLE1
-#'  }
-#' }
+#' @param flag Whether to log a flag for the missing column.
+#' @return Modified input `x` dataframe list with new "missing_units" dataframe.
 #' @seealso 
 #'  [filter][dplyr::filter]
 #' @rdname check_missing_units

@@ -1,18 +1,11 @@
 #' @title log_CvT_doc_load
-#' @description FUNCTION_DESCRIPTION
+#' @description Function to write a log entry for a template or dataframe being processed.
 #' @param f Filename to flag.
-#' @param m Log field name, Default: NULL
-#' @param reset Boolean to reset a row's flags, Default: FALSE
-#' @param val Custom field value. Default: NULL
-#' @param log_path File path where to save the log file. Default "output/template_normalization_log.xlsx"
-#' @return OUTPUT_DESCRIPTION
-#' @details DETAILS
-#' @examples 
-#' \dontrun{
-#' if(interactive()){
-#'  #EXAMPLE1
-#'  }
-#' }
+#' @param m Log field name, Default: NULL.
+#' @param reset Boolean to reset a row's flags, Default: FALSE.
+#' @param val Custom field value. Default: NULL.
+#' @param log_path File path where to save the log file. Default "output/template_normalization_log.xlsx".
+#' @return None. Log file is updated.
 #' @seealso 
 #'  [read_xlsx][readxl::read_xlsx]
 #'  [setNames][stats::setNames]

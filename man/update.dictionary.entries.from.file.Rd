@@ -12,9 +12,13 @@
 \item{in_file}{Input file with dictionary updates to process.}
 }
 \value{
-Dataframe list of dictionaries
+Dataframe list of dictionaries.
 }
 \description{
 Function to update dictionary entries from file generated from
 get.dictionary.entries.to.curate().
+}
+\seealso{
+\code{\link[readxl]{excel_sheets}}
+\code{\link[dplyr]{select}}, \code{\link[dplyr]{reexports}}
 }

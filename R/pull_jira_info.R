@@ -1,18 +1,11 @@
 #' @title pull_jira_info
-#' @description Script to process CSV export of Jira into a status log
+#' @description Script to process CSV export of Jira into a status log with attachment metadata.
 #' @param jira_project Jira project code (e.g. CVTDB).
-#' @param download_bulk Boolean whether to bulk download ticket attachments, Default: FALSE.
+#' @param in_file Filepath to previously downloaded CSV file summary of Jira tickets.
 #' @param auth_token Authorization token for Jira.
 #' @param status_filter Custom filtering to a ticket status or vector of statuses. Default: NULL.
 #' @param epic_filter Custom filtering to a specific ticket Epic link by name (single or vector). Default: empty vector.
-#' @return Summary DataFrame of Jira tickets by Epic, Label, and Status.
-#' @details DETAILS
-#' @examples 
-#' \dontrun{
-#' if(interactive()){
-#'  out = pull_jira_info(jira_project="project_name")
-#'  }
-#' }
+#' @return Named list of dataframes that summarize Jira tickets and attachment metadata.
 #' @seealso 
 #'  [download.file][utils::download.file], [unzip][utils::unzip]
 #'  [read_csv][readr::read_csv], [cols][readr::cols]
@@ -26,6 +19,7 @@
 #' @importFrom dplyr select contains mutate everything filter distinct left_join group_by summarise n
 #' @importFrom tidyr unite
 #' @importFrom stringr str_squish
+#' @importFrom tools file_ext
 pull_jira_info <- function(jira_project, in_file = NULL, auth_token = NULL, status_filter = "Done", epic_filter = c()){
   
   # Format headers

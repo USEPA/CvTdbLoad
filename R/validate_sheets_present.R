@@ -1,3 +1,11 @@
+#' @title validate_sheets_present
+#' @description Validate if template contains expected sheets
+#' @param df Input named list of dataframes.
+#' @param f Filename for logging purposes.
+#' @param log_path Path to log.
+#' @return Boolean of whether the input template passed the validation.
+#' @rdname validate_sheets_present
+#' @export 
 validate_sheets_present <- function(df, f, log_path) {
     validation <- TRUE # False if an invalid condition was encountered
 

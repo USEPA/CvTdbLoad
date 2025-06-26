@@ -2,28 +2,18 @@
 % Please edit documentation in R/normalization_prep.R
 \name{normalization_prep}
 \alias{normalization_prep}
-\title{FUNCTION_TITLE}
+\title{normalization_prep}
 \usage{
 normalization_prep(x, newcols)
 }
 \arguments{
-\item{x}{Input dataframe being prepped for normalization}
+\item{x}{Input dataframe being prepped for normalization.}
 
-\item{newcols}{}
+\item{newcols}{String vector of column names to add with NA values.}
 }
 \value{
 Modified version of the input \code{x} parameter
 }
 \description{
 Helper function to add temp ID column and new empty columns before normalization.
-}
-\details{
-DETAILS
-}
-\examples{
-\dontrun{
-if(interactive()){
- #EXAMPLE1
- }
-}
 }

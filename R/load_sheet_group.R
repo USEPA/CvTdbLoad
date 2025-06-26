@@ -1,17 +1,8 @@
-#' @description A function to load and pull all sheets from files in the specified directory.
-#' It corrects for missing required column names from a template file by filling with NA values.
-#' @param fileName The file name or path for the file of interest
+#' @title load_sheet_group
+#' @description A function to load an input template and map it to the provided template format. It corrects for missing required column names from a template file by filling with NA values.
+#' @param fileName The file name or path for the file of interest.
 #' @param template_path The file path for the extraction template. If not supplied, hard coded columns will be used.
-#' @import readxl magrittr
-#' @return A dataframe of the combined sheets
-#' @title FUNCTION_TITLE
-#' @details DETAILS
-#' @examples 
-#' \dontrun{
-#' if(interactive()){
-#'  #EXAMPLE1
-#'  }
-#' }
+#' @return A named list of dataframes that fits the format of the input template file.
 #' @seealso 
 #'  [excel_sheets][readxl::excel_sheets], [read_excel][readxl::read_excel], [read_xlsx][readxl::read_xlsx]
 #'  [select][dplyr::select]

@@ -7,21 +7,13 @@
 normalize_species(x, log_path = NULL)
 }
 \arguments{
-\item{x}{PARAM_DESCRIPTION}
+\item{x}{Dataframe with species information to normalize.}
+
+\item{log_path}{File path where to save the log file.}
 }
 \value{
-OUTPUT_DESCRIPTION
+Modified input \code{x} dataframe with normalized species information.
 }
 \description{
-FUNCTION_DESCRIPTION
-}
-\details{
-DETAILS
-}
-\examples{
-\dontrun{
-if(interactive()){
- #EXAMPLE1
- }
-}
+Normalize species field for input dataframe.
 }

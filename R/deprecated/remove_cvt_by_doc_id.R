@@ -1,7 +1,9 @@
-# Delete CvT by Document ID
-# Jonathan Taylor Wall
-# Created 2024-01-05
-
+#' @title remove_cvt_by_doc_id
+#' @description FUNCTION_DESCRIPTION
+#' @param doc_id String or numeric document identifier value for a record in the database Documents table.
+#' @return None. SQL statements are run to delete a document and all linked foreign key records.
+#' @rdname remove_cvt_by_doc_id
+#' @export 
 remove_cvt_by_doc_id <- function(doc_id){
   # Check input doc_id value
   if(is.null(doc_id) || is.na(doc_id)) stop("Input 'doc_id' must not be NULL or NA.")

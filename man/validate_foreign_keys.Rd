@@ -2,32 +2,24 @@
 % Please edit documentation in R/validate_foreign_keys.R
 \name{validate_foreign_keys}
 \alias{validate_foreign_keys}
-\title{Check foreign keys validator}
+\title{validate_foreign_keys}
 \usage{
 validate_foreign_keys(df, f, log_path, verbose = FALSE)
 }
 \arguments{
-\item{df}{List of dataframes for the sheets within an extraction template}
+\item{df}{Input named list of dataframes.}
 
-\item{f}{Filename for flagging purposes}
+\item{f}{Filename for logging purposes.}
 
-\item{log_path}{File path where to save the log file. Default "output/template_normalization_log.xlsx"}
+\item{log_path}{Path to log.}
+
+\item{verbose}{Boolean of whether to print additional console messages, Default: FALSE.}
 }
 \value{
-None. Logs any flags
+Boolean of whether the input template passed the validation.
 }
 \description{
 Function to check if processed document's foreign keys match to a value in their respective sheets.
-}
-\details{
-DETAILS
-}
-\examples{
-\dontrun{
-if(interactive()){
- #EXAMPLE1
- }
-}
 }
 \seealso{
 \link[validate:validator]{validator}

@@ -7,25 +7,15 @@
 species_get_unique_to_curate(fileList, template_path)
 }
 \arguments{
-\item{fileList}{PARAM_DESCRIPTION}
+\item{fileList}{Optional list of template files to load. If NULL, queries the database to check for cases.}
 
-\item{template_path}{PARAM_DESCRIPTION}
+\item{template_path}{Path to input CvTdb template file.}
 }
 \value{
-OUTPUT_DESCRIPTION
+Console output of species cases to add to \code{normalize_species()}.
 }
 \description{
-FUNCTION_DESCRIPTION
-}
-\details{
-DETAILS
-}
-\examples{
-\dontrun{
-if(interactive()){
- #EXAMPLE1
- }
-}
+Load a list of templates or query the database to check for species cases to add to \code{normalize_species()}.
 }
 \seealso{
 \link[dplyr:select]{select}

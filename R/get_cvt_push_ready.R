@@ -1,14 +1,7 @@
+#' @title get_cvt_push_ready
 #' @description Function to return a dataframe of files ready to push due to all
 #' flags being '0'.
-#' @title FUNCTION_TITLE
-#' @return OUTPUT_DESCRIPTION
-#' @details DETAILS
-#' @examples 
-#' \dontrun{
-#' if(interactive()){
-#'  #EXAMPLE1
-#'  }
-#' }
+#' @return Dataframe filtered from the template normalization log of templates without logged issues.
 #' @seealso 
 #'  [read_xlsx][readxl::read_xlsx]
 #'  [filter][dplyr::filter], [across][dplyr::across]

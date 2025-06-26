@@ -1,15 +1,8 @@
-#' @description Function to check if processed document is missing required fields.
-#' @param df List of dataframes for the sheets within an extraction template
-#' @param f Filename for flagging purposes #'
-#' @return None. Logs any flags
-#' @title FUNCTION_TITLE
-#' @details DETAILS
-#' @examples 
-#' \dontrun{
-#' if(interactive()){
-#'  #EXAMPLE1
-#'  }
-#' }
+#' @title check_required_fields
+#' @description Function to check if processed template is missing required fields.
+#' @param df List of dataframes for the sheets within an extraction template.
+#' @param f Optional filename for logging purposes.
+#' @return None. Logs any flags.
 #' @seealso 
 #'  [filter][dplyr::filter]
 #' @rdname check_required_fields

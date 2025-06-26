@@ -1,21 +1,8 @@
-#' @#'@description A function to pull table fk identification from a specified table
-#'by a SQL filter statement, or the entire table.
-#'@param tblName The name of the table to pull the ID from
-#'@param idFilter A SQL WHERE statement to filter idName column to. If empty, pulls all data.
-#'@import DBI
-#'@return A list of ID values from the specified database table
-#' @description FUNCTION_DESCRIPTION
-#' @title FUNCTION_TITLE
-#' @param tblName PARAM_DESCRIPTION, Default: NULL
-#' @param idFilter PARAM_DESCRIPTION, Default: NULL
-#' @return OUTPUT_DESCRIPTION
-#' @details DETAILS
-#' @examples 
-#' \dontrun{
-#' if(interactive()){
-#'  #EXAMPLE1
-#'  }
-#' }
+#' @title db_get_tbl_id
+#' @description A function to pull table fk identification from a specified table by a SQL filter statement, or the entire table.
+#' @param tblName The name of the table to pull the ID from.
+#' @param idFilter A SQL WHERE statement to filter idName column to. If empty, pulls all data.
+#' @return A list of ID values from the specified database table.
 #' @seealso 
 #'  [dbSendQuery][DBI::dbSendQuery], [dbClearResult][DBI::dbClearResult], [dbDisconnect][DBI::dbDisconnect]
 #'  [dbFetch][DBI::dbFetch]

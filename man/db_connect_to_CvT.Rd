@@ -2,25 +2,15 @@
 % Please edit documentation in R/db_connect_to_CvT.R
 \name{db_connect_to_CvT}
 \alias{db_connect_to_CvT}
-\title{FUNCTION_TITLE}
+\title{db_connect_to_CvT}
 \usage{
 db_connect_to_CvT()
 }
 \value{
-A database connection object
+A database connection object.
 }
 \description{
-A function to create a connection to the CvT database
-}
-\details{
-DETAILS
-}
-\examples{
-\dontrun{
-if(interactive()){
- #EXAMPLE1
- }
-}
+A function to create a connection to the CvT database using the .Renviron file parameters.
 }
 \seealso{
 \link[DBI:dbConnect]{dbConnect}, \link[RPostgres:Postgres]{PostgreSQL}

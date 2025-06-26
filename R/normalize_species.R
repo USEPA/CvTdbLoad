@@ -1,19 +1,13 @@
 #' @title normalize_species
-#' @description FUNCTION_DESCRIPTION
-#' @param x PARAM_DESCRIPTION
-#' @return OUTPUT_DESCRIPTION
-#' @details DETAILS
-#' @examples 
-#' \dontrun{
-#' if(interactive()){
-#'  #EXAMPLE1
-#'  }
-#' }
+#' @description Normalize species field for input dataframe.
+#' @param x Dataframe with species information to normalize.
+#' @param log_path File path where to save the log file.
+#' @return Modified input `x` dataframe with normalized species information.
 #' @rdname normalize_species
 #' @export 
 normalize_species <- function(x, log_path=NULL){
   message("...normalizing species...")
-  #Convert species
+  # Convert species
   x$species = tolower(x$species)
   conv = list(dog=list("dog", "dogs"),
               human=list("human", "humans", "female", "male", "females", "males", "woman", "women", "man", "men"),

@@ -1,17 +1,11 @@
-#' @description Function to help match template documents to Clowder files
-#' @param df Input template document's sheet for mapping
+#' @title clowder_match_docs
+#' @description Function to match template documents to Clowder files.
+#' @param df Input template document's sheet for mapping.
 #' @param dsID Clowder dataset ID to pull from.
-#' @param apiKey API key to access Clowder repo
+#' @param baseurl Clowder base URL.
+#' @param apiKey API key to access Clowder repo.
 #' @param clowder_file_list Opitonal input list of Clowder files from clowder_get_dataset_files().
-#' @title FUNCTION_TITLE
-#' @return OUTPUT_DESCRIPTION
-#' @details DETAILS
-#' @examples 
-#' \dontrun{
-#' if(interactive()){
-#'  #EXAMPLE1
-#'  }
-#' }
+#' @return Modified `df` with clowder_file_id field for matched documents.
 #' @seealso 
 #'  [filter][dplyr::filter], [mutate][dplyr::mutate], [left_join][dplyr::left_join], [arrange][dplyr::arrange]
 #' @rdname clowder_match_docs

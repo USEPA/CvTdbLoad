@@ -2,36 +2,26 @@
 % Please edit documentation in R/check_missing.R
 \name{check_missing}
 \alias{check_missing}
-\title{FUNCTION_TITLE}
+\title{check_missing}
 \usage{
 check_missing(x, miss_col, f, flag = TRUE, log_path)
 }
 \arguments{
-\item{x}{Input list of datasets being normalized}
+\item{x}{Input list of datasets being processed.}
 
-\item{miss_col}{The column to check}
+\item{miss_col}{String of the name of the column to check.}
 
-\item{f}{Filename for flagging purposes}
+\item{f}{Optional filename for logging purposes.}
 
-\item{flag}{Whether to log a flag for the missing column #'}
+\item{flag}{Whether to log a flag for the missing column.}
 
 \item{log_path}{File path where to save the log file.}
 }
 \value{
-Modified version of the input \code{x} parameter
+Modified input \code{x} dataframe list with new "missing" dataframe.
 }
 \description{
-Helper function to check for missing values for desired column.
-}
-\details{
-DETAILS
-}
-\examples{
-\dontrun{
-if(interactive()){
- #EXAMPLE1
- }
-}
+Function to check for missing values for input column.
 }
 \seealso{
 \link[dplyr:filter]{filter}

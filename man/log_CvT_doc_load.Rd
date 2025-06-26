@@ -15,29 +15,19 @@ log_CvT_doc_load(
 \arguments{
 \item{f}{Filename to flag.}
 
-\item{m}{Log field name, Default: NULL}
+\item{m}{Log field name, Default: NULL.}
 
-\item{reset}{Boolean to reset a row's flags, Default: FALSE}
+\item{reset}{Boolean to reset a row's flags, Default: FALSE.}
 
-\item{val}{Custom field value. Default: NULL}
+\item{val}{Custom field value. Default: NULL.}
 
-\item{log_path}{File path where to save the log file. Default "output/template_normalization_log.xlsx"}
+\item{log_path}{File path where to save the log file. Default "output/template_normalization_log.xlsx".}
 }
 \value{
-OUTPUT_DESCRIPTION
+None. Log file is updated.
 }
 \description{
-FUNCTION_DESCRIPTION
-}
-\details{
-DETAILS
-}
-\examples{
-\dontrun{
-if(interactive()){
- #EXAMPLE1
- }
-}
+Function to write a log entry for a template or dataframe being processed.
 }
 \seealso{
 \link[readxl:read_excel]{read_xlsx}

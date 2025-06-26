@@ -2,32 +2,24 @@
 % Please edit documentation in R/validate_field_entries.R
 \name{validate_field_entries}
 \alias{validate_field_entries}
-\title{Validate Field Types}
+\title{validate_field_entries}
 \usage{
 validate_field_entries(df, f, log_path, verbose = FALSE)
 }
 \arguments{
-\item{df}{List of dataframes for the sheets within an extraction template}
+\item{df}{Input named list of dataframes.}
 
-\item{f}{Filename for flagging purposes}
+\item{f}{Filename for logging purposes.}
 
-\item{log_path}{File path where to save the log file. Default "output/template_normalization_log.xlsx"}
+\item{log_path}{Path to log.}
+
+\item{verbose}{Boolean of whether to print additional console messages, Default: FALSE.}
 }
 \value{
-Boolean of document validity. Logs any errors
+Boolean of whether the input template passed the validation.
 }
 \description{
 Function to check if processed document has invalid field entries.
-}
-\details{
-DETAILS
-}
-\examples{
-\dontrun{
-if(interactive()){
- #EXAMPLE1
- }
-}
 }
 \seealso{
 \link[validate:validator]{validator}

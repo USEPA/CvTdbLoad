@@ -1,6 +1,12 @@
 #' @title get_next_tbl_id
-#' @description Function to get the next ID increment value for schema tables
-#' @param schema PostgreSQL database schema
+#' @description Function to get the next ID increment value for schema tables.
+#' @param schema PostgreSQL database schema.
+#' @return Named list of the next autoincrement identifier for a database table.
+#' @seealso 
+#'  \code{\link[dplyr]{pull}}
+#' @rdname get_next_tbl_id
+#' @export 
+#' @importFrom dplyr pull
 get_next_tbl_id <- function(schema){
   tbl_list = db_query_cvt(paste0("SELECT DISTINCT table_name ",
                                  "FROM information_schema.columns ",

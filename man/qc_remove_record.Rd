@@ -16,9 +16,13 @@ qc_remove_record(df, tbl_name, reset_extraction = FALSE, del_qc_note = NULL)
 \item{del_qc_note}{Optional note to add to qc_notes and qc_flags field for tbl_name records.}
 }
 \value{
-None.
+None. SQL statements are run to delete records in a cascading fashion if they have foreign key linkages to core tables.
 }
 \description{
 Function to remove QC record flagged for removal. Function will account
 for needed cascade of removal for foreign key table connections
+}
+\seealso{
+\code{\link[purrr]{keep}}
+\code{\link[dplyr]{mutate}}
 }

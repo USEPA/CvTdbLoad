@@ -2,30 +2,21 @@
 % Please edit documentation in R/db_query_cvt.R
 \name{db_query_cvt}
 \alias{db_query_cvt}
-\title{FUNCTION_TITLE}
+\title{db_query_cvt}
 \usage{
 db_query_cvt(query = NULL, query_type = "query")
 }
 \arguments{
-\item{query}{A SQL query string to query the database with}
+\item{query}{A SQL query string.}
+
+\item{query_type}{Input string specifying if the query is a SQL "query" (retrieve data) or "statement" (update database). Default: 'query'.}
 }
 \value{
-Dataframe of database query results
+Return objects from DBI \code{dbGetQuery()} and \code{dbSendStatement()} functions.
 }
 \description{
-A helper function to query cvt and receive the results.
-Handles errors/warnings with tryCatch.
-}
-\details{
-DETAILS
-}
-\examples{
-\dontrun{
-if(interactive()){
- #EXAMPLE1
- }
-}
+Function to query or send statements to the database. Handles errors/warnings with tryCatch.
 }
 \seealso{
-\link[DBI:dbGetQuery]{dbGetQuery}, \link[DBI:dbDisconnect]{dbDisconnect}
+\link[DBI:dbGetQuery]{dbGetQuery}, \link[DBI:dbSendStatement]{dbSendStatement}, \link[DBI:dbDisconnect]{dbDisconnect}
 }

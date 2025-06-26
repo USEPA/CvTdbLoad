@@ -1,14 +1,6 @@
-#' @description A function to create a connection to the CvT database
-#' @import DBI
-#' @return A database connection object
-#' @title FUNCTION_TITLE
-#' @details DETAILS
-#' @examples 
-#' \dontrun{
-#' if(interactive()){
-#'  #EXAMPLE1
-#'  }
-#' }
+#' @title db_connect_to_CvT
+#' @description A function to create a connection to the CvT database using the .Renviron file parameters.
+#' @return A database connection object.
 #' @seealso 
 #'  [dbConnect][DBI::dbConnect], [PostgreSQL][RPostgres::Postgres]
 #' @rdname db_connect_to_CvT

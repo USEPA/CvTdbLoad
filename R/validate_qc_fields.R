@@ -1,3 +1,17 @@
+#' @title validate_qc_fields
+#' @description Function to check if processed QC template was filled out appropriately.
+#' @param df Input named list of dataframes.
+#' @param f Filename for logging purposes.
+#' @param log_path Path to log.
+#' @param verbose Boolean of whether to print additional console messages, Default: FALSE.
+#' @return Boolean of whether the input template passed the validation.
+#' @seealso 
+#'  \code{\link[validate]{validator}}, \code{\link[validate]{confront}}, \code{\link[validate]{summary}}, \code{\link[validate]{meta}}, \code{\link[validate]{satisfying}}
+#'  \code{\link[dplyr]{filter}}
+#' @rdname validate_qc_fields
+#' @export 
+#' @importFrom validate validator confront summary meta violating
+#' @importFrom dplyr filter
 validate_qc_fields <- function(df, f, log_path, verbose=FALSE) {
   validation <- TRUE # False if an invalid condition was encountered
   rules <- validate::validator(.file=paste0("input/rules/qc/QC.yaml"))

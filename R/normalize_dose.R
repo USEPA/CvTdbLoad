@@ -1,19 +1,10 @@
-
-#' @description Doses are stored in mg/kg. In cases where the mass of the subject was not reported, and the dose was
-#' administered as a simple mass and not a body weight proportion, a mg/kg dose was calculated using the average
-#' mass for all subjects of that type.
-#' @param raw A dataframe of weight information to normalize
-#' @param f The file name of the template being processed. Used for error logging.
+#' @title normalize_dose
+#' @description A helper function to normalize dose.
+#' @param raw Input dataframe of data with data to normalize.
+#' @param f Optional filename for logging purposes.
 #' @param log_path File path where to save the log file.
+#' @param debug Boolean of whether to stop conversion logic early for debugging purpose. Default: FALSE.
 #' @return Normalized version of the input `raw` parameter.
-#' @title FUNCTION_TITLE
-#' @details DETAILS
-#' @examples 
-#' \dontrun{
-#' if(interactive()){
-#'  #EXAMPLE1
-#'  }
-#' }
 #' @seealso 
 #'  [filter][dplyr::filter], [mutate][dplyr::mutate], [bind_rows][dplyr::bind_rows], [arrange][dplyr::arrange], [select][dplyr::select]
 #'  [get_physchem_param][httk::get_physchem_param]
@@ -21,22 +12,10 @@
 #' @export 
 #' @importFrom dplyr filter mutate bind_rows arrange select
 #' @importFrom httk get_physchem_param
+#' @importFrom stringr str_squish
+#' @importFrom tidyr separate_longer_delim separate_wider_delim
 normalize_dose <- function(raw, f, log_path, debug = FALSE){
   message("...normalizing dose...")
-  #message("Normalize_dose is still in development...")
-  # tmp = lapply(fileList, function(f){
-  #   s_list = load_sheet_group(fileName = f, template_path = template_path)
-  #   s_list$Series %>%
-  #     left_join(s_list$Studies, by=c("fk_study_id"="id")) %>%
-  #     left_join(s_list$Subjects, by=c("fk_subject_id"="id")) %>%
-  #     select(species, subtype, weight, weight_units, height, height_units, #Needed for weight extrapolation
-  #            test_substance_name, dose_level, dose_level_units, dose_volume, administration_route, dose_duration, dose_duration_units) %>%
-  #     distinct() %>%
-  #     mutate(file=f)
-  # }) %>%
-  #   bind_rows()
-  # tmp = normalize_weight(raw=tmp, f=f)
-  # tmp = normalize_height(raw=tmp, f=f)
   if(!nrow(raw)){#Empty dataframe
     message("...normalize_dose dataframe empty...returning...")
     return(raw)

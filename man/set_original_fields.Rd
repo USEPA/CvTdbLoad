@@ -7,10 +7,16 @@
 set_original_fields(sheet_list, schema)
 }
 \arguments{
-\item{sheet_list}{Dataframe list to rename with original columns}
+\item{sheet_list}{Dataframe list to rename with original columns.}
 
 \item{schema}{String for the PostgreSQL schema information to pull.}
 }
+\value{
+Modified \code{sheet_list} list of dataframes with "_original" fields added.
+}
 \description{
-Pull dictionary of original fields from database tables and rename in sheet_list
+Pull dictionary of original fields from database tables and rename in \code{sheet_list}.
+}
+\seealso{
+\code{\link[dplyr]{filter}}, \code{\link[dplyr]{select}}, \code{\link[dplyr]{mutate}}, \code{\link[dplyr]{distinct}}, \code{\link[dplyr]{rename}}, \code{\link[dplyr]{reexports}}
 }

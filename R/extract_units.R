@@ -1,24 +1,20 @@
-#' @description Generic function to extract units from input columns
-#' @title FUNCTION_TITLE
-#' @param x PARAM_DESCRIPTION
-#' @param units_col PARAM_DESCRIPTION
-#' @param conv_col PARAM_DESCRIPTION
-#' @param unit_type PARAM_DESCRIPTION
-#' @return OUTPUT_DESCRIPTION
-#' @details DETAILS
-#' @examples 
-#' \dontrun{
-#' if(interactive()){
-#'  #EXAMPLE1
-#'  }
-#' }
+#' @title extract_units
+#' @description Generic function to extract units from input columns. The goal is to try to fill in missing unit values from `units_col` based on string values in `conv_col`.
+#' @param x Input dataframe.
+#' @param units_col String of the name of the column containing units information with missing values.
+#' @param conv_col String of the name of the column to try to extract unit information from.
+#' @param unit_type Input unit type (e.g., weight, height, age, dose_duration, conc), used by `convert_units_grepl()`.
+#' @return Modified version of input `x` dataframe where the input `units_col` will have filled in units values from input `conv_col` or be "missing_units" tagged instead of NA.
 #' @seealso 
 #'  [filter][dplyr::filter], [mutate][dplyr::mutate], [across][dplyr::across], [bind_rows][dplyr::bind_rows]
-#'  [all_of][tidyr::all_of]
+#'  [all_of][dplyr::all_of]
 #' @rdname extract_units
 #' @export 
 #' @importFrom dplyr filter mutate across bind_rows
 #' @importFrom tidyr all_of
+#' @importFrom purrr flatten
+#' @importFrom stringr str_squish
+#' @importFrom mgsub mgsub
 extract_units <- function(x, units_col, conv_col, unit_type){
   
   conv_list = convert_units_grepl(unit_type)

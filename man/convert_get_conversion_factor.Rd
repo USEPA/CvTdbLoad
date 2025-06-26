@@ -7,21 +7,11 @@
 convert_get_conversion_factor(conv_factor = 1)
 }
 \arguments{
-\item{conv_factor}{Conversion factor to use (such as Molecular weight, tissue Density, etc.)}
+\item{conv_factor}{Conversion factor to use (such as Molecular weight, tissue Density, etc.). Default of 1.}
 }
 \value{
 List of conversion factors
 }
 \description{
 A helper function to convert input values to desired units.
-}
-\details{
-DETAILS
-}
-\examples{
-\dontrun{
-if(interactive()){
- #EXAMPLE1
- }
-}
 }

@@ -1,20 +1,16 @@
-#' @title Validate Field Types
+#' @title validate_field_entries
 #' @description Function to check if processed document has invalid field entries.
-#' @param df List of dataframes for the sheets within an extraction template
-#' @param f Filename for flagging purposes
-#' @param log_path File path where to save the log file. Default "output/template_normalization_log.xlsx"
-#' @return Boolean of document validity. Logs any errors
-#' @details DETAILS
-#' @examples 
-#' \dontrun{
-#' if(interactive()){
-#'  #EXAMPLE1
-#'  }
-#' }
+#' @param df Input named list of dataframes.
+#' @param f Filename for logging purposes.
+#' @param log_path Path to log.
+#' @param verbose Boolean of whether to print additional console messages, Default: FALSE.
+#' @return Boolean of whether the input template passed the validation.
 #' @seealso 
 #'  [validator][validate::validator]
 #' @rdname validate_field_entries
 #' @export 
+#' @importFrom dplyr filter
+#' @importFrom validate validator confront summary meta violating
 validate_field_entries <- function(df, f, log_path, verbose=FALSE){
   validation <- TRUE # False if an invalid condition was encountered
   

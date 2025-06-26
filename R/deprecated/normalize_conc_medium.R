@@ -1,7 +1,7 @@
 #' @title normalize_conc_medium
-#' @description FUNCTION_DESCRIPTION
-#' @param raw PARAM_DESCRIPTION
-#' @param f PARAM_DESCRIPTION
+#' @description Function to use input dictionary to map normalized concentraiton medium.
+#' @param raw Input dataframe of data with data to normalize.
+#' @param f Optional filename for logging purposes.
 #' @return OUTPUT_DESCRIPTION
 #' @details DETAILS
 #' @examples 
@@ -18,24 +18,19 @@
 #' @importFrom readxl read_xlsx
 #' @importFrom dplyr mutate rename select left_join filter
 normalize_conc_medium <- function(raw, f){
-  # tmp = lapply(fileList, function(f){
-  #   s_list = load_sheet_group(fileName = f, template_path = template_path)
-  #   s_list$Series# %>% select(id, conc_medium) %>% mutate(doc = f)
-  # }) %>%
-  #   bind_rows()
-  #Concentration Normalization Dictionary
+  # Concentration Normalization Dictionary
   conc_dict = readxl::read_xlsx("input/dictionaries/conc_medium_dict.xlsx") %>%
     dplyr::mutate(conc_medium_original = tolower(conc_medium_original)) %>%
     dplyr::rename(conc_medium_id = id) %>%
     dplyr::select(-units)
-  #Match conc_medium
+  # Match conc_medium
   out = raw %>%
     dplyr::mutate(conc_medium_original = trimws(tolower(conc_medium))) %>%
     dplyr::left_join(conc_dict, by="conc_medium_original")
-  #Check for unmatched conc_medium
+  # Check for unmatched conc_medium
   unmatched = out %>%
     dplyr::filter(is.na(conc_medium_normalized))
-  #Flag unmatched
+  # Flag unmatched
   if(nrow(unmatched)){
     message("...conc_meduium need curation: ", paste0(unique(unmatched$conc_medium_original), collapse="; "))
     log_CvT_doc_load(f=f, m="curate_conc_medium")

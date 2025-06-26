@@ -1,14 +1,7 @@
 #' @title convert_units_grepl
-#' @description Function to get various grepl statements for unit extraction/conversion
-#' @param unit_type PARAM_DESCRIPTION
-#' @return OUTPUT_DESCRIPTION
-#' @details DETAILS
-#' @examples 
-#' \dontrun{
-#' if(interactive()){
-#'  #EXAMPLE1
-#'  }
-#' }
+#' @description Function to get various grepl statements for unit name standardization.
+#' @param unit_type Input unit type (e.g., weight, height, age, dose_duration, conc)
+#' @return List of unit name standardizations by input unit type.
 #' @rdname convert_units_grepl
 #' @export 
 convert_units_grepl <- function(unit_type){

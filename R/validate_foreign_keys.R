@@ -1,20 +1,16 @@
-#' @title Check foreign keys validator
+#' @title validate_foreign_keys
 #' @description Function to check if processed document's foreign keys match to a value in their respective sheets.
-#' @param df List of dataframes for the sheets within an extraction template
-#' @param f Filename for flagging purposes
-#' @param log_path File path where to save the log file. Default "output/template_normalization_log.xlsx"
-#' @return None. Logs any flags
-#' @details DETAILS
-#' @examples 
-#' \dontrun{
-#' if(interactive()){
-#'  #EXAMPLE1
-#'  }
-#' }
+#' @param df Input named list of dataframes.
+#' @param f Filename for logging purposes.
+#' @param log_path Path to log.
+#' @param verbose Boolean of whether to print additional console messages, Default: FALSE.
+#' @return Boolean of whether the input template passed the validation.
 #' @seealso 
 #'  [validator][validate::validator]
 #' @rdname validate_foreign_keys
 #' @export 
+#' @importFrom dplyr filter
+#' @importFrom validate validator confront summary meta violating
 validate_foreign_keys <- function(df, f, log_path, verbose=FALSE){
   validation <- TRUE # False if an invalid condition was encountered
 

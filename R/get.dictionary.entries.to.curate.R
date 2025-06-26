@@ -1,9 +1,16 @@
 #' @title get.dictionary.entries.to.curate
 #' @description Function to generate file of dictionary entries to curate
-#' normalized field values. Includes foreign key identifiers to help query database
-#' @param schema Database schema for PostgreSQL
-#' @export
-#' @return Dataframe list of dictionaries
+#' normalized field values. Includes foreign key identifiers to help query database.
+#' @param schema Database schema for PostgreSQL.
+#' @param full.report Boolean of whether to generate a full report and include foreign key connections to provide additional context, Default: FALSE.
+#' @export 
+#' @return Dataframe list of dictionaries.
+#' @seealso 
+#'  \code{\link[purrr]{flatten}}, \code{\link[purrr]{keep}}
+#'  \code{\link[writexl]{write_xlsx}}
+#' @rdname get.dictionary.entries.to.curate
+#' @importFrom purrr flatten compact
+#' @importFrom writexl write_xlsx
 get.dictionary.entries.to.curate <- function(schema, full.report=FALSE){
   
   # Map of dictionary tables to their foreign key tables/fields

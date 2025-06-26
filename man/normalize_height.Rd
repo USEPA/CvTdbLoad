@@ -2,36 +2,24 @@
 % Please edit documentation in R/normalize_height.R
 \name{normalize_height}
 \alias{normalize_height}
-\title{FUNCTION_TITLE}
+\title{normalize_height}
 \usage{
 normalize_height(raw, f, log_path, debug = FALSE)
 }
 \arguments{
-\item{raw}{PARAM_DESCRIPTION}
+\item{raw}{Input dataframe of data with data to normalize.}
 
-\item{f}{PARAM_DESCRIPTION}
+\item{f}{Optional filename for logging purposes.}
 
 \item{log_path}{File path where to save the log file.}
+
+\item{debug}{Boolean of whether to stop conversion logic early for debugging purpose. Default: FALSE.}
 }
 \value{
 Normalized version of the input \code{raw} parameter.
-
-OUTPUT_DESCRIPTION
 }
 \description{
-FUNCTION_DESCRIPTION
-}
-\details{
-#'@description A helper function to normalize subject height.
-
-DETAILS
-}
-\examples{
-\dontrun{
-if(interactive()){
- #EXAMPLE1
- }
-}
+A function to normalize subject height.
 }
 \seealso{
 \link[dplyr:mutate]{mutate}, \link[dplyr:filter]{filter}, \link[dplyr:bind_rows]{bind_rows}, \link[dplyr:arrange]{arrange}

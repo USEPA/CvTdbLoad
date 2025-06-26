@@ -1,17 +1,10 @@
-#' @description Helper function to check for ranges, and handling them
-#' @param x Input list of datasets being normalized
-#' @param f Filename for flagging purposes
-#' @param col The column being checked/normalized
+#' @title check_unit_range
+#' @description Function to check for ranges for input column.
+#' @param x Input list of datasets being processed.
+#' @param f Optional filename for logging purposes.
+#' @param col String of the name of the column to check.
 #' @param log_path File path where to save the log file.
-#' @return Modified version of the input `x` parameter
-#' @title FUNCTION_TITLE
-#' @details DETAILS
-#' @examples 
-#' \dontrun{
-#' if(interactive()){
-#'  #EXAMPLE1
-#'  }
-#' }
+#' @return Modified input `x` dataframe list with new "unit_range" dataframe.
 #' @seealso 
 #'  [filter][dplyr::filter], [mutate][dplyr::mutate], [rowwise][dplyr::rowwise], [across][dplyr::across], [select][dplyr::select]
 #'  [separate][tidyr::separate], [all_of][tidyr::all_of]

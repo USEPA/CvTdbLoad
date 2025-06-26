@@ -1,17 +1,10 @@
 #' @title check_non_numeric
-#' @description FUNCTION_DESCRIPTION
-#' @param x PARAM_DESCRIPTION
-#' @param f PARAM_DESCRIPTION
-#' @param col PARAM_DESCRIPTION
+#' @description Function to check for non-numeric values for input column.
+#' @param x Input list of datasets being processed.
+#' @param f Optional filename for logging purposes.
+#' @param col String of the name of the column to check.
 #' @param log_path File path where to save the log file.
-#' @return OUTPUT_DESCRIPTION
-#' @details DETAILS
-#' @examples 
-#' \dontrun{
-#' if(interactive()){
-#'  #EXAMPLE1
-#'  }
-#' }
+#' @return Modified input `x` dataframe list with new "non_numeric" dataframe.
 #' @seealso 
 #'  [mutate][dplyr::mutate], [filter][dplyr::filter], [select][dplyr::select]
 #' @rdname check_non_numeric

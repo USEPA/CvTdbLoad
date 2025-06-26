@@ -2,26 +2,16 @@
 % Please edit documentation in R/get_cvt_push_ready.R
 \name{get_cvt_push_ready}
 \alias{get_cvt_push_ready}
-\title{FUNCTION_TITLE}
+\title{get_cvt_push_ready}
 \usage{
 get_cvt_push_ready()
 }
 \value{
-OUTPUT_DESCRIPTION
+Dataframe filtered from the template normalization log of templates without logged issues.
 }
 \description{
 Function to return a dataframe of files ready to push due to all
 flags being '0'.
-}
-\details{
-DETAILS
-}
-\examples{
-\dontrun{
-if(interactive()){
- #EXAMPLE1
- }
-}
 }
 \seealso{
 \link[readxl:read_excel]{read_xlsx}

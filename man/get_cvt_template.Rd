@@ -7,23 +7,13 @@
 get_cvt_template(template_path)
 }
 \arguments{
-\item{template_path}{PARAM_DESCRIPTION}
+\item{template_path}{Path to the CvT template file.}
 }
 \value{
-OUTPUT_DESCRIPTION
+Named list of template file dataframes.
 }
 \description{
-Pull the CvT template in a list of empty dataframes
-}
-\details{
-DETAILS
-}
-\examples{
-\dontrun{
-if(interactive()){
- #EXAMPLE1
- }
-}
+Load the CvT template file into a list of empty dataframes.
 }
 \seealso{
 \link[readxl:excel_sheets]{excel_sheets}, \link[readxl:read_excel]{read_xlsx}

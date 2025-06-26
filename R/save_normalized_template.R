@@ -1,15 +1,8 @@
-#' @description A helper function to cache the normalized templates
-#' @title FUNCTION_TITLE
-#' @param df PARAM_DESCRIPTION, Default: doc_sheet_list
-#' @param f PARAM_DESCRIPTION, Default: f
-#' @return OUTPUT_DESCRIPTION
-#' @details DETAILS
-#' @examples 
-#' \dontrun{
-#' if(interactive()){
-#'  #EXAMPLE1
-#'  }
-#' }
+#' @description A helper function to cache the normalized templates during the normalization workflow.
+#' @title save_normalized_template
+#' @param df Named list of dataframes of normalized template data.
+#' @param f Filename of the input template that is modified to save a normalized copy.
+#' @return None. Input dataframe is saved to output folder.
 #' @seealso 
 #'  [file_ext][tools::file_ext]
 #'  [write_xlsx][writexl::write_xlsx]
@@ -17,7 +10,7 @@
 #' @export 
 #' @importFrom tools file_ext
 #' @importFrom writexl write_xlsx
-save_normalized_template <- function(df=doc_sheet_list, f=f){
+save_normalized_template <- function(df, f){
   #"L:\Lab\HEM\T_Wall_Projects_FY20\CvT Database\output\normalized_templates"  
   fn = basename(f)
   fn_ext = tools::file_ext(fn)

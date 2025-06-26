@@ -1,23 +1,15 @@
+#' @title db_update_tbl
 #' @description A function to update database table entries based on dataframe
-#' @param df A dataframe to write to the database
-#' @param tblName The name of the table to write the df data to
-#' @import DBI
-#' @return None
-#' @title FUNCTION_TITLE
-#' @details DETAILS
-#' @examples 
-#' \dontrun{
-#' if(interactive()){
-#'  #EXAMPLE1
-#'  }
-#' }
+#' @param df A dataframe to write to the database, Default: NULL
+#' @param tblName Name of database table to create or append and fill with input `df` dataframe data, Default: NULL
+#' @return None. Updates are pushed to the database.
 #' @seealso 
 #'  [dbWriteTable][DBI::dbWriteTable], [dbClearResult][DBI::dbClearResult], [dbDisconnect][DBI::dbDisconnect]
 #'  [dbSendStatement][DBI::dbSendStatement]
 #' @rdname db_push_to_CvT
 #' @export 
 #' @importFrom DBI dbWriteTable dbClearResult dbDisconnect
-#' @importFrom DBI dbSendStatement
+#' @importFrom DBI dbWriteTable dbClearResult dbDisconnect
 db_update_tbl <- function(df=NULL, tblName=NULL){
   # Check input params
   if(is.null(df)) stop("Must provide a dataframe to push to database")
