@@ -82,7 +82,7 @@ download_jira_update_clowder_info <- function(jira_project,
     for(filename in bulk_download$filename){
       if(length(which(bulk_download$filename == filename)) > 1){
         message("...Duplicate filename found: ", filename)
-        bulk_download %>% dplyr::filter(filename == !!filename) %>% View()
+        bulk_download %>% dplyr::filter(filename == !!filename) %>% utils::View()
         browser()
         next
       }

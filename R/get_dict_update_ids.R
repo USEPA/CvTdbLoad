@@ -53,7 +53,7 @@ get_dict_update_ids <- function(sheet_list, schema){
           # Get what's new for the dictionary
           new = sheet %>%
             tidyr::unite(dplyr::any_of(dict_col), col="dict_index", sep="_", remove=FALSE) %>%
-            filter(!dict_index %in% dict$dict_index) %>%
+            dplyr::filter(!dict_index %in% dict$dict_index) %>%
             dplyr::select(any_of(dict_col)) %>%
             dplyr::distinct() %>%
             dplyr::mutate(dplyr::across(!where(is.character), as.character))  
