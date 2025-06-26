@@ -62,8 +62,8 @@ out = rbind(out %>%
 writexl::write_xlsx(out, "edsp_cvt_doc_chems_check_20230118.xlsx")
 
 # Load EDSP list
-"C:\Users\jwall01\OneDrive - Environmental Protection Agency (EPA)\Profile\Downloads\Chemical List ERMODEL-2023-01-18.xlsx"
-"C:/Users/jwall01/OneDrive - Environmental Protection Agency (EPA)/Profile/Desktop/cvtdb-load"
+# "C:/Users/jwall01/OneDrive - Environmental Protection Agency (EPA)/Profile/Downloads/Chemical List ERMODEL-2023-01-18.xlsx"
+# "C:/Users/jwall01/OneDrive - Environmental Protection Agency (EPA)/Profile/Desktop/cvtdb-load"
 
 # Load original list (https://comptox.epa.gov/dashboard/chemical-lists/ERMODEL)
 edsp = readxl::read_xlsx("../../Downloads/Chemical List ERMODEL-2023-01-18.xlsx")

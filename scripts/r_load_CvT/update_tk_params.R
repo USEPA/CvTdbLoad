@@ -1,10 +1,8 @@
-library(readr); library(dplyr)
-
 #' update_tk_params
 #' @param tk_input String filepath to the input file used for tk params
 #' @param tk_output String filepath to the output file of tk params
 #' @return None. Data is processed and database updates are made.
-update_tk_params(tk_input="input\\tk params\\cvtdb_invivopkfit_04262022-2.csv",#"input\\tk params\\SupTable-CvTData.txt", 
+update_tk_params <- function(tk_input="input\\tk params\\cvtdb_invivopkfit_04262022-2.csv",#"input\\tk params\\SupTable-CvTData.txt", 
                  tk_output="input\\tk params\\SupTable-TKFits.txt",
                  invivopkfit_version = "TBD_default"){
   # Load the input data
