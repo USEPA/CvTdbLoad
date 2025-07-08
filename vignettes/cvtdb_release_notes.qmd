@@ -1,5 +1,5 @@
 ---
-title: "CvTdb v2.0 Release Notes"
+title: "CvTdb v2.0.0 Release Notes"
 author: Taylor Wall
 description: >
   The following are notes to accompany a release for CvTdb.
@@ -26,21 +26,15 @@ editor: visual
 #| echo: FALSE
 #| message: FALSE
 #| warning: FALSE
-
+library(magrittr)
 knitr::opts_chunk$set(collapse = T, comment = "#>")
 knitr::opts_chunk$set(warning = FALSE, message = FALSE)
 options(tibble.print_min = 4L, tibble.print_max = 4L)
-
 devtools::load_all()
 
-if(file.exists("../scripts/release/summarize_cvt_data.R")){
-  source("../scripts/release/summarize_cvt_data.R", .GlobalEnv)
-  cvt_summary = summarize_cvt_data()
-} else {
-  stop("Cannot find summarize_cvt_data script...", getwd())
-}
+release_version = "v2.0.0"
 
-v_compare = file.path("../output/release/version_comparison/v2.0.0.RData")
+v_compare = file.path(paste0("../output/release/version_comparison/", release_version,".RData"))
 # Check if comparison stats exist, if not create them
 if(!file.exists(v_compare)){
   source("../scripts/release/cvtdb_release_comparison_stats.R", .GlobalEnv)
@@ -60,7 +54,7 @@ version_palette = c("v1.0.0"="#4454C4FF",
 
 ## Background
 
-The Concentration versus Time Database (CvTdb) contains manually curated time-series data and associated metadata for *in vivo* toxicokinetic ("TK") studies on organic chemicals available in the scientific literature. The database has been developed in close coordination with leading researchers at the EPA with specialties relating to toxicology and toxicokinetic modeling. These data inform chemical safety analysis and allow evaluation of the relationship between administered doses and internal concentrations of a substance. These data can also be used to build or evaluate physiologically based pharmacokinetic (PBPK) and physiologically-based (PBTK) models (such as the [*httk*](https://cran.r-project.org/web/packages/httk/index.html) R package), which simulate the absorption, distribution, metabolism, and elimination of a chemical. The database also contains toxicokinetic parameters, including volume of distribution and elimination half-life, which are calculated across all data associated with a particular compound using the publicly available pharmacokinetic curve-fitting software [*invivoPKfit*](https://CRAN.R-project.org/package=invivoPKfit). This version 2.0.0 release builds upon the original [v1.0.0](https://github.com/USEPA/CompTox-PK-CvTdb/releases/tag/v1.0.0) “legacy” database released with Sayre, Wambaugh, and Grulke (2020) and the minor [v1.1.0](https://github.com/USEPA/CompTox-PK-CvTdb/releases/tag/v1.1.0) database release from 2021 that added the Showa Pharmaceutical University dataset. The code, documentation, and vignettes associated with the database release are available on GitHub ([CompTox-PK-CvTdb](https://github.com/USEPA/CompTox-PK-CvTdb); [CvTdbLoad](https://github.com/USEPA/cvtdbload)). The database is also available for download through the public CCTE EPA Clowder repository (**Add FigShare link**) (no user account required).
+The Concentration versus Time Database (CvTdb) contains manually curated time-series data and associated metadata for *in vivo* toxicokinetic ("TK") studies on organic chemicals available in the scientific literature. The database has been developed in close coordination with leading researchers at the EPA with specialties relating to toxicology and toxicokinetic modeling. These data inform chemical safety analysis and allow evaluation of the relationship between administered doses and internal concentrations of a substance. These data can also be used to build or evaluate physiologically based pharmacokinetic (PBPK) and physiologically-based (PBTK) models (such as the [*httk*](https://cran.r-project.org/web/packages/httk/index.html) R package), which simulate the absorption, distribution, metabolism, and elimination of a chemical. The database also contains toxicokinetic parameters, including volume of distribution and elimination half-life, which are calculated across all data associated with a particular compound using the publicly available pharmacokinetic curve-fitting software [*invivoPKfit*](https://CRAN.R-project.org/package=invivoPKfit). This version 2.0.0 release builds upon the original [v1.0.0](https://github.com/USEPA/CompTox-PK-CvTdb/releases/tag/v1.0.0) “legacy” database released with Sayre, Wambaugh, and Grulke (2020) and the minor [v1.1.0](https://github.com/USEPA/CompTox-PK-CvTdb/releases/tag/v1.1.0) database release from 2021 that added the Showa Pharmaceutical University dataset. The code, documentation, and vignettes associated with the database release are available on GitHub ([CompTox-PK-CvTdb](https://github.com/USEPA/CompTox-PK-CvTdb); [CvTdbLoad](https://github.com/USEPA/cvtdbload)). The database is also available for download through the public CCTE EPA [Clowder repository](https://doi.org/10.23645/epacomptox.20394501.v10) (no user account required).
 
 > **Note:** Since a variety of chemicals are considered of interest for CvTdb, beyond pharmaceutical substances, the term "toxicokinetic" (TK) is used preferentially over the term "pharmacokinetic" (PK). However, there may be instances where PK and TK are used interchangeably. We recognize that there are slight differences, but for practicality purposes, the terms may be interchangeably used within discussions.
 
@@ -98,11 +92,11 @@ Does the study...
 ### CvTdb GitHub Files
 
 | File Name | Description | File Type |
-|--------------------------------|------------------------|-----------------|
+|------------------------|------------------------|------------------------|
 | CvTdb_Curation_SOP | In depth guide to procedures and best practices for extracting (“curating”) data from published papers into templates for upload to the database. | .pdf |
-| CvTdb_QC_SOP | Guide for the specific process designed for going through previously uploaded templates and updating them for compliance with CvTdb 2024 Release | .pdf |
 | CvT_curation_template | Template for extracting data from papers for upload in the database | .xlsx |
-| CvT_QC_template | Template for "QC" worfklow, containing fields for "qc_flags", "qc_notes", etc. | .xlsx |
+<!-- End of tabset | CvTdb_QC_SOP | Guide for the specific process designed for going through previously uploaded templates and updating them for compliance with CvTdb 2024 Release | .pdf |
+| CvT_QC_template | Template for "QC" worfklow, containing fields for "qc_flags", "qc_notes", etc. | .xlsx | -->
 
 ### Querying CvTdb
 
@@ -208,7 +202,7 @@ norm_tbl = list(
     #     tidyr::unite(col = "route_norm_units", administration_route_normalized, dose_level_units_normalized, sep = ": ") %>%
     #   dplyr::pull(route_norm_units) %>%
     #   paste0(collapse = "<br>"),
-    `normalized units` = "> mg/kg BW<br>> mg/m3 (inhalation)<br>> mg/kg BW-day (feed/drinking water)<br>> mg/m2 (dermal)",
+    `normalized units` = "> mg/kg BW (iv/oral bolus)<br>> mg/m3 (inhalation)<br>> mg/kg BW-day (feed/drinking water)<br>> mg/m2 (dermal)",
     fields = c("> dose_level_target", "> dose_level_target_units", "> dose_level_original", "> dose_level_units_original", "> dose_level_normalized", "> dose_level_units_normalized") %>%
       paste0(collapse = "<br>"),
     `original units` = db_query_cvt(paste0("SELECT distinct dose_level_units_original ",
@@ -253,13 +247,14 @@ DT::datatable(norm_tbl,
               escape = FALSE
               )
 ```
+
 Special considerations for unit normalization:
 
 -   Overall
     -   Units reported with a confidence interval were converted by ignoring the confidence interval.
     -   Units reported with a range were converted by calculating the mean of the range.
 -   Conc
-    -   Only series with a normalized concentration medium value in the conc_medium_dict table had normalized conc units calculated.
+    -   Only series records with a normalized concentration medium value in the conc_medium_dict table had normalized conc units calculated.
     -   Units reported relative to tissue mass were converted by using the tissue densities from the *httk* package's "Density (g/cm3)" tissue data by species and reported concentration medium (conc_medium) tissue.
     -   Radioactivity units reported as "equivalent" were reported with "Eq" (e.g., ugEq/ml, ugEq/m3).
 -   Dose
@@ -287,27 +282,32 @@ CvTdb contains data for various chemicals, species, and administration routes. T
 #| echo: FALSE
 #| results: 'asis'
 
-cvt_summary_out = cvt_summary %>%
-  dplyr::mutate(value = dplyr::case_when(
-    `Summary Name` %in% c(
+cvt_summary_out =
+  cvtdb_release_comparison %>%
+  dplyr::filter(version == release_version) %>%
+  dplyr::mutate(count = dplyr::case_when(
+    stat %in% c(
       "Total Instances Where the Dosed Chemical is Different from the Analyzed Chemical"
     ) ~ {
       # Parse into sentence
-      tmp = value %>%
+      tmp = count %>%
       stringr::str_split(";") %>% 
       unlist()
       paste0(tmp[1], " DTXSID pairs from ", tmp[2], " studies and ", tmp[3], " series")
     },
-    TRUE ~ value
+    TRUE ~ count
   )) %>%
-  tidyr::unite(col = "summary_out", `Summary Name`, value, 
+  tidyr::unite(col = "summary_out", stat, count, 
                sep = ": ", remove = FALSE) %>%
   dplyr::mutate(summary_out = dplyr::case_when(
     # Sub-bullet
-    `Summary Name` %in% c(
+    stat %in% c(
       "Total Dosed Chemicals Mapped to DTXSID",
       "Total Analyzed Chemicals Mapped to DTXSID"
-    ) ~ paste0("\t-\t", summary_out),
+    ) ~ paste0("\t-\t", summary_out) %>%
+      stringr::str_replace("; ", " total chemicals with ") %>%
+      stringr::str_replace("; ", " mapped to ") %>%
+      paste0(" unique DTXSID values"),
     # Parent bullet
     TRUE ~ paste0("-\t", summary_out)
   )) %>%
@@ -322,10 +322,10 @@ cvt_summary_out = cvt_summary %>%
 
 #### Version Comparison
 
--   v1.0.0 
+-   v1.0.0
     -   The original database released with the Sayre, Wambaugh, and Grulke (2020) manuscript.
 -   v1.1.0
-    -   Release with minor changes to add/update conc_time_values normalizations, fix a couple study normalized administration routes, and add a new chemicals table to split off chemical information from the studies and series tables.
+    -   Release with minor changes to add/update conc_time_values normalizations, fix a couple study normalized administration routes, and add a new chemicals table to split off chemical curation information from the Studies and Series tables.
 
 The following tabs summarize count differences between CvTdb versions.
 
@@ -350,13 +350,17 @@ htmltools::tagList(DT::datatable(mtcars))
 #| fig-width: 12
 #| fig-height: 7
 
-vc_stat_list = sort(unique(cvtdb_release_comparison$stat))
+vc_stat_list = cvtdb_release_comparison %>%
+  dplyr::filter(!stat %in% c("Total TK Parameters by Extraction Document Count")) %>%
+  dplyr::pull(stat) %>%
+  unique() %>%
+  sort()
 
 # Create list of plots
 vc_plots = lapply(vc_stat_list, function(stat){
   if(stat %in% c(
-    "Total Administration Routes by Study Count",
-    "Total Species by Study Count"
+    "Total Study Count by Administration Routes Linked to Series",
+    "Total Study Count by Species"
   )) {
     
     ggplot2::ggplot(cvtdb_release_comparison %>%
@@ -364,21 +368,25 @@ vc_plots = lapply(vc_stat_list, function(stat){
                       dplyr::arrange(version, stat) %>%
                       tidyr::separate_longer_delim(
                         cols = count,
-                        delim = "; "
+                        delim = ", "
                       ) %>%
                       tidyr::separate_wider_delim(
                        cols = count,
                        names = c("label", "count"),
-                       delim = " - "
+                       delim = " ("
                       ) %>%
-                      dplyr::mutate(count = as.numeric(count)),
+                      dplyr::mutate(count = count %>%
+                                      gsub("\\)", "", .) %>%
+                                      as.numeric(),
+                                    label = gsub("\\*", "", label)),
                   ggplot2::aes(x=label, y=count, fill=version, label = prettyNum(count, big.mark = ","))) +
       ggplot2::geom_bar(stat = "identity", position = "dodge") + 
       # Manually set the palette
       ggplot2::scale_fill_manual(values=version_palette, drop=TRUE) +
       ggplot2::geom_text(
         position = ggplot2::position_dodge(width = .9),
-        check_overlap = TRUE
+        check_overlap = TRUE,
+        fontface = "bold"
         ) + 
       ggplot2::labs(y = "Count",
                   x = stat %>%
@@ -399,8 +407,38 @@ vc_plots = lapply(vc_stat_list, function(stat){
     DT::datatable(options = list(scrollX = TRUE, columnDefs = 
                                list(list(className = 'dt-left', targets = "_all"))), 
               rownames = FALSE)
+  } else if (grepl("Mapped to DTXSID", stat)) {
+    
+    ggplot2::ggplot(cvtdb_release_comparison %>%
+                      dplyr::filter(stat == !!stat) %>%
+                      dplyr::arrange(version, stat) %>%
+                      tidyr::separate_wider_delim(
+                        cols = count,
+                        names = c("Total Chemicals", "Mapped Chemicals", "Unique DTXSIDs"),
+                        delim = "; "
+                      ) %>%
+                      tidyr::pivot_longer(
+                       cols = c("Total Chemicals", "Mapped Chemicals", "Unique DTXSIDs"),
+                       names_to = "Count Group",
+                       values_to = "count"
+                      ) %>%
+                      dplyr::mutate(count = as.numeric(count)),
+                  ggplot2::aes(x=as.numeric(version), y=count, fill=`Count Group`, 
+                               color = `Count Group`, label = prettyNum(count, big.mark = ","))) +
+      ggplot2::geom_area(position = 'identity', alpha = 0.4) +
+      
+      ggplot2::geom_line(lwd = 2) +
+      ggplot2::geom_point(size = 3) +
+      # ggplot2::geom_text(color= "black", check_overlap = FALSE, fontface = "bold") + 
+      ggrepel::geom_text_repel(color= "black", fontface = "bold",
+                               nudge_y=0.5, nudge_x=0) + 
+      
+      ggplot2::scale_x_discrete(limits = levels(cvtdb_release_comparison$version)) +
+      ggplot2::labs(y = "Count",
+                  x = "CvTdb Version",
+                  title = paste0("CvTdb Version Comparison - ", stat))
   } else {
-  ggplot2::ggplot(cvtdb_release_comparison %>%
+    ggplot2::ggplot(cvtdb_release_comparison %>%
                     dplyr::filter(stat == !!stat) %>%
                     dplyr::arrange(version, stat) %>%
                     dplyr::mutate(count = as.numeric(count)),
@@ -408,7 +446,7 @@ vc_plots = lapply(vc_stat_list, function(stat){
     ggplot2::geom_area(fill="#69b3a2", position = 'identity', alpha=0.4) +
     ggplot2::geom_line(color="#69b3a2", lwd = 2) +
     ggplot2::geom_point(color="#69b3a2", size = 3) +
-    ggplot2::geom_text(check_overlap = TRUE) + 
+    ggplot2::geom_text(color= "black", check_overlap = FALSE, fontface = "bold") + 
     # ggplot2::facet_wrap(~stat, scales = "free") +
     ggplot2::scale_x_discrete(limits = levels(cvtdb_release_comparison$version)) +
     # ggplot2::theme(axis.text.x = ggplot2::element_text(angle = 45, hjust=0.9, vjust=1.0)) +
@@ -438,7 +476,11 @@ for(stat in names(vc_plots)){
 <!-- End of tabset -->
 :::
 
-i.  Total Subjects changed dramatically between v1.1.0 and v2.0.0 due to an effort to shift towards creating unique subject table entries per extraction document, rather than having documents share the same subject entry. This helped untangle and prevent cases where a document is QC'd and subject information is updated, causing subject information to be incorrect for other linked documents. This also helped support packages like *invivopkfit*, where curve fitting could treat each subject's timecourse as unique. Also, NTP documents were re-extracted to report on a per-subject basis, often having hundreds of entries.
+i.  Total subjects changed dramatically between v1.1.0 and v2.0.0 due to an effort to shift towards creating unique Subject table entries per extraction document, rather than having documents share the same subject entry. This helped untangle and prevent cases where a document is QC'd and subject information is updated, causing subject information to be incorrect for other linked documents. This also helped support packages like *invivopkfit*, where curve fitting could treat each subject's timecourse as unique. Also, NTP documents were re-extracted to report on a per-subject basis, often having hundreds of entries.
+ii. There are chemical table entries not currently linked to a Study or Series record. This is due to QC efforts that may have remapped these foreign keys. The entries were maintained in the chemicals table since they may be linked in the future if a study or series record reports the same original chemical identifiers.
+iii. Some documents report "control" studies, which do not have Series table linkages but were extracted for completeness. So, only the unique count of studies linked to series was reported here.
+iv. Dosed and analyzed chemical table entries represent unique chemical identifiers reported in a document. Different chemical table entries may be mapped to the same DTXSID value.
+v.  There are cases where a Series record is not linked to the Conc_Time_Values table because it only had tk_parameters table data. There are also Series records that do not have Conc_Time_Values table linkages that most likely need to be re-extracted or removed due to process changes.
 
 ```{r}
 #| label: "tbl-cvt-chemical_route_species_summary"
@@ -566,7 +608,7 @@ i.  Note, counts are by unique studies, where a single study may have dosed thro
     -   Upcoming publication from Celia Schacht
 -   Inhalation study documents (14)
 -   TK Parameter documents (16)
-    -   Curation of 43 documents with TK parameters reported, 16 with CvTdb relevant studies, series, and conc_time_values. Note, these were included in the release although they did not complete the standard QC review due to time and resource constraints.
+    -   Curation of 43 documents with TK parameters reported, 16 with CvTdb relevant studies, series, and concentration time values. Note, these were included in the release although they did not complete the standard QC review due to time and resource constraints.
 
 ## New Features
 
@@ -592,6 +634,7 @@ i.  Note, counts are by unique studies, where a single study may have dosed thro
 
 ## Known Issues
 
+-   Subjects table entries ID 46,283 and 53,441 have weight values of "25.D9" and "29 .4", which were maintained as-is to reflect the true original value reported by the extraction document.
 -   The administration method, administration form, and conc_medium dictionaries have entries that are not normalized at this time. This was due to internal decisions related to interpretability and consistency of the use of authoritative vocabulary/ontology.
 -   Select dose and concentration units were not normalized due to their complexity, lack of required metadata, or potentially being out of scope for CvTdb. A QC effort is underway to review such records and determine if they can be fixed or should be removed.
     -   Dose
