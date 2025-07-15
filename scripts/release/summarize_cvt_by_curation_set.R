@@ -1,6 +1,15 @@
 #' @title Get CvT Curation and QC Stats
 #' @description Summarize CvT curation and QC overall and by tag Sets
 #' @return None. XLSX files are written to output/release folder
+#' @seealso 
+#'  \code{\link[dplyr]{pull}}, \code{\link[dplyr]{filter}}, \code{\link[dplyr]{bind_rows}}
+#'  \code{\link[utils]{View}}
+#'  \code{\link[writexl]{write_xlsx}}
+#' @rdname summarize_cvt_by_curation_set
+#' @export 
+#' @importFrom dplyr pull filter bind_rows
+#' @importFrom utils View
+#' @importFrom writexl write_xlsx
 get_cvt_curation_qc_stats <- function(){
   # Pull tags
   curation_sets = db_query_cvt("SELECT distinct curation_set_tag FROM cvt.documents") %>%
@@ -63,12 +72,12 @@ get_cvt_curation_qc_stats <- function(){
       n_test_substance = length(unique(studies$fk_dosed_chemical_id[!is.na(studies$fk_dosed_chemical_id)])),
       n_test_substance_dtxsid = chems %>%
         dplyr::filter(id %in% studies$fk_dosed_chemical_id[!is.na(studies$fk_dosed_chemical_id)]) %>%
-        pull(dsstox_substance_id) %>% unique() %>% length(),
+        dplyr::pull(dsstox_substance_id) %>% unique() %>% length(),
       # Analyte Count
       n_analyte_substance = length(unique(series$fk_analyzed_chemical_id[!is.na(series$fk_analyzed_chemical_id)])),
       n_analyte_substance_dtxsid = chems %>%
         dplyr::filter(id %in% series$fk_analyzed_chemical_id[!is.na(series$fk_analyzed_chemical_id)]) %>%
-        pull(dsstox_substance_id) %>% unique() %>% length(),
+        dplyr::pull(dsstox_substance_id) %>% unique() %>% length(),
       # Conc Time Data Point Count
       n_conc_medium = length(unique(series$fk_conc_medium_id[!is.na(series$fk_conc_medium_id)])),
       n_conc_medium_normalized = conc_medium %>%
@@ -78,7 +87,7 @@ get_cvt_curation_qc_stats <- function(){
       return()
   }) %>%
     dplyr::bind_rows() %T>% 
-    View("CvT Summary")
+    utils::View("CvT Summary")
   
   writexl::write_xlsx(curation_tag_summary, paste0("output/release/cvtdb_stats_", Sys.Date(), ".xlsx"))
   ################################################################################
@@ -136,12 +145,12 @@ get_cvt_curation_qc_stats <- function(){
       n_test_substance = length(unique(studies$fk_dosed_chemical_id[!is.na(studies$fk_dosed_chemical_id)])),
       n_test_substance_dtxsid = chems %>%
         dplyr::filter(id %in% studies$fk_dosed_chemical_id[!is.na(studies$fk_dosed_chemical_id)]) %>%
-        pull(dsstox_substance_id) %>% unique() %>% length(),
+        dplyr::pull(dsstox_substance_id) %>% unique() %>% length(),
       # Analyte Count
       n_analyte_substance = length(unique(series$fk_analyzed_chemical_id[!is.na(series$fk_analyzed_chemical_id)])),
       n_analyte_substance_dtxsid = chems %>%
         dplyr::filter(id %in% series$fk_analyzed_chemical_id[!is.na(series$fk_analyzed_chemical_id)]) %>%
-        pull(dsstox_substance_id) %>% unique() %>% length(),
+        dplyr::pull(dsstox_substance_id) %>% unique() %>% length(),
       # Conc Time Data Point Count
       n_conc_medium = length(unique(series$fk_conc_medium_id[!is.na(series$fk_conc_medium_id)])),
       n_conc_medium_normalized = conc_medium %>%
@@ -151,7 +160,7 @@ get_cvt_curation_qc_stats <- function(){
       return()
   }) %>%
     dplyr::bind_rows() %T>% 
-    View("CvT Summary")
+    utils::View("CvT Summary")
   
   writexl::write_xlsx(qc_tag_summary, paste0("output/release/cvtdb_qc_stats_", Sys.Date(), ".xlsx"))
 }

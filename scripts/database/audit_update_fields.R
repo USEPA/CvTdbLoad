@@ -1,9 +1,11 @@
-#--------------------------------------------------------------------------------------
-#' @description Function to add/modify/delete select audit columns to source table
+#' @title audit.update.fields
+#' @description Function to add/modify/delete select audit columns to table
 #' @param s_tbl Source table name to apply changes to
-#' @param field_lsit List of current field names in source table
+#' @param field_list List of current field names in source table
 #' @param db_schema the schema of the database
-#--------------------------------------------------------------------------------------
+#' @return None. SQL statements are executed.
+#' @rdname audit_update_fields
+#' @export 
 audit.update.fields <- function(s_tbl, field_list, db_schema){
   # Update rec_create_dt to always update timestamp
   if("rec_create_dt" %in% field_list){

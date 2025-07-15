@@ -1,4 +1,13 @@
-
+#' @title bulk_update_weight_normalization
+#' @description Utility function to perform bulk subject weight normalization to all subject records.
+#' @return Dataframe log of updated records.
+#' @seealso 
+#'  \code{\link[dplyr]{mutate}}, \code{\link[dplyr]{group_by}}, \code{\link[dplyr]{across}}, \code{\link[dplyr]{summarise}}, \code{\link[dplyr]{filter}}, \code{\link[dplyr]{pull}}, \code{\link[dplyr]{select}}, \code{\link[dplyr]{distinct}}
+#'  \code{\link[tidyr]{separate_rows}}, \code{\link[tidyr]{replace_na}}
+#' @rdname bulk_update_weight_normalization
+#' @export 
+#' @importFrom dplyr mutate group_by across summarise ungroup filter pull select distinct
+#' @importFrom tidyr separate_rows replace_na
 bulk_update_weight_normalization <- function(){
   # Set global variable for debugging (skip logging)
   ENV_DEBUG <<- TRUE

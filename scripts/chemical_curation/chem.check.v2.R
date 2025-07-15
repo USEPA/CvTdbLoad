@@ -1,16 +1,24 @@
-#--------------------------------------------------------------------------------------
-#' Check the chemicals from a file
+#' @title chem.check.v2
+#' @description Check the chemicals from a file
 #' Names with special characters are cleaned and trimmed
 #' CASRN are fixed (dashes put in, trimmed) and check sums are calculated
 #' The output is sent to a file called chemcheck.xlsx in the source data file
 #' One option for using this is to edit the source file until no errors are found
-#'
-#' @param res0  The data frame in which chemicals names and CASRN will be replaced
+#' @param res0 The data frame in which chemicals names and CASRN will be replaced
 #' @param verbose If TRUE, print diagnostic messages
 #' @return Return a list with fixed CASRN and name and flags indicating if fixes were made:
 #' res0=res0,name.OK=name.OK,casrn.OK=casrn.OK,checksum.OK=checksum.OK
-#'
-#--------------------------------------------------------------------------------------
+#' @seealso 
+#'  \code{\link[stringi]{stri_escape_unicode}}
+#'  \code{\link[stringr]{str_replace}}, \code{\link[stringr]{str_trim}}
+#'  \code{\link[dplyr]{c("rowwise", "rowwise")}}, \code{\link[dplyr]{mutate}}, \code{\link[dplyr]{group_by}}, \code{\link[dplyr]{filter}}, \code{\link[dplyr]{select}}, \code{\link[dplyr]{rename}}, \code{\link[dplyr]{distinct}}
+#'  \code{\link[tidyr]{separate}}
+#' @rdname chem.check.v2
+#' @export 
+#' @importFrom stringi stri_escape_unicode
+#' @importFrom stringr str_replace_all str_squish
+#' @importFrom dplyr rowwise mutate ungroup filter select rename distinct
+#' @importFrom tidyr separate
 chem.check.v2 <- function(res0, verbose=FALSE) {
   name.OK = TRUE
   casrn.OK = TRUE
@@ -112,7 +120,7 @@ chem.check.v2 <- function(res0, verbose=FALSE) {
                   escaped=n1,
                   cleaned=n2,
                   checksum=cs) %>%
-    distinct()
+    dplyr::distinct()
 
   if(!name.OK) { cat("Some names fixed\n") } else { cat("All names OK\n") }
   if(!casrn.OK) { cat("Some casrn fixed\n") } else { cat("All casrn OK\n") }

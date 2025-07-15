@@ -1,9 +1,16 @@
-#--------------------------------------------------------------------------------------
-#'@description Function to parse SQL file into SQL query strings
-#'@param filepath Input SQL filepath
-#'@import stringr dplyr
-#'@export
-#--------------------------------------------------------------------------------------
+#' @title FUNCTION_TITLE
+#' @description Function to parse SQL file into SQL query strings
+#' @param filepath Input SQL filepath, Default: NULL
+#' @import stringr dplyr
+#' @return Parsed SQL string list.
+#' @export
+#' @seealso 
+#'  \code{\link[readr]{read_lines}}
+#'  \code{\link[stringr]{str_trim}}
+#' @rdname parse_sql_file
+#' @export 
+#' @importFrom readr read_lines
+#' @importFrom stringr str_squish
 parse_sql_file <- function(filepath = NULL){
   # Read in SQL file lines
   raw_query = readr::read_lines(filepath)

@@ -1,3 +1,17 @@
+#' @title get_chems_for_curation
+#' @description Pull list of chemical identifiers to submit for chemical curation.
+#' @return Output XLSX file generated with chemical identifiers for curation.
+#' @seealso 
+#'  \code{\link[tidyr]{pivot_longer}}, \code{\link[tidyr]{unite}}
+#'  \code{\link[dplyr]{filter}}, \code{\link[dplyr]{select}}, \code{\link[dplyr]{bind_rows}}, \code{\link[dplyr]{pull}}, \code{\link[dplyr]{bind_cols}}, \code{\link[dplyr]{mutate}}, \code{\link[dplyr]{case_when}}, \code{\link[dplyr]{across}}, \code{\link[dplyr]{na_if}}
+#'  \code{\link[readxl]{read_excel}}
+#'  \code{\link[writexl]{write_xlsx}}
+#' @rdname get_chems_for_curation
+#' @export 
+#' @importFrom tidyr pivot_longer unite
+#' @importFrom dplyr filter select bind_rows pull bind_cols mutate case_when across na_if
+#' @importFrom readxl read_xlsx
+#' @importFrom writexl write_xlsx
 get_chems_for_curation <- function(){
   chem_curation_scripts = list.files("scripts/chemical_curation", full.names = TRUE)
   invisible(sapply(chem_curation_scripts, source,.GlobalEnv))
@@ -30,13 +44,13 @@ get_chems_for_curation <- function(){
   chems = in_data %>%
     dplyr::select(external_id, raw_name = name, raw_casrn = casrn) %>%
     dplyr::bind_cols(out$res0 %>%
-                       dplyr::mutate(casrn = case_when(
+                       dplyr::mutate(casrn = dplyr::case_when(
                          cs == FALSE ~ NA,
                          TRUE ~ casrn
                        )) %>%
                        dplyr::select(cleaned_name = name, cleaned_casrn = casrn, checksum_pass = cs)
                      ) %>%
-    dplyr::mutate(dplyr::across(where(is.character), ~na_if(., "NA")),
+    dplyr::mutate(dplyr::across(where(is.character), ~dplyr::na_if(., "NA")),
                   cleaned_casrn = dplyr::case_when(
                     checksum_pass %in% c(0) ~ NA,
                     TRUE ~ checksum_pass
@@ -47,6 +61,5 @@ get_chems_for_curation <- function(){
     dplyr::select(-filter_key) %T>%
     writexl::write_xlsx(., paste0("output/chemical_mapping/cvtdb_chems_to_curate_",Sys.Date(),".xlsx"))
     
-
     return(chems)
 }

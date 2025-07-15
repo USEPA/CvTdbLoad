@@ -3,7 +3,6 @@
 #' @param f_list Input filepaths to NTP Excel files to extract. Must be full paths
 #' @param skip_list List of NTP identifiers to skip due to autoextract issues, Default: c("S0640", "C96016", "C96019", "S0575", "S0636")
 #' @return None. All outputs are stored in XLSX files in output/NTP directory.
-#' @details DETAILS
 #' @examples 
 #' \dontrun{
 #' if(interactive()){

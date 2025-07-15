@@ -1,3 +1,15 @@
+#' @title summarise_units_not_normalized
+#' @description Query database to identify units not normalized to check if they are expected missingness.
+#' @return None. XLSX file report is written for review.
+#' @seealso 
+#'  \code{\link[dplyr]{count}}, \code{\link[dplyr]{across}}, \code{\link[dplyr]{reexports}}, \code{\link[dplyr]{bind_rows}}, \code{\link[dplyr]{select}}, \code{\link[dplyr]{distinct}}, \code{\link[dplyr]{filter}}
+#'  \code{\link[purrr]{modify}}
+#'  \code{\link[writexl]{write_xlsx}}
+#' @rdname summarise_units_not_normalized
+#' @export 
+#' @importFrom dplyr count across all_of bind_rows select distinct starts_with filter
+#' @importFrom purrr modify
+#' @importFrom writexl write_xlsx
 summarise_units_not_normalized <- function(){
   
   norm_script_list = list.files("scripts/bulk_update") %>%

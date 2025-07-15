@@ -1,19 +1,24 @@
-# Orchestration script for pulling CvTdb data into template format
-# Jonathan Taylor Wall
-# Created 2023-6-2
-# Modified 2023-8-15
-# R version 4.1.2 (2021-11-01)
-
-#' @title Pull CvTdb as Template
+#' @title orchestrate_cvtdb_to_template
 #' @description Pull CvTdb data into CvT template by document identifiers
 #' @param id_list Named list of document identifiers to pull
-#' @template_path Path to CvT template for format data into. Default "input/CvT_data_template_articles.xlsx"
-#' @template_map Path to map file to rename database fields into CvT template fields. Default "input/qa_template_map.xlsx"
-#' @example 
+#' @param template_path Path to CvT template for format data into. Default "input/CvT_data_template_articles.xlsx"
+#' @param template_map Path to map file to rename database fields into CvT template fields. Default "input/qa_template_map.xlsx"
+#' @param export Boolean whether to write XLSX files, or just return a list of dataframe lists by document identifier, Default: TRUE.
+#' @return If export is FALSE, a list of Dataframe lists. If export is TRUE, XLSX files are written.
+#' @examples 
+#' \dontrun{
+#' if(interactive()){
 #' id_list = list(id=c(52),
 #'                pmid=c(3096853, 11504147),
 #'                other_study_identifier=c("C99037B"))
 #' orchestrate_cvtdb_to_template(id_list=id_list)
+#'  }
+#' }
+#' @seealso 
+#'  \code{\link[dplyr]{filter}}
+#' @rdname orchestrate_cvtdb_to_template
+#' @export 
+#' @importFrom dplyr filter
 orchestrate_cvtdb_to_template <- function(id_list, 
                               template_path="input/CvT_data_template_articles.xlsx", 
                               template_map="input/qa_template_map.xlsx",
@@ -84,11 +89,6 @@ orchestrate_cvtdb_to_template <- function(id_list,
   if(!export) return(export_list)
 }
 
-#'@title get_jira_queued_cvt_qc
-#'@description Function to pull a report from CVTDB Jira and filter to QC ticketed document ID values.
-#'@param auth_token Jira API authentication token.
-#'@param jira_project Name of Jira Project. Default CVTDB.
-#'@return Vector of CVTDB document ID's already ticketed in Jira
 get_jira_queued_cvt_qc <- function(auth_token = NULL, jira_project="CVTDB"){
   # Format headers
   if(!is.null(auth_token)){
@@ -132,11 +132,6 @@ get_jira_queued_cvt_qc <- function(auth_token = NULL, jira_project="CVTDB"){
   return(out$doc_id)
 }
 
-#'@title get_cvt_qc_queue
-#'@description Function to pull CVTDB document entries with data that have not been
-#'queued for QC in Jira.
-#'@param auth_token Jira API authentication token.
-#'@return DataFrame of CVTDB document entries not queued in Jira for QC.
 get_cvt_qc_queue <- function(auth_token = NULL){
   # Pull document information that has CvT data
   ## Conc_Time_Values entries with fk_series_id

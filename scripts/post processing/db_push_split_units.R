@@ -4,6 +4,17 @@
 #' field of 0 (No) or 1 (Yes) for confirmed unit splits.
 #' @param split_file Relative path to split units log.
 #' @return None. SQL updates performed.
+#' @seealso 
+#'  \code{\link[readxl]{excel_sheets}}, \code{\link[readxl]{read_excel}}
+#'  \code{\link[dplyr]{filter}}, \code{\link[dplyr]{select}}, \code{\link[dplyr]{mutate}}, \code{\link[dplyr]{bind_rows}}, \code{\link[dplyr]{group_by}}, \code{\link[dplyr]{na_if}}
+#'  \code{\link[tidyr]{separate}}, \code{\link[tidyr]{pivot_longer}}, \code{\link[tidyr]{unite}}, \code{\link[tidyr]{pivot_wider}}
+#'  \code{\link[utils]{View}}
+#' @rdname db_push_split_units
+#' @export 
+#' @importFrom readxl excel_sheets read_xlsx
+#' @importFrom dplyr filter select mutate bind_rows group_by na_if ungroup
+#' @importFrom tidyr separate pivot_longer unite pivot_wider
+#' @importFrom utils View
 db_push_split_units <- function(split_file){
   # Pull log of split units to push for updates
   split_units = readxl::excel_sheets(split_file) %>%
@@ -32,7 +43,7 @@ db_push_split_units <- function(split_file){
                       dplyr::na_if("NA")) %>%
       dplyr::ungroup() %>%
       tidyr::pivot_wider(id_cols = c("id", curator_comment))
-    View(updated_data)
+    utils::View(updated_data)
     message("Push update? - Select continue...")
     browser()
     # Update database entry for document

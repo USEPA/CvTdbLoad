@@ -2,16 +2,7 @@
 #' @description Helper function to return a dataframe to rekey duplicate entries
 #' @param df Input list of extracted CvT data sheets
 #' @param sheet Name of the sheet to find dup keys
-#' @param df PARAM_DESCRIPTION
-#' @param sheet PARAM_DESCRIPTION
-#' @return OUTPUT_DESCRIPTION
-#' @details DETAILS
-#' @examples 
-#' \dontrun{
-#' if(interactive()){
-#'  #EXAMPLE1
-#'  }
-#' }
+#' @return Dataframe of duplicate NTP keys with new key to assign.
 #' @seealso 
 #'  [group_by][dplyr::group_by], [across][dplyr::across], [mutate][dplyr::mutate], [ungroup][dplyr::ungroup], [select][dplyr::select], [distinct][dplyr::distinct], [filter][dplyr::filter], [everything][dplyr::everything], [arrange][dplyr::arrange]
 #'  [separate][tidyr::separate], [separate_rows][tidyr::separate_rows]

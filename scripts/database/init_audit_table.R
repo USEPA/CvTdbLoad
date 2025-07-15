@@ -1,9 +1,9 @@
-#--------------------------------------------------------------------------------------
-#' Create audit table and add BEFORE UPDATE audit triggers to source_* tables
-#'
+#' @title init.audit.table
+#' @description Create audit table and add BEFORE UPDATE audit triggers to tables
 #' @param db_schema the schema of the database
-#' @export
-#--------------------------------------------------------------------------------------
+#' @export 
+#' @return None. SQL statements are executed.
+#' @rdname init_audit_table
 init.audit.table <- function(db_schema){
   # List of ID fields not to be added to JSON of audit
   id_list = c("id", "qc_status", "qc_flags", "qc_notes", "version", "rec_create_dt", "created_by")

@@ -1,8 +1,26 @@
-# Script to push CvT Original Extracted Values to CvT from Clowder
-# This decouples the normalization from loading original values first.
-# Created by: Jonathan Taylor Wall
-# Created Date: 2023-12-14
-
+#' @title load_cvt_templates_to_db
+#' @description Script to push CvT Original Extracted Values to CvT from Clowder
+#' This decouples the normalization from loading original values first.
+#' @param schema PostgreSQL database schema, Default: 'cvt'
+#' @param log_path Filepath to log file to generate, Default: 'output/load_required_fields_log.xlsx'
+#' @param cvt_dataset Name of database, Default: NULL
+#' @param col_exclude Columns to exclude from updates/checks, Default: c("created_by", "rec_create_dt", "qc_status", "qc_flags", "qc_notes", #' "version")
+#' @return Log file generated. SQL statements executed.
+#' @seealso 
+#'  \code{\link[tidyr]{separate_longer_delim}}
+#'  \code{\link[dplyr]{mutate}}, \code{\link[dplyr]{filter}}, \code{\link[dplyr]{rename}}, \code{\link[dplyr]{context}}, \code{\link[dplyr]{case_when}}, \code{\link[dplyr]{select}}, \code{\link[dplyr]{arrange}}, \code{\link[dplyr]{bind_rows}}, \code{\link[dplyr]{mutate-joins}}, \code{\link[dplyr]{join_by}}, \code{\link[dplyr]{reexports}}, \code{\link[dplyr]{across}}, \code{\link[dplyr]{distinct}}
+#'  \code{\link[stringr]{str_trim}}
+#'  \code{\link[purrr]{keep}}
+#'  \code{\link[rlang]{sym}}
+#'  \code{\link[writexl]{write_xlsx}}
+#' @rdname push_CvT_templates_orig_values
+#' @export 
+#' @importFrom tidyr separate_longer_delim
+#' @importFrom dplyr mutate filter rename n case_when select arrange bind_rows left_join join_by any_of starts_with across everything distinct
+#' @importFrom stringr str_squish
+#' @importFrom purrr compact
+#' @importFrom rlang sym
+#' @importFrom writexl write_xlsx
 load_cvt_templates_to_db <- function(
     schema = 'cvt',
     log_path = "output/load_required_fields_log.xlsx",
@@ -452,7 +470,7 @@ load_cvt_templates_to_db <- function(
           # Combine fields from template with fields from document entry
           doc_in_db_push = doc_in_db %>%
             dplyr::filter(id %in% !!id) %>%
-            dplyr::select(any_of(
+            dplyr::select(dplyr::any_of(
               names(doc_in_db)[!names(doc_in_db) %in% names(temp_doc)[!names(temp_doc) %in% "id"]]
             )) %>%
             dplyr::left_join(temp_doc,
@@ -461,7 +479,7 @@ load_cvt_templates_to_db <- function(
             # Remove versioning, handled by database audit triggers
             dplyr::select(-rec_create_dt, -version) %>%
             # Order columns by database table order
-            dplyr::select(id, any_of(tbl_fields), document_type)
+            dplyr::select(id, dplyr::any_of(tbl_fields), document_type)
           
           # Update database entry for document
           db_update_tbl(df=doc_in_db_push %>%

@@ -1,11 +1,23 @@
-#-------------------------------------------------------------------------------------
-#' Function to generate general summaries of the database for a given release version
+#' @title postgres_db_release_schema_comparison
+#' @description Function to generate general summaries of the database for a given release version
 #' @param in.db The version of db to summarize
 #' @param in.host The host of the database to summarize
 #' @param compare.db The version of db to compare with the input db version
 #' @param compare.host The host of the comparison database
 #' @return None. Exported files are generated in a summary folder.
-#-------------------------------------------------------------------------------------
+#' @param in.schema The schema of the database.
+#' @param compare.schema The schema of the database to compare to.
+#' @seealso 
+#'  \code{\link[stringi]{stri_trans_tolower}}
+#'  \code{\link[dplyr]{filter}}, \code{\link[dplyr]{mutate}}, \code{\link[dplyr]{bind_rows}}, \code{\link[dplyr]{group_by}}, \code{\link[dplyr]{summarise}}, \code{\link[dplyr]{context}}, \code{\link[dplyr]{mutate-joins}}, \code{\link[dplyr]{select}}, \code{\link[dplyr]{distinct}}, \code{\link[dplyr]{rename}}
+#'  \code{\link[writexl]{write_xlsx}}
+#'  \code{\link[readxl]{excel_sheets}}, \code{\link[readxl]{read_excel}}
+#' @rdname postgres_db_release_schema_comparison
+#' @export 
+#' @importFrom stringi stri_trans_tolower
+#' @importFrom dplyr filter mutate bind_rows group_by summarise n ungroup left_join select distinct rename
+#' @importFrom writexl write_xlsx
+#' @importFrom readxl excel_sheets read_excel
 postgres_db_release_schema_comparison <- function(in.db, in.host, compare.db, compare.host, in.schema, compare.schema){
   
   # Helper function to check if any field names match sql keywords
@@ -94,7 +106,7 @@ postgres_db_release_schema_comparison <- function(in.db, in.host, compare.db, co
       
       # Get accurate row count
       db_query_cvt(paste0("SELECT count(*) as n_tbl_row FROM ", schema, ".", tbl_n)) %>%
-        mutate(table_name = tbl_n) %>%
+        dplyr::mutate(table_name = tbl_n) %>%
         return()
     }) %>%
       dplyr::bind_rows()
@@ -161,9 +173,9 @@ postgres_db_release_schema_comparison <- function(in.db, in.host, compare.db, co
       dplyr::distinct(),
     # Record count differences for table overlap
     row_count_diff = new$tbl_list %>%
-      select(-table_schema) %>%
+      dplyr::select(-table_schema) %>%
       dplyr::left_join(old$tbl_list %>%
-                         select(-table_schema) %>%
+                         dplyr::select(-table_schema) %>%
                          dplyr::rename(old_n_tbl_columns=n_tbl_columns,
                                        old_n_tbl_row_est=n_tbl_row_est,
                                        old_n_tbl_row=n_tbl_row),

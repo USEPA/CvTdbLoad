@@ -1,3 +1,17 @@
+#' @title cvtdb_release_comparison_stats
+#' @description Query different versions of CvT to generate comparison summary stats.
+#' @return None. RData file is saved to output folder.
+#' @seealso 
+#'  \code{\link[DBI]{dbConnect}}
+#'  \code{\link[RSQLite]{SQLite}}, \code{\link[RSQLite]{character(0)}}
+#'  \code{\link[dplyr]{pull}}, \code{\link[dplyr]{count}}, \code{\link[dplyr]{arrange}}, \code{\link[dplyr]{mutate}}, \code{\link[dplyr]{select}}, \code{\link[dplyr]{reexports}}, \code{\link[dplyr]{distinct}}, \code{\link[dplyr]{filter}}, \code{\link[dplyr]{bind_rows}}
+#'  \code{\link[tidyr]{unite}}, \code{\link[tidyr]{pivot_longer}}
+#' @rdname cvtdb_release_comparison_stats
+#' @export 
+#' @importFrom DBI dbConnect
+#' @importFrom RSQLite SQLite dbGetQuery dbDisconnect
+#' @importFrom dplyr pull count arrange mutate select contains distinct filter everything bind_rows
+#' @importFrom tidyr unite pivot_longer
 cvtdb_release_comparison_stats <- function(){
   
   if(!dir.exists("output/release/version_comparison")) dir.create("output/release/version_comparison", recursive = TRUE)

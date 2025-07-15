@@ -4,6 +4,17 @@
 #' @param schema Database schema name.
 #' @param old_dict Optional filepath to old dictionary to join previous definitions.
 #' @return None. XLSX file is saved to output/release folder
+#' @seealso 
+#'  \code{\link[tools]{fileutils}}
+#'  \code{\link[dplyr]{mutate-joins}}, \code{\link[dplyr]{mutate}}, \code{\link[dplyr]{across}}
+#'  \code{\link[readxl]{read_excel}}
+#'  \code{\link[writexl]{write_xlsx}}
+#' @rdname get_field_dictionary
+#' @export 
+#' @importFrom tools file_ext
+#' @importFrom dplyr left_join mutate across
+#' @importFrom readxl read_xlsx
+#' @importFrom writexl write_xlsx
 get_field_dictionary <- function(schema, old_dict){
   
   # Pull dataframe of table and field names in schema

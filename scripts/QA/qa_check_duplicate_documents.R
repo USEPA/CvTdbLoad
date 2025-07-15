@@ -1,13 +1,24 @@
-#' @title qc_check_duplicate_documents
+#' @title qa_check_duplicate_documents
 #' @description Find duplicates in documents table based on ID hierarchy.
 #' @return None. XLSX file written to output folder.
+#' @seealso 
+#'  \code{\link[dplyr]{filter}}, \code{\link[dplyr]{mutate}}, \code{\link[dplyr]{select}}, \code{\link[dplyr]{bind_rows}}, \code{\link[dplyr]{arrange}}
+#'  \code{\link[rlang]{sym}}
+#'  \code{\link[stringr]{str_length}}
+#'  \code{\link[writexl]{write_xlsx}}
+#' @rdname qa_check_duplicate_documents
+#' @export 
+#' @importFrom dplyr filter mutate select bind_rows arrange
+#' @importFrom rlang sym
+#' @importFrom stringr str_length
+#' @importFrom writexl write_xlsx
 qa_check_duplicate_documents <- function(){
   #Input list of ID values to check in hierarchical order
   check_list = c("pmid", "other_study_identifier", "doi", "url")
   #Find potential duplicate values per ID level (irrespective of the hierarchy)
   where_clause = lapply(check_list, function(x){
     tmp = db_query_cvt(paste0("SELECT ",x," from cvt.documents")) %>%
-      filter(!is.na(!!sym(x))) %>% unlist() %>% unname()
+      dplyr::filter(!is.na(!!rlang::sym(x))) %>% unlist() %>% unname()
     tmp = tmp[duplicated(tmp)] %>% unique() %>% paste0(collapse="', '")
   }) %T>% { names(.) <- check_list }
   #Pull all document data
@@ -18,22 +29,22 @@ qa_check_duplicate_documents <- function(){
     if(!stringr::str_length(where_clause[[level]])){
       #No duplicates identified in search level, so filter out those with such values
       input = input %>% 
-        filter(!id %in% doc_list[[level]]$id, #Filter out identified duplicates
-               is.na(!!sym(level))) #Filter to missing from this level
+        dplyr::filter(!id %in% doc_list[[level]]$id, #Filter out identified duplicates
+               is.na(!!rlang::sym(level))) #Filter to missing from this level
       next #Skip empty search
     }
     doc_list[[level]] = db_query_cvt(paste0("SELECT * FROM cvt.documents where ", 
                                             level, " in ('", where_clause[[level]],"')"))
     doc_list[[level]] = input %>%
-      filter(!!sym(level) %in% where_clause[[level]]) %>%
-      mutate(doc_name = paste0(!!sym(level), "_", level,"_doc_id_", id)) %>%
-      select(id, !!sym(level), doc_name)
+      dplyr::filter(!!rlang::sym(level) %in% where_clause[[level]]) %>%
+      dplyr::mutate(doc_name = paste0(!!rlang::sym(level), "_", level,"_doc_id_", id)) %>%
+      dplyr::select(id, !!rlang::sym(level), doc_name)
     input = input %>% 
-      filter(!id %in% doc_list[[level]]$id, #Filter out identified duplicates
-             is.na(!!sym(level))) #Filter to missing from this level
+      dplyr::filter(!id %in% doc_list[[level]]$id, #Filter out identified duplicates
+             is.na(!!rlang::sym(level))) #Filter to missing from this level
   }
   
-  doc_list = bind_rows(doc_list) %>% arrange(doc_name)
+  doc_list = dplyr::bind_rows(doc_list) %>% dplyr::arrange(doc_name)
   
   # out = lapply(seq_len(nrow(doc_list)), function(r){
   #   message("Pulling data for row: ", r, " ID: ", doc_list$id[r])

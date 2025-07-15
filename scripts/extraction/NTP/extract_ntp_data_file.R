@@ -1,25 +1,9 @@
-# Script to automate extraction for NTP style CvT data documents
-# Created by: Jonathan Taylor Wall
-# Created Date: 2023-03-8
-#Load packages
-# require(DBI); require(dplyr); require(magrittr); require(tidyr); require(readxl); library(httk)
-# R version 4.1.0 (2021-05-18)
-# httk_2.1.0; readxl_1.3.1; tidyr_1.2.0; magrittr_2.0.2; dplyr_1.0.8; DBI_1.1.2
-# purrr_0.3.4; assertthat_0.2.1
-#Load R Scripts
 #' @title extract_ntp_data_file
 #' @description Function to semi-automate extraction of NTP data to CvT template
 #' @param filepath File path to the NTP file to extract to CvT template
 #' @param template_path File path to latest template
 #' @param template_map File path to a field name map from NTP to CvT template names
-#' @return OUTPUT_DESCRIPTION
-#' @details DETAILS
-#' @examples 
-#' \dontrun{
-#' if(interactive()){
-#'  #EXAMPLE1
-#'  }
-#' }
+#' @return List of Dataframes with the template format.
 #' @seealso 
 #'  [excel_sheets][readxl::excel_sheets], [read_xlsx][readxl::read_xlsx]
 #'  [mutate][dplyr::mutate], [across][dplyr::across], [everything][dplyr::everything], [filter][dplyr::filter], [bind_rows][dplyr::bind_rows], [select][dplyr::select], [n][dplyr::n], [left_join][dplyr::left_join], [rename][dplyr::rename], [any_of][dplyr::any_of]

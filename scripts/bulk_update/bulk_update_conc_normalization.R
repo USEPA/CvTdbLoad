@@ -1,4 +1,14 @@
-
+#' @title bulk_update_conc_normalization
+#' @description Utility function to perform bulk concentration normalization to all Conc_Time_Values records.
+#' @param report.only Boolean whether to make updates or just report potential changes, Default: TRUE
+#' @return Dataframe log of updated records.
+#' @seealso 
+#'  \code{\link[dplyr]{mutate}}, \code{\link[dplyr]{group_by}}, \code{\link[dplyr]{across}}, \code{\link[dplyr]{summarise}}, \code{\link[dplyr]{select}}, \code{\link[dplyr]{distinct}}, \code{\link[dplyr]{filter}}, \code{\link[dplyr]{case_when}}, \code{\link[dplyr]{pull}}, \code{\link[dplyr]{reexports}}
+#'  \code{\link[tidyr]{separate_rows}}, \code{\link[tidyr]{replace_na}}
+#' @rdname bulk_update_conc_normalization
+#' @export 
+#' @importFrom dplyr mutate group_by across summarise ungroup select distinct filter case_when pull everything
+#' @importFrom tidyr separate_rows replace_na
 bulk_update_conc_normalization <- function(report.only = TRUE){
   # Set global variable for debugging (skip logging)
   ENV_DEBUG <<- TRUE
@@ -44,7 +54,7 @@ bulk_update_conc_normalization <- function(report.only = TRUE){
       analyte_name_secondary_check = chemical_name_secondary_original,
       dplyr::across(
         .cols = c(analyte_name_check, analyte_name_secondary_check),
-        .fns = ~ case_when(
+        .fns = ~ dplyr::case_when(
           # Check contains [14] (often [14]C)
           grepl("\\[14\\]", .) ~ TRUE,
           # Check contains [3] (often [3]H)
