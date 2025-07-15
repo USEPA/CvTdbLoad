@@ -7,7 +7,7 @@ The Concentration versus Time Database (CvTdb) contains manually curated time-se
 This repository contains the R scripts used to process templates into CvTdb, perform term and unit normalizations/conversions, and generate QA reports and templates for database review and refinement.
 >Note, the code provided is for publication transparency sake only. Users are not meant to run the code and reproduce the database themselves. The generation of the database is a semi-automated process, so it is not possible to completely reproduce the database from running the provided code alone. Please access the complete database data from the links provided below.
 
-# Where to access ToxValDB data
+# Where to access CvTdb data
 - US EPA FigShare Dataset (**link TBD**)
 	- Versioned releases of CvTdb in SQLite file format with associated documentation
 	- Note, the FigShare DOI link will land on the most recent version of the FigShare posting. Use the version dropdown menu to navigate to the desired release version based on the dataset title.
