@@ -2,31 +2,20 @@
 % Please edit documentation in R/load_sheet_group.R
 \name{load_sheet_group}
 \alias{load_sheet_group}
-\title{FUNCTION_TITLE}
+\title{load_sheet_group}
 \usage{
 load_sheet_group(fileName = "", template_path = "")
 }
 \arguments{
-\item{fileName}{The file name or path for the file of interest}
+\item{fileName}{The file name or path for the file of interest.}
 
 \item{template_path}{The file path for the extraction template. If not supplied, hard coded columns will be used.}
 }
 \value{
-A dataframe of the combined sheets
+A named list of dataframes that fits the format of the input template file.
 }
 \description{
-A function to load and pull all sheets from files in the specified directory.
-It corrects for missing required column names from a template file by filling with NA values.
-}
-\details{
-DETAILS
-}
-\examples{
-\dontrun{
-if(interactive()){
- #EXAMPLE1
- }
-}
+A function to load an input template and map it to the provided template format. It corrects for missing required column names from a template file by filling with NA values.
 }
 \seealso{
 \link[readxl:excel_sheets]{excel_sheets}, \link[readxl:read_excel]{read_excel}, \link[readxl:read_excel]{read_xlsx}

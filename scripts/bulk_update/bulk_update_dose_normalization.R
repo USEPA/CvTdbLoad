@@ -1,4 +1,14 @@
-
+#' @title bulk_update_dose_normalization
+#' @description Utility function to perform bulk dose normalization to all study records.
+#' @param report.only Boolean whether to make updates or just report potential changes, Default: TRUE
+#' @return Dataframe log of updated records.
+#' @seealso 
+#'  \code{\link[dplyr]{mutate}}, \code{\link[dplyr]{distinct}}, \code{\link[dplyr]{group_by}}, \code{\link[dplyr]{count}}, \code{\link[dplyr]{filter}}, \code{\link[dplyr]{across}}, \code{\link[dplyr]{summarise}}, \code{\link[dplyr]{rename}}, \code{\link[dplyr]{pull}}, \code{\link[dplyr]{case_when}}, \code{\link[dplyr]{select}}, \code{\link[dplyr]{reexports}}
+#'  \code{\link[tidyr]{unite}}, \code{\link[tidyr]{separate_rows}}, \code{\link[tidyr]{replace_na}}
+#' @rdname bulk_update_dose_normalization
+#' @export 
+#' @importFrom dplyr mutate distinct group_by ungroup count filter across summarise rename pull case_when select all_of
+#' @importFrom tidyr unite separate_rows replace_na
 bulk_update_dose_normalization <- function(report.only=TRUE){
   # Set global variable for debugging (skip logging)
   ENV_DEBUG <<- TRUE

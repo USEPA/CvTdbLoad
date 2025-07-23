@@ -1,14 +1,27 @@
-#' download_jira_update_clowder_info
-#' @param jira_project Jira project identifier
-#' @param in_file Optional param for the file path to previously pulled Jira information
-#' @param auth_token Jira API token
-#' @param reset_attachments Boolean whether to re-download files, or just update Clowder metadata
-#' @param dsID Clowder dataset ID
-#' @param baseurl Clowder URL
-#' @param userID Clowder user ID
-#' @param apiKey Clowder API key
-#' @param labels_filter Vector list of Jira ticket labels to filter to
+#' @title download_jira_update_clowder_info
+#' @description Function to generate a dataframe of Jira ticket metadata with attachment information. Can be used to download the attachments locally and upload metadata to Clowder files once they have been uploaded to Clowder separately.
+#' @param jira_project Jira project identifier (e.g., CVTDB).
+#' @param in_file Optional param for the file path to previously pulled Jira information CSV file.
+#' @param auth_token Jira API token.
+#' @param update_clowder_metadata Boolean whether to update Clowder file metadata. Only set to TRUE once Jira ticket attachments have been uploaded to Clowder. Default: FALSE.
+#' @param reset_attachments Boolean whether to re-download Jira ticket attachments. Default: FALSE.
+#' @param dsID Clowder dataset identifier.
+#' @param baseurl Clowder base URL.
+#' @param userID Clowder user identifier.
+#' @param apiKey Clowder API key.
+#' @param labels_filter Vector list of Jira ticket labels to filter to.
 #' @param epic_filter Custom filtering to a specific ticket Epic link by name (single or vector). Default: empty vector.
+#' @param attachment_filter Filename regex string vector to filter to select Jira ticket attachments, Default: empty vector.
+#' @return Dataframe of metadata from Jira tickets to associate to Clowder files.
+#' @seealso 
+#'  \code{\link[dplyr]{filter}}, \code{\link[dplyr]{select}}, \code{\link[dplyr]{mutate}}
+#'  \code{\link[tidyr]{unite}}
+#'  \code{\link[utils]{View}}, \code{\link[utils]{download.file}}
+#' @rdname download_jira_update_clowder_info
+#' @export 
+#' @importFrom dplyr filter select mutate
+#' @importFrom tidyr unite
+#' @importFrom utils download.file
 download_jira_update_clowder_info <- function(jira_project, 
                                               in_file = NULL, 
                                               auth_token, 
@@ -82,7 +95,7 @@ download_jira_update_clowder_info <- function(jira_project,
     for(filename in bulk_download$filename){
       if(length(which(bulk_download$filename == filename)) > 1){
         message("...Duplicate filename found: ", filename)
-        bulk_download %>% dplyr::filter(filename == !!filename) %>% View()
+        # bulk_download %>% dplyr::filter(filename == !!filename) %>% View()
         browser()
         next
       }

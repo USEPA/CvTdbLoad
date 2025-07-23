@@ -1,20 +1,16 @@
-#' @title Check required fields validator
+#' @title validate_required_fields
 #' @description Function to check if processed document is missing required fields.
-#' @param df List of dataframes for the sheets within an extraction template
-#' @param f Filename for flagging purposes
-#' @param log_path File path where to save the log file. Default "output/template_normalization_log.xlsx"
-#' @return None. Logs any flags
-#' @details DETAILS
-#' @examples 
-#' \dontrun{
-#' if(interactive()){
-#'  #EXAMPLE1
-#'  }
-#' }
+#' @param df Input named list of dataframes.
+#' @param f Filename for logging purposes.
+#' @param log_path Path to log.
+#' @param verbose Boolean of whether to print additional console messages, Default: FALSE.
+#' @return Boolean of whether the input template passed the validation.
 #' @seealso 
 #'  [validator][validate::validator]
 #' @rdname check_required_fields_new
 #' @export 
+#' @importFrom dplyr filter
+#' @importFrom validate validator confront summary meta violating
 validate_required_fields <- function(df, f, log_path, verbose=FALSE){
   validation <- TRUE # False if an invalid condition was encountered
   

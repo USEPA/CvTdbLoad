@@ -1,15 +1,8 @@
 #' @title species_get_unique_to_curate
-#' @description FUNCTION_DESCRIPTION
-#' @param fileList PARAM_DESCRIPTION
-#' @param template_path PARAM_DESCRIPTION
-#' @return OUTPUT_DESCRIPTION
-#' @details DETAILS
-#' @examples 
-#' \dontrun{
-#' if(interactive()){
-#'  #EXAMPLE1
-#'  }
-#' }
+#' @description Load a list of templates or query the database to check for species cases to add to `normalize_species()`.
+#' @param fileList Optional list of template files to load. If NULL, queries the database to check for cases.
+#' @param template_path Path to input CvTdb template file.
+#' @return Console output of species cases to add to `normalize_species()`.
 #' @seealso 
 #'  [select][dplyr::select]
 #' @rdname species_get_unique_to_curate
@@ -18,7 +11,7 @@
 species_get_unique_to_curate <- function(fileList, template_path){
   
   if(!is.null(fileList)){
-    #Get species from files
+    # Get species from files
     spec = lapply(fileList, function(f){
       s_list = load_sheet_group(fileName = f, template_path = template_path)
       s_list$Subjects %>% dplyr::pull(species) %>% unique()
@@ -29,6 +22,7 @@ species_get_unique_to_curate <- function(fileList, template_path){
     out = normalize_species(spec) %>%
       unique()  
   } else {
+    # If no input files, query the database to check for cases to curate
     out = db_query_cvt("SELECT distinct species FROM cvt.subjects") %>%
       normalize_species() %>%
       dplyr::pull(species) %>%

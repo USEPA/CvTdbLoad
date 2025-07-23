@@ -1,21 +1,14 @@
-#' @description Helpfer function to normalize concentration units
-#' @title FUNCTION_TITLE
-#' @param x PARAM_DESCRIPTION
-#' @return OUTPUT_DESCRIPTION
-#' @details DETAILS
-#' @examples 
-#' \dontrun{
-#' if(interactive()){
-#'  #EXAMPLE1
-#'  }
-#' }
+#' @title normalize_conc_units
+#' @description Helper function to normalize concentration unit names.
+#' @param x Input vector of conc units.
+#' @return Modified input `x` vector with normalized concentration unit names.
 #' @rdname normalize_conc_units
 #' @export 
 normalize_conc_units <- function(x){
   if(length(x)==0){
     return(x)
   }
-  #Convert conc units
+  # Convert conc units
   # x = tolower(x) # Commented out due to edge cases like meter (m) and molarity (M)
   conv = list(`percentage`=list("%", "% of original dose", "percent", "percentage", 
                                 "% Dose", "% dose", "cumulative %", "perc_dose", 

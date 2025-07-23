@@ -7,27 +7,19 @@
 normalize_time(raw, f, log_path, debug = FALSE)
 }
 \arguments{
-\item{raw}{PARAM_DESCRIPTION}
+\item{raw}{Input dataframe of data with data to normalize.}
 
-\item{f}{PARAM_DESCRIPTION}
+\item{f}{Optional filename for logging purposes.}
 
 \item{log_path}{File path where to save the log file.}
+
+\item{debug}{Boolean of whether to stop conversion logic early for debugging purpose. Default: FALSE.}
 }
 \value{
-OUTPUT_DESCRIPTION
+Modified dataframe of \code{raw} with normalized values.
 }
 \description{
-FUNCTION_DESCRIPTION
-}
-\details{
-DETAILS
-}
-\examples{
-\dontrun{
-if(interactive()){
- #EXAMPLE1
- }
-}
+Normalize time to hours for input dataframe.
 }
 \seealso{
 \link[dplyr:mutate]{mutate}, \link[dplyr:bind_rows]{bind_rows}, \link[dplyr:arrange]{arrange}

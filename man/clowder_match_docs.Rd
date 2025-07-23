@@ -2,7 +2,7 @@
 % Please edit documentation in R/clowder_match_docs.R
 \name{clowder_match_docs}
 \alias{clowder_match_docs}
-\title{FUNCTION_TITLE}
+\title{clowder_match_docs}
 \usage{
 clowder_match_docs(
   df = NULL,
@@ -13,29 +13,21 @@ clowder_match_docs(
 )
 }
 \arguments{
-\item{df}{Input template document's sheet for mapping}
+\item{df}{Input template document's sheet for mapping.}
 
 \item{dsID}{Clowder dataset ID to pull from.}
 
-\item{apiKey}{API key to access Clowder repo}
+\item{baseurl}{Clowder base URL.}
+
+\item{apiKey}{API key to access Clowder repo.}
 
 \item{clowder_file_list}{Opitonal input list of Clowder files from clowder_get_dataset_files().}
 }
 \value{
-OUTPUT_DESCRIPTION
+Modified \code{df} with clowder_file_id field for matched documents.
 }
 \description{
-Function to help match template documents to Clowder files
-}
-\details{
-DETAILS
-}
-\examples{
-\dontrun{
-if(interactive()){
- #EXAMPLE1
- }
-}
+Function to match template documents to Clowder files.
 }
 \seealso{
 \link[dplyr:filter]{filter}, \link[dplyr:mutate]{mutate}, \link[dplyr:mutate-joins]{left_join}, \link[dplyr:arrange]{arrange}

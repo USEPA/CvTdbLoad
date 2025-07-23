@@ -7,23 +7,13 @@
 normalize_boolean(x, col)
 }
 \arguments{
-\item{x}{PARAM_DESCRIPTION}
+\item{x}{Input dataframe}
 
-\item{col}{PARAM_DESCRIPTION}
+\item{col}{Stirng vector of fields to update boolean values to "0" or "1".}
 }
 \value{
-OUTPUT_DESCRIPTION
+Modified dataframe \code{x} with boolean fields updated to "0" or "1".
 }
 \description{
 FUNCTION_DESCRIPTION
-}
-\details{
-DETAILS
-}
-\examples{
-\dontrun{
-if(interactive()){
- #EXAMPLE1
- }
-}
 }

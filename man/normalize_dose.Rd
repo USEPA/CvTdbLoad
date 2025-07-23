@@ -2,34 +2,24 @@
 % Please edit documentation in R/normalize_dose.R
 \name{normalize_dose}
 \alias{normalize_dose}
-\title{FUNCTION_TITLE}
+\title{normalize_dose}
 \usage{
 normalize_dose(raw, f, log_path, debug = FALSE)
 }
 \arguments{
-\item{raw}{A dataframe of weight information to normalize}
+\item{raw}{Input dataframe of data with data to normalize.}
 
-\item{f}{The file name of the template being processed. Used for error logging.}
+\item{f}{Optional filename for logging purposes.}
 
 \item{log_path}{File path where to save the log file.}
+
+\item{debug}{Boolean of whether to stop conversion logic early for debugging purpose. Default: FALSE.}
 }
 \value{
 Normalized version of the input \code{raw} parameter.
 }
 \description{
-Doses are stored in mg/kg. In cases where the mass of the subject was not reported, and the dose was
-administered as a simple mass and not a body weight proportion, a mg/kg dose was calculated using the average
-mass for all subjects of that type.
-}
-\details{
-DETAILS
-}
-\examples{
-\dontrun{
-if(interactive()){
- #EXAMPLE1
- }
-}
+A helper function to normalize dose.
 }
 \seealso{
 \link[dplyr:filter]{filter}, \link[dplyr:mutate]{mutate}, \link[dplyr:bind_rows]{bind_rows}, \link[dplyr:arrange]{arrange}, \link[dplyr:select]{select}

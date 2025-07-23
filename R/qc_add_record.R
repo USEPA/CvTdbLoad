@@ -1,11 +1,17 @@
 #' @title qc_add_record
-#' @description Function to add record from QC template 
-#' @param df Input dataframe of field values to add to database table
-#' @param tbl_field_list Dataframe of CvT tables and fields
-#' @param load_doc_sheet_only Boolean whether just to add document sheet only
-#' @param col_exclude List of columns to exclude from database pushes
-#' @export
-#' @return None, SQL statements are submitted
+#' @description Function to add record from QC template.
+#' @param df Input dataframe of field values to add to database table.
+#' @param tbl_field_list Dataframe of CvT tables and fields.
+#' @param load_doc_sheet_only Boolean whether just to add document sheet only.
+#' @param col_exclude List of columns to exclude from database pushes.
+#' @export 
+#' @return None. SQL statements are submitted to add a record to the database tables.
+#' @seealso 
+#'  \code{\link[purrr]{keep}}
+#'  \code{\link[dplyr]{filter}}, \code{\link[dplyr]{select}}, \code{\link[dplyr]{reexports}}, \code{\link[dplyr]{mutate}}, \code{\link[dplyr]{case_when}}
+#' @rdname qc_add_record
+#' @importFrom purrr compact
+#' @importFrom dplyr filter select any_of mutate case_when
 qc_add_record <- function(df, tbl_field_list, load_doc_sheet_only, col_exclude){
   
   # Remove empty rows and columns (all NA values)

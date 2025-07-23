@@ -2,34 +2,24 @@
 % Please edit documentation in R/check_unit_range.R
 \name{check_unit_range}
 \alias{check_unit_range}
-\title{FUNCTION_TITLE}
+\title{check_unit_range}
 \usage{
 check_unit_range(x, f, col, log_path)
 }
 \arguments{
-\item{x}{Input list of datasets being normalized}
+\item{x}{Input list of datasets being processed.}
 
-\item{f}{Filename for flagging purposes}
+\item{f}{Optional filename for logging purposes.}
 
-\item{col}{The column being checked/normalized}
+\item{col}{String of the name of the column to check.}
 
 \item{log_path}{File path where to save the log file.}
 }
 \value{
-Modified version of the input \code{x} parameter
+Modified input \code{x} dataframe list with new "unit_range" dataframe.
 }
 \description{
-Helper function to check for ranges, and handling them
-}
-\details{
-DETAILS
-}
-\examples{
-\dontrun{
-if(interactive()){
- #EXAMPLE1
- }
-}
+Function to check for ranges for input column.
 }
 \seealso{
 \link[dplyr:filter]{filter}, \link[dplyr:mutate]{mutate}, \link[dplyr:rowwise]{rowwise}, \link[dplyr:across]{across}, \link[dplyr:select]{select}

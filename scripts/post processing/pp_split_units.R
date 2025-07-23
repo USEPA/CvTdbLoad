@@ -1,11 +1,20 @@
-# Script to split CvT units from numeric fields as needed
-# Created by: Jonathan Taylor Wall
-# Created Date: 2023-02-7
-
-#'@title pp_split_units
-#'@description Postprocessing function to split units from numeric fields as needed
-#'@param schema_name PostgreSQL schema to query
-#'
+#' @title pp_split_units
+#' @description Postprocessing function to flag units to split from numeric fields as needed.
+#' @param schema_name PostgreSQL schema to query
+#' @return Output log of candidates to split units.
+#' @seealso 
+#'  \code{\link[dplyr]{filter}}, \code{\link[dplyr]{select}}, \code{\link[dplyr]{rename}}, \code{\link[dplyr]{mutate}}, \code{\link[dplyr]{bind_rows}}
+#'  \code{\link[readxl]{read_excel}}
+#'  \code{\link[stringr]{str_trim}}, \code{\link[stringr]{str_count}}, \code{\link[stringr]{str_detect}}, \code{\link[stringr]{str_remove}}, \code{\link[stringr]{str_extract}}
+#'  \code{\link[tidyr]{separate}}, \code{\link[tidyr]{unite}}
+#'  \code{\link[writexl]{write_xlsx}}
+#' @rdname pp_split_units
+#' @export 
+#' @importFrom dplyr filter select rename mutate bind_rows
+#' @importFrom readxl read_xlsx
+#' @importFrom stringr str_squish str_count str_detect str_remove_all str_extract_all str_extract
+#' @importFrom tidyr separate unite
+#' @importFrom writexl write_xlsx
 pp_split_units <- function(schema_name){
   # Pull tables of interest  
   tbl_list = db_query_cvt(paste0("SELECT table_name FROM information_schema.tables WHERE table_schema = '",
@@ -196,7 +205,7 @@ pp_split_units <- function(schema_name){
       tmp = tmp %>% dplyr::filter(!id %in% out$partial_hours$id)
       
       # Recombine for return
-      out = bind_rows(out) %>%
+      out = dplyr::bind_rows(out) %>%
         # Add table name
         dplyr::mutate(tbl_name = tbl_n,
                curator_comment_new = unlist(curator_comment_new),

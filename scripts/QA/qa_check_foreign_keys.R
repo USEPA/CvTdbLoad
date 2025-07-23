@@ -1,13 +1,6 @@
 #' @title qc_check_foreign_keys
 #' @description Script to check dict table foreign key mappings.
 #' @return Dataframe list of checked foreign keys with conflicts.
-#' @details DETAILS
-#' @examples 
-#' \dontrun{
-#' if(interactive()){
-#'  #EXAMPLE1
-#'  }
-#' }
 #' @seealso 
 #'  \code{\link[dplyr]{rename}}, \code{\link[dplyr]{group_by}}, \code{\link[dplyr]{across}}, \code{\link[dplyr]{mutate}}, \code{\link[dplyr]{distinct}}, \code{\link[dplyr]{select}}, \code{\link[dplyr]{reexports}}, \code{\link[dplyr]{mutate-joins}}, \code{\link[dplyr]{case_when}}, \code{\link[dplyr]{filter}}, \code{\link[dplyr]{count}}
 #'  \code{\link[stringr]{str_trim}}

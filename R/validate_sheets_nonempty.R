@@ -1,3 +1,11 @@
+#' @title validate_sheets_nonempty
+#' @description Function to check if processed template contains expected non-empty sheets.
+#' @param df Input named list of dataframes.
+#' @param f Filename for logging purposes.
+#' @param log_path Path to log.
+#' @return Boolean of whether the input template passed the validation.
+#' @rdname validate_sheets_nonempty
+#' @export 
 validate_sheets_nonempty <- function(df, f, log_path) {
   validation <- TRUE # False if an invalid condition was encountered
   

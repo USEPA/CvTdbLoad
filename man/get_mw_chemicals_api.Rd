@@ -2,20 +2,22 @@
 % Please edit documentation in R/get_mw_chemicals_api.R
 \name{get_mw_chemicals_api}
 \alias{get_mw_chemicals_api}
-\title{get_mw_chemicals_api
-Function to get MW dictionary from CCTE Chemicals API in batches}
+\title{get_mw_chemicals_api}
 \usage{
 get_mw_chemicals_api(dtxsid_list, api_key)
 }
 \arguments{
-\item{dtxsid_list}{List of DTXSIDs to query}
+\item{dtxsid_list}{List of DTXSIDs to query.}
 
-\item{api_key}{API key for the CCTE Chemicals API}
+\item{api_key}{API key for the CCTE Chemicals API.}
 }
 \value{
-dataframe of MW information by DTXSID
+Dataframe of molecular weight information by DTXSID.
 }
 \description{
-get_mw_chemicals_api
-Function to get MW dictionary from CCTE Chemicals API in batches
+Function to get molecular weight dictionary from CCTE Chemicals API in batches.
+}
+\seealso{
+\code{\link[httr]{GET}}, \code{\link[httr]{content}}, \code{\link[httr]{POST}}, \code{\link[httr]{content_type}}, \code{\link[httr]{add_headers}}
+\code{\link[dplyr]{bind_rows}}, \code{\link[dplyr]{select}}, \code{\link[dplyr]{filter}}
 }

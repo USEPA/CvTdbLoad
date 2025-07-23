@@ -7,29 +7,19 @@
 check_non_numeric(x, f, col, log_path)
 }
 \arguments{
-\item{x}{PARAM_DESCRIPTION}
+\item{x}{Input list of datasets being processed.}
 
-\item{f}{PARAM_DESCRIPTION}
+\item{f}{Optional filename for logging purposes.}
 
-\item{col}{PARAM_DESCRIPTION}
+\item{col}{String of the name of the column to check.}
 
 \item{log_path}{File path where to save the log file.}
 }
 \value{
-OUTPUT_DESCRIPTION
+Modified input \code{x} dataframe list with new "non_numeric" dataframe.
 }
 \description{
-FUNCTION_DESCRIPTION
-}
-\details{
-DETAILS
-}
-\examples{
-\dontrun{
-if(interactive()){
- #EXAMPLE1
- }
-}
+Function to check for non-numeric values for input column.
 }
 \seealso{
 \link[dplyr:mutate]{mutate}, \link[dplyr:filter]{filter}, \link[dplyr:select]{select}

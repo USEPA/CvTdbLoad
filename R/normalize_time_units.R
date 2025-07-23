@@ -1,14 +1,7 @@
 #' @title normalize_time_units
-#' @description FUNCTION_DESCRIPTION
-#' @param x PARAM_DESCRIPTION
-#' @return OUTPUT_DESCRIPTION
-#' @details DETAILS
-#' @examples 
-#' \dontrun{
-#' if(interactive()){
-#'  #EXAMPLE1
-#'  }
-#' }
+#' @description Function to normalize time unit names to a standard format.
+#' @param x Input vector of time units.
+#' @return Modified `x` vector with normalized time unit names.
 #' @rdname normalize_time_units
 #' @export 
 normalize_time_units <- function(x){

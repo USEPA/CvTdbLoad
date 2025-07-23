@@ -2,26 +2,16 @@
 % Please edit documentation in R/reorganize_file_flags.R
 \name{reorganize_file_flags}
 \alias{reorganize_file_flags}
-\title{FUNCTION_TITLE}
+\title{reorganize_file_flags}
 \usage{
 reorganize_file_flags()
 }
 \value{
-OUTPUT_DESCRIPTION
+None. File are reorganized in output directory.
 }
 \description{
-A helper function to check if a file has logged issues (changed to
+A function to check if a file has logged issues (changed to
 1 for select columns) and move it to appropriate subfolder.
-}
-\details{
-DETAILS
-}
-\examples{
-\dontrun{
-if(interactive()){
- #EXAMPLE1
- }
-}
 }
 \seealso{
 \link[readxl:read_excel]{read_xlsx}

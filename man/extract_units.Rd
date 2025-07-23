@@ -2,36 +2,26 @@
 % Please edit documentation in R/extract_units.R
 \name{extract_units}
 \alias{extract_units}
-\title{FUNCTION_TITLE}
+\title{extract_units}
 \usage{
 extract_units(x, units_col, conv_col, unit_type)
 }
 \arguments{
-\item{x}{PARAM_DESCRIPTION}
+\item{x}{Input dataframe.}
 
-\item{units_col}{PARAM_DESCRIPTION}
+\item{units_col}{String of the name of the column containing units information with missing values.}
 
-\item{conv_col}{PARAM_DESCRIPTION}
+\item{conv_col}{String of the name of the column to try to extract unit information from.}
 
-\item{unit_type}{PARAM_DESCRIPTION}
+\item{unit_type}{Input unit type (e.g., weight, height, age, dose_duration, conc), used by \code{convert_units_grepl()}.}
 }
 \value{
-OUTPUT_DESCRIPTION
+Modified version of input \code{x} dataframe where the input \code{units_col} will have filled in units values from input \code{conv_col} or be "missing_units" tagged instead of NA.
 }
 \description{
-Generic function to extract units from input columns
-}
-\details{
-DETAILS
-}
-\examples{
-\dontrun{
-if(interactive()){
- #EXAMPLE1
- }
-}
+Generic function to extract units from input columns. The goal is to try to fill in missing unit values from \code{units_col} based on string values in \code{conv_col}.
 }
 \seealso{
 \link[dplyr:filter]{filter}, \link[dplyr:mutate]{mutate}, \link[dplyr:across]{across}, \link[dplyr:bind_rows]{bind_rows}
-\link[tidyr:reexports]{all_of}
+\link[dplyr:reexports]{all_of}
 }

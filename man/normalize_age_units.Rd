@@ -7,21 +7,11 @@
 normalize_age_units(x)
 }
 \arguments{
-\item{x}{PARAM_DESCRIPTION}
+\item{x}{Input vector of conc units.}
 }
 \value{
-OUTPUT_DESCRIPTION
+Modified input \code{x} vector with normalized age unit names.
 }
 \description{
-FUNCTION_DESCRIPTION
-}
-\details{
-DETAILS
-}
-\examples{
-\dontrun{
-if(interactive()){
- #EXAMPLE1
- }
-}
+Helper function to normalize age unit names.
 }

@@ -1,25 +1,18 @@
-#' @description Helper function to check for missing values for desired column.
-#' @param x Input list of datasets being normalized
-#' @param f Filename for flagging purposes
-#' @param miss_col The column to check
-#' @param flag Whether to log a flag for the missing column #'
+#' @title check_missing
+#' @description Function to check for missing values for input column.
+#' @param x Input list of datasets being processed.
+#' @param f Optional filename for logging purposes.
+#' @param miss_col String of the name of the column to check.
+#' @param flag Whether to log a flag for the missing column.
 #' @param log_path File path where to save the log file.
-#' @return Modified version of the input `x` parameter
-#' @title FUNCTION_TITLE
-#' @details DETAILS
-#' @examples 
-#' \dontrun{
-#' if(interactive()){
-#'  #EXAMPLE1
-#'  }
-#' }
+#' @return Modified input `x` dataframe list with new "missing" dataframe.
 #' @seealso 
 #'  [filter][dplyr::filter]
 #' @rdname check_missing
 #' @export 
 #' @importFrom dplyr filter
 check_missing <- function(x, miss_col, f, flag=TRUE, log_path){
-  x$missing = x$raw %>% dplyr::filter(!!as.symbol(miss_col) %in% c("NA", "n/a", "N/A", "NR", "ND", "NQ")  |
+  x$missing = x$raw %>% dplyr::filter(!!as.symbol(miss_col) %in% c("NA", "n/a", "N/A", "NR", "ND", "NQ", "NE", "NS")  |
                                        is.na(!!as.symbol(miss_col)))
   x$raw = x$raw %>% dplyr::filter(!tempID %in% x$missing$tempID)
   if(flag & nrow(x$missing)){

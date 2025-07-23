@@ -1,16 +1,10 @@
 #' @title normalize_age
-#' @description FUNCTION_DESCRIPTION
-#' @param raw PARAM_DESCRIPTION
-#' @param f PARAM_DESCRIPTION
+#' @description A helper function to normalize dose.
+#' @param raw Input dataframe of data with data to normalize.
+#' @param f Optional filename for logging purposes.
 #' @param log_path File path where to save the log file.
-#' @return OUTPUT_DESCRIPTION
-#' @details DETAILS
-#' @examples 
-#' \dontrun{
-#' if(interactive()){
-#'  # EXAMPLE1
-#'  }
-#' }
+#' @param debug Boolean of whether to stop conversion logic early for debugging purpose. Default: FALSE.
+#' @return Normalized version of the input `raw` parameter.
 #' @seealso 
 #'  [read_xlsx][readxl::read_xlsx]
 #'  [mutate][dplyr::mutate], [filter][dplyr::filter], [select][dplyr::select], [bind_rows][dplyr::bind_rows], [rename][dplyr::rename], [arrange][dplyr::arrange]
@@ -21,13 +15,7 @@
 normalize_age <- function(raw, f, log_path, debug = FALSE){
   message("...normalizing age...")
   age_dict = readxl::read_xlsx("input/dictionaries/age_category_dict.xlsx")
-  # tmp = lapply(fileList, function(f){
-  #   s_list = load_sheet_group(fileName = f, template_path = template_path)
-  #   s_list$Subjects %>% select(species, age, age_category, age_units) %>% distinct() %>%
-  #     mutate(doc = f)
-  # }) %>%
-  #   bind_rows()
-  # tmp$species = normalize_species(tmp$species)
+  
   if(!nrow(raw)){# Empty dataframe
     message("...normalize_age dataframe empty...returning...")
     return(raw)
@@ -46,8 +34,7 @@ normalize_age <- function(raw, f, log_path, debug = FALSE){
   out$raw$age_units[is.na(out$raw$age_units)] = out$raw$age_category[is.na(out$raw$age_units)]
   out$raw = extract_units(x=out$raw, units_col="age_units", conv_col="age_normalized", unit_type="age")
   out$raw$age_units_original = out$raw$age_units
-  # Extrapolate age
-  out = norm_extrapolate(x=out, f=f, extrap_type="age", log_path=log_path)
+  
   # Missing age
   out = check_missing(x=out, miss_col = "age", f=f, log_path=log_path, flag=FALSE)
   # Missing units
@@ -124,7 +111,7 @@ normalize_age <- function(raw, f, log_path, debug = FALSE){
   out = out[sapply(out, nrow) > 0]
   # Convert to NA for all lists that were not normalized
   out = lapply(names(out), function(n){
-    if(n %in% c("extrapolate", "mapped_age")){
+    if(n %in% c("mapped_age")){
       return(out[[n]])
     } else{
       convert_cols_to_NA(out[[n]], col_list=c("age_normalized", "age_category")) %>%

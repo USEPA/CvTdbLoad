@@ -2,28 +2,18 @@
 % Please edit documentation in R/check_empty_sheet.R
 \name{check_empty_sheet}
 \alias{check_empty_sheet}
-\title{FUNCTION_TITLE}
+\title{check_empty_sheet}
 \usage{
 check_empty_sheet(template)
 }
 \arguments{
-\item{template}{List of loaded template sheets #'}
+\item{template}{List of loaded template sheets.}
 }
 \value{
-Boolean TRUE or FALSE if an empty sheet exists
+Boolean TRUE or FALSE if an empty sheet exists.
 }
 \description{
-Function to check if any sheet of loaded template is empty
-}
-\details{
-DETAILS
-}
-\examples{
-\dontrun{
-if(interactive()){
- #EXAMPLE1
- }
-}
+Function to check if any sheet of loaded template is empty.
 }
 \seealso{
 \link[purrr:reexports]{is_empty}

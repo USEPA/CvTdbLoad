@@ -2,32 +2,24 @@
 % Please edit documentation in R/normalize_weight.R
 \name{normalize_weight}
 \alias{normalize_weight}
-\title{FUNCTION_TITLE}
+\title{normalize_weight}
 \usage{
 normalize_weight(raw, f, log_path, debug = FALSE)
 }
 \arguments{
-\item{raw}{A dataframe of weight information to normalize}
+\item{raw}{Input dataframe of data with data to normalize.}
 
-\item{f}{The file name of the template being processed. Used for error logging. #'}
+\item{f}{Optional filename for logging purposes.}
 
 \item{log_path}{File path where to save the log file.}
+
+\item{debug}{Boolean of whether to stop conversion logic early for debugging purpose. Default: FALSE.}
 }
 \value{
 Normalized version of the input \code{raw} parameter.
 }
 \description{
-A helper function to normalize subject weight (associated with dose normalization).
-}
-\details{
-DETAILS
-}
-\examples{
-\dontrun{
-if(interactive()){
- #EXAMPLE1
- }
-}
+A helper function to normalize dose.
 }
 \seealso{
 \link[dplyr:mutate]{mutate}, \link[dplyr:filter]{filter}, \link[dplyr:bind_rows]{bind_rows}, \link[dplyr:arrange]{arrange}, \link[dplyr:select]{select}

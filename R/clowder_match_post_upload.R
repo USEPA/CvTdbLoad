@@ -1,24 +1,16 @@
+#' @title clowder_match_post_upload
 #' @description This is a helper function to match already loaded CvT document entries to Clowder docs.
-#' @param dsID Clowder dataset ID to pull from.
-#' @param apiKey The API key required for a user to access the Clowder dataset
-#' @return Returns a dataframe with file details of: filename and ClowderID.
-#' @import dplyr
-#' @title FUNCTION_TITLE
-#' @details DETAILS
-#' @examples 
-#' \dontrun{
-#' if(interactive()){
-#'  #EXAMPLE1
-#'  }
-#' }
+#' @param dsID Clowder dataset identifier.
+#' @param baseurl Clowder base URL.
+#' @param apiKey Clowder API key.
+#' @return None. An update query is performed to update the Documents table "clowder_file_id" field.
 #' @seealso 
 #'  [filter][dplyr::filter], [select][dplyr::select]
-#'  [dbWriteTable][RPostgres::dbWriteTable], [dbDisconnect][RPostgres::dbDisconnect]
 #' @rdname clowder_match_post_upload
-#' @export 
+#' @export
 #' @importFrom dplyr filter select
-#' @importFrom RPostgres dbWriteTable dbDisconnect
-clowder_match_post_upload <- function(dsID = NULL, apiKey = NULL){
+#' @importFrom DBI dbWriteTable dbDisconnect
+clowder_match_post_upload <- function(dsID = NULL, baseurl = NULL, apiKey = NULL){
   # Get all documents in CvT without Clowder ID
   docs = db_query_cvt("SELECT id, pmid, other_study_identifier FROM cvt.documents where clowder_file_id is NULL") %>%
     dplyr::filter(!is.na(pmid) | !is.na(other_study_identifier))

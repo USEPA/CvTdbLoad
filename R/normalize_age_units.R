@@ -1,14 +1,7 @@
 #' @title normalize_age_units
-#' @description FUNCTION_DESCRIPTION
-#' @param x PARAM_DESCRIPTION
-#' @return OUTPUT_DESCRIPTION
-#' @details DETAILS
-#' @examples 
-#' \dontrun{
-#' if(interactive()){
-#'  #EXAMPLE1
-#'  }
-#' }
+#' @description Helper function to normalize age unit names.
+#' @param x Input vector of conc units.
+#' @return Modified input `x` vector with normalized age unit names.
 #' @rdname normalize_age_units
 #' @export 
 normalize_age_units <- function(x){

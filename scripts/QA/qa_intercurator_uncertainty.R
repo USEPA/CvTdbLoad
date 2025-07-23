@@ -1,17 +1,8 @@
-# install.packages('pracma')
-
 #' @title qa_intercurator_uncertainty
 #' @description QA function to compare the extracted Conc_Time_Values for Series entries by curators.
 #' @param curator_1 File path or template DataFrame list for an extraction template for one curator
 #' @param curator_2 File path or template DataFrame list for an extraction template for another curator
 #' @return A list of dataframes of input, intermediates, and output
-#' @details DETAILS
-#' @examples 
-#' \dontrun{
-#' if(interactive()){
-#'  # EXAMPLE1
-#'  }
-#' }
 #' @seealso 
 #'  \code{\link[dplyr]{filter}}, \code{\link[dplyr]{mutate}}, \code{\link[dplyr]{across}}
 #'  \code{\link[pracma]{trapz}}
@@ -111,13 +102,6 @@ qa_intercurator_uncertainty <- function(curator_1, curator_2){
 #' @description Function to validate the input intercurator params and load data as necessar.
 #' @param in_data Input param for \code{qa_intercurator_uncertainty} function
 #' @return Loaded input data in a named list of CvT template sheet dataframes
-#' @details DETAILS
-#' @examples 
-#' \dontrun{
-#' if(interactive()){
-#'  # EXAMPLE1
-#'  }
-#' }
 #' @rdname qa_intercurator_uncertainty
 #' @export 
 get_intercurator_data <- function(in_data){

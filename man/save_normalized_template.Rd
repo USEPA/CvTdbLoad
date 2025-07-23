@@ -2,30 +2,20 @@
 % Please edit documentation in R/save_normalized_template.R
 \name{save_normalized_template}
 \alias{save_normalized_template}
-\title{FUNCTION_TITLE}
+\title{save_normalized_template}
 \usage{
-save_normalized_template(df = doc_sheet_list, f = f)
+save_normalized_template(df, f)
 }
 \arguments{
-\item{df}{PARAM_DESCRIPTION, Default: doc_sheet_list}
+\item{df}{Named list of dataframes of normalized template data.}
 
-\item{f}{PARAM_DESCRIPTION, Default: f}
+\item{f}{Filename of the input template that is modified to save a normalized copy.}
 }
 \value{
-OUTPUT_DESCRIPTION
+None. Input dataframe is saved to output folder.
 }
 \description{
-A helper function to cache the normalized templates
-}
-\details{
-DETAILS
-}
-\examples{
-\dontrun{
-if(interactive()){
- #EXAMPLE1
- }
-}
+A helper function to cache the normalized templates during the normalization workflow.
 }
 \seealso{
 \link[tools:fileutils]{file_ext}

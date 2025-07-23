@@ -2,16 +2,23 @@
 % Please edit documentation in R/get_cvtdb_sqlite.R
 \name{get_cvtdb_sqlite}
 \alias{get_cvtdb_sqlite}
-\title{Get CvTdb SQLite}
+\title{get_cvtdb_sqlite}
 \usage{
 get_cvtdb_sqlite(schema, outdir)
 }
 \arguments{
-\item{schema}{Database postgreSQL schema}
+\item{schema}{Database postgreSQL schema.}
+
+\item{outdir}{String for desired output directory.}
 }
 \value{
-None. SQLite file is written to output/release folder
+None. SQLite file is written to \code{outdir} folder.
 }
 \description{
-Pull CvTdb tables and write sqlite file
+Pull CvTdb tables and write sqlite file.
+}
+\seealso{
+\code{\link[dplyr]{pull}}
+\code{\link[DBI]{dbConnect}}, \code{\link[DBI]{dbWriteTable}}, \code{\link[DBI]{dbDisconnect}}
+\code{\link[RSQLite]{SQLite}}
 }

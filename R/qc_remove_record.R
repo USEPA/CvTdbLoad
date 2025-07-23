@@ -5,8 +5,14 @@
 #' @param tbl_name Name of table the records are from
 #' @param reset_extraction Boolean whether to reset_extraction or remove whole record. Defaul FALSE.
 #' @param del_qc_note Optional note to add to qc_notes and qc_flags field for tbl_name records.
-#' @export
-#' @return None.
+#' @export 
+#' @return None. SQL statements are run to delete records in a cascading fashion if they have foreign key linkages to core tables.
+#' @seealso 
+#'  \code{\link[purrr]{keep}}
+#'  \code{\link[dplyr]{mutate}}
+#' @rdname qc_remove_record
+#' @importFrom purrr discard compact
+#' @importFrom dplyr mutate
 qc_remove_record <- function(df, tbl_name, reset_extraction = FALSE, del_qc_note = NULL){
   
   if(!nrow(df)){

@@ -1,14 +1,6 @@
 #' @title cvt_update_doc_metadata_from_log
 #' @description Parse metadata logs to fill in NULL values from CvTdb documents table records.
-
 #' @return None. SQL update statements are executed.
-#' @details DETAILS
-#' @examples 
-#' \dontrun{
-#' if(interactive()){
-#'  #EXAMPLE1
-#'  }
-#' }
 #' @seealso 
 #'  \code{\link[dplyr]{bind_rows}}, \code{\link[dplyr]{mutate}}, \code{\link[dplyr]{distinct}}, \code{\link[dplyr]{across}}, \code{\link[dplyr]{filter}}, \code{\link[dplyr]{group_by}}, \code{\link[dplyr]{reexports}}, \code{\link[dplyr]{case_when}}, \code{\link[dplyr]{count}}, \code{\link[dplyr]{select}}, \code{\link[dplyr]{mutate-joins}}, \code{\link[dplyr]{group_split}}
 #'  \code{\link[readxl]{read_excel}}

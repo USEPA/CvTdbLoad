@@ -1,16 +1,10 @@
-#' @description Helper function to check for confidence intervals for a metric, and handling them.
-#' @param x Input list of datasets being normalized
-#' @param f Filename for flagging purposes
-#' @param col The column being checked/normalized
-#' @return Modified version of the input `x` parameter
-#' @title FUNCTION_TITLE
-#' @details DETAILS
-#' @examples 
-#' \dontrun{
-#' if(interactive()){
-#'  #EXAMPLE1
-#'  }
-#' }
+#' @title check_unit_ci
+#' @description Function to check for confidence intervals for an input field.
+#' @param x Input list of datasets being processed.
+#' @param f Optional filename for logging purposes.
+#' @param col String of the name of the column to check.
+#' @param log_path File path where to save the log file.
+#' @return Modified input `x` dataframe list with new "ci" dataframe.
 #' @seealso 
 #'  [filter][dplyr::filter], [mutate][dplyr::mutate], [across][dplyr::across]
 #'  [all_of][tidyr::all_of]
@@ -18,6 +12,7 @@
 #' @export 
 #' @importFrom dplyr filter mutate across
 #' @importFrom tidyr all_of
+#' @param log_path PARAM_DESCRIPTION
 check_unit_ci <- function(x, f, col, log_path){
   #Removed |? at end of regex, not sure what it was used for??
   x$ci = x$raw %>% dplyr::filter(grepl("±|\\+/-|\\+", !!as.symbol(col)))

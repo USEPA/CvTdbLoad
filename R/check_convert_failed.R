@@ -1,18 +1,11 @@
 #' @title check_convert_failed
-#' @description FUNCTION_DESCRIPTION
-#' @param x PARAM_DESCRIPTION
-#' @param f PARAM_DESCRIPTION
-#' @param col PARAM_DESCRIPTION
+#' @description Check if a conversion failed, resulting in an NA value. This can be due to a lack of necessary equation parameters (e.g., molecular weight, subject weight).
+#' @param x Input list of datasets being processed.
+#' @param f Optional filename for logging purposes.
+#' @param col String of name of column to check.
 #' @param log_path File path where to save the log file.
-#' @param id_col Column to use to log index value
-#' @return OUTPUT_DESCRIPTION
-#' @details DETAILS
-#' @examples 
-#' \dontrun{
-#' if(interactive()){
-#'  #EXAMPLE1
-#'  }
-#' }
+#' @param id_col Column to use to log index value to help with logging.
+#' @return Modified input `x` dataframe list with new "convert_failed" dataframe.
 #' @seealso 
 #'  [filter][dplyr::filter]
 #' @rdname check_convert_failed

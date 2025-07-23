@@ -4,6 +4,15 @@
 #' @param schema PostgreSQL database schema.
 #' @param revert_document Whether to revert current document record with audit entry. Default FALSE.
 #' @return None. Database SQL queries are performed.
+#' @seealso 
+#'  \code{\link[purrr]{keep}}
+#'  \code{\link[jsonlite]{toJSON, fromJSON}}
+#'  \code{\link[dplyr]{mutate}}, \code{\link[dplyr]{bind_rows}}, \code{\link[dplyr]{mutate-joins}}, \code{\link[dplyr]{group_by}}, \code{\link[dplyr]{slice}}, \code{\link[dplyr]{rename}}, \code{\link[dplyr]{select}}, \code{\link[dplyr]{reexports}}, \code{\link[dplyr]{filter}}
+#' @rdname db_recover_doc_del_audit
+#' @export 
+#' @importFrom purrr keep
+#' @importFrom jsonlite fromJSON
+#' @importFrom dplyr mutate bind_rows left_join group_by slice_min slice_max rename select any_of filter ungroup
 db_recover_doc_del_audit <- function(doc_id, schema, revert_document = FALSE){
   message("Pulling document and audit information...")
   # Check if doc_id present in documents table

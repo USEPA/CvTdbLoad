@@ -2,26 +2,16 @@
 % Please edit documentation in R/normalize_conc_units.R
 \name{normalize_conc_units}
 \alias{normalize_conc_units}
-\title{FUNCTION_TITLE}
+\title{normalize_conc_units}
 \usage{
 normalize_conc_units(x)
 }
 \arguments{
-\item{x}{PARAM_DESCRIPTION}
+\item{x}{Input vector of conc units.}
 }
 \value{
-OUTPUT_DESCRIPTION
+Modified input \code{x} vector with normalized concentration unit names.
 }
 \description{
-Helpfer function to normalize concentration units
-}
-\details{
-DETAILS
-}
-\examples{
-\dontrun{
-if(interactive()){
- #EXAMPLE1
- }
-}
+Helper function to normalize concentration unit names.
 }

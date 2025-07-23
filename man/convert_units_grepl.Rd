@@ -7,21 +7,11 @@
 convert_units_grepl(unit_type)
 }
 \arguments{
-\item{unit_type}{PARAM_DESCRIPTION}
+\item{unit_type}{Input unit type (e.g., weight, height, age, dose_duration, conc)}
 }
 \value{
-OUTPUT_DESCRIPTION
+List of unit name standardizations by input unit type.
 }
 \description{
-Function to get various grepl statements for unit extraction/conversion
-}
-\details{
-DETAILS
-}
-\examples{
-\dontrun{
-if(interactive()){
- #EXAMPLE1
- }
-}
+Function to get various grepl statements for unit name standardization.
 }

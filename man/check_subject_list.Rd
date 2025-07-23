@@ -2,34 +2,24 @@
 % Please edit documentation in R/check_subject_list.R
 \name{check_subject_list}
 \alias{check_subject_list}
-\title{FUNCTION_TITLE}
+\title{check_subject_list}
 \usage{
 check_subject_list(x, f, col, log_path)
 }
 \arguments{
-\item{x}{Input list of datasets being normalized}
+\item{x}{Input list of datasets being processed.}
 
-\item{f}{Filename for flagging purposes}
+\item{f}{Optional filename for logging purposes.}
 
-\item{col}{The column being checked/normalized #'}
+\item{col}{String of the name of the column to check.}
 
 \item{log_path}{File path where to save the log file.}
 }
 \value{
-Modified version of the input \code{x} parameter
+Modified input \code{x} dataframe list with new "split_subject" dataframe.
 }
 \description{
-Helper function to check if a metric entry has a ; separated list, therefore should be split.
-}
-\details{
-DETAILS
-}
-\examples{
-\dontrun{
-if(interactive()){
- #EXAMPLE1
- }
-}
+Function to check if an input field has a ; separated list, therefore should be split.
 }
 \seealso{
 \link[dplyr:filter]{filter}

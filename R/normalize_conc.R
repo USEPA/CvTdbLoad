@@ -1,15 +1,10 @@
-#' @description A helper function to normalize concentration units.
-#' @param raw A dataframe of weight information to normalize
-#' @param f The file name of the template being processed. Used for error logging.
+#' @title normalize_conc
+#' @description A helper function to normalize dose.
+#' @param raw Input dataframe of data with data to normalize.
+#' @param f Optional filename for logging purposes.
+#' @param log_path File path where to save the log file.
+#' @param debug Boolean of whether to stop conversion logic early for debugging purpose. Default: FALSE.
 #' @return Normalized version of the input `raw` parameter.
-#' @title FUNCTION_TITLE
-#' @details DETAILS
-#' @examples 
-#' \dontrun{
-#' if(interactive()){
-#'  # EXAMPLE1
-#'  }
-#' }
 #' @seealso 
 #'  [mutate][dplyr::mutate], [filter][dplyr::filter], [across][dplyr::across], [bind_rows][dplyr::bind_rows], [arrange][dplyr::arrange]
 #'  [POST][httr::POST]
@@ -17,24 +12,9 @@
 #' @export 
 #' @importFrom dplyr mutate filter across bind_rows arrange
 #' @importFrom httk get_physchem_param
+#' @importFrom stringr str_squish
 normalize_conc <- function(raw, f, log_path, debug = FALSE){
   message("...normalizing conc...")
-  # tmp = lapply(fileList, function(f){
-  #   s_list = load_sheet_group(fileName = f, template_path = template_path)
-  #   s_list$Series %>%
-  #     left_join(s_list$Subjects %>%
-  #                 select(id, species), by=c("fk_study_id"="id")) %>%
-  #     left_join(s_list$Conc_Time_Values, by=c("id"="fk_series_id")) %>%
-  #     select(id, species, conc_medium, analyte_name, analyte_name_secondary, analyte_casrn,
-  #            conc_original=conc, conc_units_original=conc_units,
-  #            conc_sd_original=conc_sd, conc_lower_bound_original=conc_lower_bound,
-  #            conc_upper_bound_original=conc_upper_bound) %>%
-  #     mutate(doc = f) %>%
-  #     distinct()
-  # }) %>%
-  #   bind_rows()
-  # tmp$species = normalize_species(x=tmp$species)
-  # tmp = normalize_conc_medium(raw=tmp, f=f)
   if(!nrow(raw)){# Empty dataframe
     message("...normalize_conc dataframe empty...returning...")
     return(raw)

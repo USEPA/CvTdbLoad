@@ -15,29 +15,19 @@ pull_jira_info(
 \arguments{
 \item{jira_project}{Jira project code (e.g. CVTDB).}
 
+\item{in_file}{Filepath to previously downloaded CSV file summary of Jira tickets.}
+
 \item{auth_token}{Authorization token for Jira.}
 
 \item{status_filter}{Custom filtering to a ticket status or vector of statuses. Default: NULL.}
 
 \item{epic_filter}{Custom filtering to a specific ticket Epic link by name (single or vector). Default: empty vector.}
-
-\item{download_bulk}{Boolean whether to bulk download ticket attachments, Default: FALSE.}
 }
 \value{
-Summary DataFrame of Jira tickets by Epic, Label, and Status.
+Named list of dataframes that summarize Jira tickets and attachment metadata.
 }
 \description{
-Script to process CSV export of Jira into a status log
-}
-\details{
-DETAILS
-}
-\examples{
-\dontrun{
-if(interactive()){
- out = pull_jira_info(jira_project="project_name")
- }
-}
+Script to process CSV export of Jira into a status log with attachment metadata.
 }
 \seealso{
 \link[utils:download.file]{download.file}, \link[utils:unzip]{unzip}

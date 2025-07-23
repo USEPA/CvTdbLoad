@@ -1,21 +1,16 @@
-#' @title Check expected fields
+#' @title validate_expected_fields
 #' @description Function to check if processed document's column names appropriately match the blank template.
-#' @param df List of dataframes for the sheets within an extraction template
-#' @param f Filename for flagging purposes
-#' @param log_path File path where to save the log file. Default "output/template_normalization_log.xlsx"
-#' @param template_path File path to the location of a blank template for comparison
-#' @return None. Logs any flags
-#' @details DETAILS
-#' @examples 
-#' \dontrun{
-#' if(interactive()){
-#'  #EXAMPLE1
-#'  }
-#' }
+#' @param df Input named list of dataframes.
+#' @param f Filename for logging purposes.
+#' @param log_path Path to log.
+#' @param template_path Path to blank template file for comparison.
+#' @param verbose Boolean of whether to print additional console messages, Default: FALSE.
+#' @return Boolean of whether the input template passed the validation.
 #' @seealso 
 #'  [validator][validate::validator]
 #' @rdname validate_expected_fields
 #' @export 
+#' @importFrom readxl read_excel
 validate_expected_fields <- function(df, f, log_path, template_path, verbose=FALSE) {
   validation <- TRUE # False if an invalid condition was encountered
   

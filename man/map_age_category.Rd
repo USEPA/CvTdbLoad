@@ -7,25 +7,15 @@
 map_age_category(x, dict)
 }
 \arguments{
-\item{x}{PARAM_DESCRIPTION}
+\item{x}{Input dataframe with species and age value/units fields.}
 
-\item{dict}{PARAM_DESCRIPTION}
+\item{dict}{Input dataframe with species age category assignment fields.}
 }
 \value{
-OUTPUT_DESCRIPTION
+Modified input \code{x} dataframe with age_category field filled in where possible.
 }
 \description{
-FUNCTION_DESCRIPTION
-}
-\details{
-DETAILS
-}
-\examples{
-\dontrun{
-if(interactive()){
- #EXAMPLE1
- }
-}
+Function to use a standard age category dictionary file to map species age to an age category.
 }
 \seealso{
 \link[dplyr:filter]{filter}, \link[dplyr:select]{select}

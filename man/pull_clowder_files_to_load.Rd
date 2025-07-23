@@ -2,8 +2,7 @@
 % Please edit documentation in R/pull_clowder_files_to_load.R
 \name{pull_clowder_files_to_load}
 \alias{pull_clowder_files_to_load}
-\title{pull_clowder_files_to_load
-Function to pull Clowder templates to process based on metadata "cvt_to_load"}
+\title{pull_clowder_files_to_load}
 \usage{
 pull_clowder_files_to_load(
   dsID,
@@ -13,7 +12,24 @@ pull_clowder_files_to_load(
   metadata_filter_tag = NULL
 )
 }
+\arguments{
+\item{dsID}{Clowder dataset identifier.}
+
+\item{baseurl}{Clowder base URL.}
+
+\item{apiKey}{Clowder API token.}
+
+\item{curation_set_tag}{String curation dataset tag to filter pulled files to.}
+
+\item{metadata_filter_tag}{String vector of metadata fields to filter/select to for pulled files.}
+}
+\value{
+Dataframe of Clowder file metadata.
+}
 \description{
-pull_clowder_files_to_load
 Function to pull Clowder templates to process based on metadata "cvt_to_load"
+}
+\seealso{
+\code{\link[dplyr]{mutate}}, \code{\link[dplyr]{rename}}, \code{\link[dplyr]{mutate-joins}}, \code{\link[dplyr]{filter}}, \code{\link[dplyr]{select}}, \code{\link[dplyr]{bind_rows}}, \code{\link[dplyr]{distinct}}
+\code{\link[tidyr]{separate}}, \code{\link[tidyr]{pivot_longer}}
 }

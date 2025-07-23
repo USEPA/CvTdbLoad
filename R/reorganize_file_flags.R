@@ -1,19 +1,13 @@
-#' @description A helper function to check if a file has logged issues (changed to 
+#' @title reorganize_file_flags
+#' @description A function to check if a file has logged issues (changed to 
 #' 1 for select columns) and move it to appropriate subfolder.
-#' @title FUNCTION_TITLE
-#' @return OUTPUT_DESCRIPTION
-#' @details DETAILS
-#' @examples 
-#' \dontrun{
-#' if(interactive()){
-#'  #EXAMPLE1
-#'  }
-#' }
+#' @return None. File are reorganized in output directory.
 #' @seealso 
 #'  [read_xlsx][readxl::read_xlsx]
 #' @rdname reorganize_file_flags
 #' @export 
 #' @importFrom readxl read_xlsx
+#' @importFrom dplyr mutate across any_of
 reorganize_file_flags <- function(){
   flag_map = readxl::read_xlsx("input\\dictionaries\\flag_map.xlsx")
   log = readxl::read_xlsx("output\\template_normalization_log.xlsx") %>%
@@ -21,9 +15,6 @@ reorganize_file_flags <- function(){
                                 ~as.numeric(.)))
   
   for(i in seq_len(nrow(log))){
-    # if(i <= 7){#Quick skip/restart logic
-    #   next
-    # }
     f = log$filename[i]
     if(file.exists(paste0("output/normalized_templates/",gsub(".xlsx", "_normalized.xlsx", basename(f))))){
       for(flag in unique(flag_map$`Flag Type`)){
@@ -51,7 +42,7 @@ reorganize_file_flags <- function(){
             file.rename(from=paste0("output/normalized_templates/",gsub(".xlsx", "_normalized.xlsx", basename(f))),
                         to=paste0(f_path, gsub(".xlsx", "_normalized.xlsx", basename(f)))
             )
-            break #If moved, skip any further checks
+            break # If moved, skip any further checks
           }
         }
       }

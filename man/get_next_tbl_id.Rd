@@ -7,8 +7,14 @@
 get_next_tbl_id(schema)
 }
 \arguments{
-\item{schema}{PostgreSQL database schema}
+\item{schema}{PostgreSQL database schema.}
+}
+\value{
+Named list of the next autoincrement identifier for a database table.
 }
 \description{
-Function to get the next ID increment value for schema tables
+Function to get the next ID increment value for schema tables.
+}
+\seealso{
+\code{\link[dplyr]{pull}}
 }

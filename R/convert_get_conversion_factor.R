@@ -1,16 +1,9 @@
-#' @description A helper function to convert input values to desired units.
-#' @param conv_factor Conversion factor to use (such as Molecular weight, tissue Density, etc.)
 #' @title convert_get_conversion_factor
+#' @description A helper function to convert input values to desired units.
+#' @param conv_factor Conversion factor to use (such as Molecular weight, tissue Density, etc.). Default of 1.
 #' @return List of conversion factors
-#' @details DETAILS
-#' @examples 
-#' \dontrun{
-#' if(interactive()){
-#'  #EXAMPLE1
-#'  }
-#' }
 #' @rdname convert_get_conversion_factor
-#' @export
+#' @export 
 convert_get_conversion_factor <- function(conv_factor=1){
   # Map of input units to desired output units equation
   list(day = list(hr="*24", day="/1", week="/7", month="/30", year="/365"),

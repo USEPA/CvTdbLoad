@@ -7,17 +7,21 @@
 qc_add_record(df, tbl_field_list, load_doc_sheet_only, col_exclude)
 }
 \arguments{
-\item{df}{Input dataframe of field values to add to database table}
+\item{df}{Input dataframe of field values to add to database table.}
 
-\item{tbl_field_list}{Dataframe of CvT tables and fields}
+\item{tbl_field_list}{Dataframe of CvT tables and fields.}
 
-\item{load_doc_sheet_only}{Boolean whether just to add document sheet only}
+\item{load_doc_sheet_only}{Boolean whether just to add document sheet only.}
 
-\item{col_exclude}{List of columns to exclude from database pushes}
+\item{col_exclude}{List of columns to exclude from database pushes.}
 }
 \value{
-None, SQL statements are submitted
+None. SQL statements are submitted to add a record to the database tables.
 }
 \description{
-Function to add record from QC template
+Function to add record from QC template.
+}
+\seealso{
+\code{\link[purrr]{keep}}
+\code{\link[dplyr]{filter}}, \code{\link[dplyr]{select}}, \code{\link[dplyr]{reexports}}, \code{\link[dplyr]{mutate}}, \code{\link[dplyr]{case_when}}
 }

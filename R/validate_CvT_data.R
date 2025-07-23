@@ -1,4 +1,28 @@
-#' @export
+#' @title validate_cvt
+#' @description Function to validate a CvTdb template based on a ruleset.
+#' @param clowder_file_id Clowder template file identifier, Default: NULL
+#' @param clowder_api_key Clowder API token, Default: NULL
+#' @param file_path Path to template file, Default: NULL
+#' @param db_identifier String or numeric identifier for a record in the database Documents table, Default: NULL
+#' @param df Input named list of dataframes, Default: NULL
+#' @param df_identifier String identifier for input `df`, required if `df` is not NULL, Default: NULL
+#' @param log_path Path to log, Default: 'output/validation/validate_cvt_log.xlsx'
+#' @param ignore_present Boolean of whether to ignore `validate_sheets_present()`, Default: FALSE
+#' @param ignore_nonempty Boolean of whether to ignore `validate_sheets_nonempty()`, Default: FALSE
+#' @param ignore_required Boolean of whether to ignore `validate_required_fields()`, Default: FALSE
+#' @param ignore_qc Boolean of whether to ignore `validate_qc_fields()` and/or use the QC template for validation, Default: FALSE
+#' @param ignore_field_types Boolean of whether to ignore `validate_field_types()`, Default: FALSE
+#' @param ignore_field_entries Boolean of whether to ignore `validate_field_entries()`, Default: FALSE
+#' @param ignore_field_uniqueness Boolean of whether to ignore `validate_field_uniqueness()`, Default: FALSE
+#' @param ignore_foreign_keys Boolean of whether to ignore `validate_foreign_keys()`, Default: FALSE
+#' @param ignore_expected_fields Boolean of whether to ignore `validate_expected_fields()`, Default: FALSE
+#' @param verbose Boolean of whether to print additional console messages, Default: FALSE.
+#' @return Boolean of whether the input template passed the validation.
+#' @seealso 
+#'  \code{\link[dplyr]{mutate}}
+#' @rdname validate_CvT_data
+#' @export 
+#' @importFrom dplyr mutate
 validate_cvt <- function(
     clowder_file_id = NULL,
     clowder_api_key=NULL,

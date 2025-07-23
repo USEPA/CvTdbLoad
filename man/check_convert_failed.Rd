@@ -7,31 +7,21 @@
 check_convert_failed(x, f, col, log_path, id_col = "id")
 }
 \arguments{
-\item{x}{PARAM_DESCRIPTION}
+\item{x}{Input list of datasets being processed.}
 
-\item{f}{PARAM_DESCRIPTION}
+\item{f}{Optional filename for logging purposes.}
 
-\item{col}{PARAM_DESCRIPTION}
+\item{col}{String of name of column to check.}
 
 \item{log_path}{File path where to save the log file.}
 
-\item{id_col}{Column to use to log index value}
+\item{id_col}{Column to use to log index value to help with logging.}
 }
 \value{
-OUTPUT_DESCRIPTION
+Modified input \code{x} dataframe list with new "convert_failed" dataframe.
 }
 \description{
-FUNCTION_DESCRIPTION
-}
-\details{
-DETAILS
-}
-\examples{
-\dontrun{
-if(interactive()){
- #EXAMPLE1
- }
-}
+Check if a conversion failed, resulting in an NA value. This can be due to a lack of necessary equation parameters (e.g., molecular weight, subject weight).
 }
 \seealso{
 \link[dplyr:filter]{filter}

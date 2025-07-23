@@ -1,21 +1,15 @@
 #' @title map_age_category
-#' @description FUNCTION_DESCRIPTION
-#' @param x PARAM_DESCRIPTION
-#' @param dict PARAM_DESCRIPTION
-#' @return OUTPUT_DESCRIPTION
-#' @details DETAILS
-#' @examples 
-#' \dontrun{
-#' if(interactive()){
-#'  #EXAMPLE1
-#'  }
-#' }
+#' @description Function to use a standard age category dictionary file to map species age to an age category.
+#' @param x Input dataframe with species and age value/units fields.
+#' @param dict Input dataframe with species age category assignment fields.
+#' @return Modified input `x` dataframe with age_category field filled in where possible.
 #' @seealso 
 #'  [filter][dplyr::filter], [select][dplyr::select]
 #' @rdname map_age_category
 #' @export 
 #' @importFrom dplyr filter select
 map_age_category <- function(x, dict){
+  # TODO vectorize instead of looping
   for(i in seq_len(nrow(x))){
     m_dict = dict %>% dplyr::filter(species == x$species[i]) %>% dplyr::select(-species)
     if(!grepl(m_dict$unit, x$age_units[i])){

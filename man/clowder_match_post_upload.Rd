@@ -2,32 +2,23 @@
 % Please edit documentation in R/clowder_match_post_upload.R
 \name{clowder_match_post_upload}
 \alias{clowder_match_post_upload}
-\title{FUNCTION_TITLE}
+\title{clowder_match_post_upload}
 \usage{
-clowder_match_post_upload(dsID = NULL, apiKey = NULL)
+clowder_match_post_upload(dsID = NULL, baseurl = NULL, apiKey = NULL)
 }
 \arguments{
-\item{dsID}{Clowder dataset ID to pull from.}
+\item{dsID}{Clowder dataset identifier.}
 
-\item{apiKey}{The API key required for a user to access the Clowder dataset}
+\item{baseurl}{Clowder base URL.}
+
+\item{apiKey}{Clowder API key.}
 }
 \value{
-Returns a dataframe with file details of: filename and ClowderID.
+None. An update query is performed to update the Documents table "clowder_file_id" field.
 }
 \description{
 This is a helper function to match already loaded CvT document entries to Clowder docs.
 }
-\details{
-DETAILS
-}
-\examples{
-\dontrun{
-if(interactive()){
- #EXAMPLE1
- }
-}
-}
 \seealso{
 \link[dplyr:filter]{filter}, \link[dplyr:select]{select}
-\link[RPostgres:dbWriteTable]{dbWriteTable}, \link[RPostgres:dbDisconnect]{dbDisconnect}
 }

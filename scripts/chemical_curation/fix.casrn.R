@@ -1,25 +1,13 @@
-#--------------------------------------------------------------------------------------
+#' @title fix.casrn
 #' @description Fix a CASRN that has one of several problems
-#'
 #' @param casrn Input CASRN to be fixed
 #' @param cname An optional chemical name
 #' @param verbose if TRUE, print the input values
 #' @return the fixed CASRN
-#' @title fix.casrn
-#' @details DETAILS
-#' @examples
-#' \dontrun{
-#' if(interactive()){
-#'  fix.casrn("107028")
-#'  # Expected output "107-02-8"
-#'  }
-#' }
-#' @seealso
+#' @seealso 
 #'  \code{\link[tidyr]{reexports}}
 #' @rdname fix.casrn
 #' @export
-#
-#--------------------------------------------------------------------------------------
 fix.casrn <- function(casrn, cname="", verbose=FALSE) {
   # verbose print input
   if(verbose) cat("input: ",cname,":",casrn,"\n")

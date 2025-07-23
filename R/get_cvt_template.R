@@ -1,14 +1,7 @@
 #' @title get_cvt_template
-#' @description Pull the CvT template in a list of empty dataframes
-#' @param template_path PARAM_DESCRIPTION
-#' @return OUTPUT_DESCRIPTION
-#' @details DETAILS
-#' @examples 
-#' \dontrun{
-#' if(interactive()){
-#'  #EXAMPLE1
-#'  }
-#' }
+#' @description Load the CvT template file into a list of empty dataframes.
+#' @param template_path Path to the CvT template file.
+#' @return Named list of template file dataframes.
 #' @seealso 
 #'  [excel_sheets][readxl::excel_sheets], [read_xlsx][readxl::read_xlsx]
 #' @rdname get_cvt_template

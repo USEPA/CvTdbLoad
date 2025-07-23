@@ -1,3 +1,17 @@
+#' @title jira_download_templates
+#' @description Function to download Jira ticket attachments.
+#' @param in_data Input dataframe with Jira ticket attachment information.
+#' @param auth_token Jira API token.
+#' @return None. Jira API calls are made to download files to the "output" folder.
+#' @seealso 
+#'  \code{\link[tidyr]{unite}}
+#'  \code{\link[dplyr]{mutate}}
+#'  \code{\link[utils]{download.file}}, \code{\link[utils]{unzip}}
+#' @rdname jira_download_templates
+#' @export 
+#' @importFrom tidyr unite
+#' @importFrom dplyr mutate
+#' @importFrom utils download.file unzip
 jira_download_templates <- function(in_data, auth_token){
   # Format headers
   if(!is.null(auth_token)){

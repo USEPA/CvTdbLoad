@@ -2,30 +2,20 @@
 % Please edit documentation in R/check_required_fields.R
 \name{check_required_fields}
 \alias{check_required_fields}
-\title{FUNCTION_TITLE}
+\title{check_required_fields}
 \usage{
 check_required_fields(df, f)
 }
 \arguments{
-\item{df}{List of dataframes for the sheets within an extraction template}
+\item{df}{List of dataframes for the sheets within an extraction template.}
 
-\item{f}{Filename for flagging purposes #'}
+\item{f}{Optional filename for logging purposes.}
 }
 \value{
-None. Logs any flags
+None. Logs any flags.
 }
 \description{
-Function to check if processed document is missing required fields.
-}
-\details{
-DETAILS
-}
-\examples{
-\dontrun{
-if(interactive()){
- #EXAMPLE1
- }
-}
+Function to check if processed template is missing required fields.
 }
 \seealso{
 \link[dplyr:filter]{filter}

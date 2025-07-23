@@ -7,27 +7,19 @@
 normalize_age(raw, f, log_path, debug = FALSE)
 }
 \arguments{
-\item{raw}{PARAM_DESCRIPTION}
+\item{raw}{Input dataframe of data with data to normalize.}
 
-\item{f}{PARAM_DESCRIPTION}
+\item{f}{Optional filename for logging purposes.}
 
 \item{log_path}{File path where to save the log file.}
+
+\item{debug}{Boolean of whether to stop conversion logic early for debugging purpose. Default: FALSE.}
 }
 \value{
-OUTPUT_DESCRIPTION
+Normalized version of the input \code{raw} parameter.
 }
 \description{
-FUNCTION_DESCRIPTION
-}
-\details{
-DETAILS
-}
-\examples{
-\dontrun{
-if(interactive()){
- # EXAMPLE1
- }
-}
+A helper function to normalize dose.
 }
 \seealso{
 \link[readxl:read_excel]{read_xlsx}

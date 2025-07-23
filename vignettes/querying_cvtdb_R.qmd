@@ -19,7 +19,6 @@ format:
     code-copy: TRUE
     page-layout: full
 html-table-processing: none # https://quarto.org/docs/prerelease/1.4/ast.html#finer-control-over-table-processing
-editor: visual
 ---
 
 ```{r}
@@ -50,7 +49,7 @@ if(!file.exists("res_cvtdb.sqlite")){
 
 ### CvTdb Summary
 
-The Concentration versus Time Database (CvTdb) contains manually curated time-series data and associated metadata for in vivo studies on organic chemicals available in the scientific literature. These data inform chemical safety analysis and allow evaluation of the relationship between administered doses and internal concentrations of a substance. These data can also be used to build or evaluate physiologically based pharmacokinetic (PBPK) models, which simulate the absorption, distribution, metabolism, and elimination of a chemical. The database also contains toxicokinetic parameters, including volume of distribution and elimination half-life, which are calculated across all data associated with a particular compound using the publicly available pharmacokinetic curve-fitting software invivoPKfit. This version 2.0.0 release builds upon the original [v1.0.0](https://github.com/USEPA/CompTox-PK-CvTdb/releases/tag/v1.0.0) “legacy” database released with Sayre, Wambaugh, and Grulke (2020) and the minor [v1.1.0](https://github.com/USEPA/CompTox-PK-CvTdb/releases/tag/v1.1.0) database release from 2021 that added the Showa Pharmaceutical University dataset. The code, documentation, and vignettes associated with the database release are available on GitHub ([CompTox-PK-CvTdb](https://github.com/USEPA/CompTox-PK-CvTdb); [CvTdbLoad](https://github.com/USEPA/cvtdbload)). The database is also available for download through the public CCTE EPA Clowder repository (**Add FigShare link**) (no user account required).
+The Concentration versus Time Database (CvTdb) contains manually curated time-series data and associated metadata for in vivo studies on organic chemicals available in the scientific literature. These data inform chemical safety analysis and allow evaluation of the relationship between administered doses and internal concentrations of a substance. These data can also be used to build or evaluate physiologically based pharmacokinetic (PBPK) models, which simulate the absorption, distribution, metabolism, and elimination of a chemical. The database also contains toxicokinetic parameters, including volume of distribution and elimination half-life, which are calculated across all data associated with a particular compound using the publicly available pharmacokinetic curve-fitting software invivoPKfit. This version 2.0.0 release builds upon the original [v1.0.0](https://github.com/USEPA/CompTox-PK-CvTdb/releases/tag/v1.0.0) “legacy” database released with Sayre, Wambaugh, and Grulke (2020) and the minor [v1.1.0](https://github.com/USEPA/CompTox-PK-CvTdb/releases/tag/v1.1.0) database release from 2021 that added the Showa Pharmaceutical University dataset. The code, documentation, and vignettes associated with the database release are available on GitHub ([CompTox-PK-CvTdb](https://github.com/USEPA/CompTox-PK-CvTdb); [CvTdbLoad](https://github.com/USEPA/cvtdbload)). The database is also available for download through the public CCTE EPA [Clowder repository](https://doi.org/10.23645/epacomptox.29610452.v1) (no user account required).
 
 > Sayre, R.R., Wambaugh, J.F. & Grulke, C.M (2020). Database of pharmacokinetic time-series data and parameters for 144 environmental chemicals. Sci Data 7(122). https://doi.org/10.1038/s41597-020-0455-1.
 
@@ -829,7 +828,7 @@ df_dbplyr <- tryCatch(
 
 > **Note:** It is important to make the distinction between the "dosed substance" (fk_dosed_chemical_id) from the Studies table, and the "analyzed chemical" (fk_analyzed_chemical_id) from the Series table. The dosed substance represents the chemical administered to the subject for a study, whereas the analyzed substance represents the chemical being measured in the subject as a result of the dosed substance. These substances may be the same, a radiolabeled version, or multiple analytes that derived from a single dosed substance. One may need to alter a query to use either the dosed substance or analyzed chemical identifier fields to search for a chemical of interest depending on intended use.
 
-#### Filter for chemicals that have conc time data for species and administartion routes of interest
+#### Filter for chemicals that have conc time data for species and administration routes of interest
 
 An example of querying for CvTdb chemicals that have conc time data for species and administration routes of interest.
 

@@ -2,7 +2,7 @@
 % Please edit documentation in R/convert_units.R
 \name{convert_units}
 \alias{convert_units}
-\title{FUNCTION_TITLE}
+\title{convert_units}
 \usage{
 convert_units(
   x,
@@ -14,31 +14,21 @@ convert_units(
 )
 }
 \arguments{
-\item{x}{Input dataframe to convert}
+\item{x}{Input dataframe to convert.}
 
-\item{num}{Name of column with values to convert}
+\item{num}{Name of column with values to convert.}
 
-\item{units}{Name of column with units to convert from}
+\item{units}{Name of column with units to convert from.}
 
-\item{desired}{Desired units to convert the input value into}
+\item{desired}{Desired units to convert the input value into.}
 
-\item{conv_factor}{Conversion factor to use (such as Molecular weight, tissue Density, etc.)}
+\item{conv_factor}{Conversion factor to use (such as Molecular weight, tissue Density, etc.).}
 
 \item{overwrite_units}{Boolean to overwrite the 'units' with desired units.}
 }
 \value{
-OUTPUT_DESCRIPTION
+Modified dataframe of input \code{x} dataframe with converted column using \code{convert_get_conversion_factor()}.
 }
 \description{
-A helper function to convert input values to desired units.
-}
-\details{
-DETAILS
-}
-\examples{
-\dontrun{
-if(interactive()){
- #EXAMPLE1
- }
-}
+Function to convert input values to desired units.
 }

@@ -5,14 +5,7 @@
 #' @param template CvT extraction template
 #' @param sheetname Name of the NTP sheet being processed
 #' @param intro_dat Intro sheet information from NTP document
-#' @return OUTPUT_DESCRIPTION
-#' @details DETAILS
-#' @examples 
-#' \dontrun{
-#' if(interactive()){
-#'  #EXAMPLE1
-#'  }
-#' }
+#' @return List of dataframes with template formatting.
 #' @seealso 
 #'  [mutate][dplyr::mutate], [filter][dplyr::filter], [select][dplyr::select], [rename][dplyr::rename], [any_of][dplyr::any_of], [distinct][dplyr::distinct], [all_of][dplyr::all_of], [across][dplyr::across], [arrange][dplyr::arrange], [contains][dplyr::contains], [group_by][dplyr::group_by], [ungroup][dplyr::ungroup], [matches][dplyr::matches], [n][dplyr::n], [rowwise][dplyr::rowwise], [left_join][dplyr::left_join]
 #'  [unite][tidyr::unite], [pivot_longer][tidyr::pivot_longer], [separate][tidyr::separate], [pivot_wider][tidyr::pivot_wider]

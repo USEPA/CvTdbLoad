@@ -1,7 +1,13 @@
 #' @title set_original_fields
-#' @description Pull dictionary of original fields from database tables and rename in sheet_list
-#' @param sheet_list Dataframe list to rename with original columns
+#' @description Pull dictionary of original fields from database tables and rename in `sheet_list`.
+#' @param sheet_list Dataframe list to rename with original columns.
 #' @param schema String for the PostgreSQL schema information to pull.
+#' @return Modified `sheet_list` list of dataframes with "_original" fields added.
+#' @seealso 
+#'  \code{\link[dplyr]{filter}}, \code{\link[dplyr]{select}}, \code{\link[dplyr]{mutate}}, \code{\link[dplyr]{distinct}}, \code{\link[dplyr]{rename}}, \code{\link[dplyr]{reexports}}
+#' @rdname set_original_fields
+#' @export 
+#' @importFrom dplyr filter select mutate distinct rename any_of
 set_original_fields <- function(sheet_list, schema){
   # Pull all tables/field information from input schema
   db_f_list = db_query_cvt(paste0("SELECT * FROM information_schema.columns WHERE table_schema = '",schema,"'")) %>%

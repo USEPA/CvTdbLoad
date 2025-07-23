@@ -2,32 +2,24 @@
 % Please edit documentation in R/check_unit_ci.R
 \name{check_unit_ci}
 \alias{check_unit_ci}
-\title{FUNCTION_TITLE}
+\title{check_unit_ci}
 \usage{
 check_unit_ci(x, f, col, log_path)
 }
 \arguments{
-\item{x}{Input list of datasets being normalized}
+\item{x}{Input list of datasets being processed.}
 
-\item{f}{Filename for flagging purposes}
+\item{f}{Optional filename for logging purposes.}
 
-\item{col}{The column being checked/normalized}
+\item{col}{String of the name of the column to check.}
+
+\item{log_path}{PARAM_DESCRIPTION}
 }
 \value{
-Modified version of the input \code{x} parameter
+Modified input \code{x} dataframe list with new "ci" dataframe.
 }
 \description{
-Helper function to check for confidence intervals for a metric, and handling them.
-}
-\details{
-DETAILS
-}
-\examples{
-\dontrun{
-if(interactive()){
- #EXAMPLE1
- }
-}
+Function to check for confidence intervals for an input field.
 }
 \seealso{
 \link[dplyr:filter]{filter}, \link[dplyr:mutate]{mutate}, \link[dplyr:across]{across}

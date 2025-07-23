@@ -1,3 +1,19 @@
+#' @title get_unhandled_normalize_log
+#' @description Utility function to generate a log of all normalization processes that need code updates to handle new conversion cases.
+#' @param f Placeholder input file name, Default: 'debug_file'
+#' @param log_path Path to output log file, Default: 'output/debug_log.xlsx'
+#' @return None. A multi-sheet XLSX file is written.
+#' @seealso 
+#'  \code{\link[dplyr]{group_by}}, \code{\link[dplyr]{across}}, \code{\link[dplyr]{summarise}}, \code{\link[dplyr]{distinct}}, \code{\link[dplyr]{select}}, \code{\link[dplyr]{mutate}}, \code{\link[dplyr]{bind_rows}}, \code{\link[dplyr]{filter}}
+#'  \code{\link[tidyselect]{all_of}}
+#'  \code{\link[tidyr]{separate_rows}}
+#'  \code{\link[writexl]{write_xlsx}}
+#' @rdname get_unhandled_normalize_log
+#' @export 
+#' @importFrom dplyr group_by across summarise ungroup distinct select mutate bind_rows filter
+#' @importFrom tidyselect all_of
+#' @importFrom tidyr separate_rows
+#' @importFrom writexl write_xlsx
 get_unhandled_normalize_log <- function(f="debug_file", log_path="output/debug_log.xlsx"){
   ENV_DEBUG <<- TRUE
     
@@ -83,7 +99,7 @@ get_unhandled_normalize_log <- function(f="debug_file", log_path="output/debug_l
     # Add flag name
     summary_list[[normalization_name]] = lapply(names(summary), function(sn){
       summary[[sn]] %>%
-        dplyr::select(all_of(columns)) %>%
+        dplyr::select(tidyselect::all_of(columns)) %>%
         dplyr::mutate(norm_flag_name = sn) %>%
         tidyr::separate_rows(id, sep = ", ")
     }) %>%

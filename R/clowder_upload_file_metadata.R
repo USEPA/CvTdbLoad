@@ -1,4 +1,23 @@
-upload_file_metadata <- function(metadata, dsID, userID, baseurl, apiKey){
+#' @title clowder_upload_file_metadata
+#' @description Function to process add metadata field values to Clowder files.
+#' @param metadata Dataframe of metadata to add to Clowder files.
+#' @param dsID Clowder dataset identifier.
+#' @param userID Clowder User identifier.
+#' @param baseurl Clowder base URL.
+#' @param apiKey Clowder API key.
+#' @return None. Clowder APi calls are performed to add metadata to Clowder files.
+#' @seealso 
+#'  \code{\link[tidyr]{unite}}, \code{\link[tidyr]{separate}}
+#'  \code{\link[dplyr]{mutate-joins}}, \code{\link[dplyr]{rename}}, \code{\link[dplyr]{select}}, \code{\link[dplyr]{filter}}
+#'  \code{\link[purrr]{flatten}}
+#'  \code{\link[httr]{POST}}, \code{\link[httr]{content_type}}, \code{\link[httr]{add_headers}}
+#' @rdname clowder_upload_file_metadata
+#' @export 
+#' @importFrom tidyr unite separate
+#' @importFrom dplyr left_join rename select filter
+#' @importFrom purrr flatten
+#' @importFrom httr POST accept_json content_type_json add_headers
+clowder_upload_file_metadata <- function(metadata, dsID, userID, baseurl, apiKey){
   ################################################################################
   ### Push metadata
   ################################################################################

@@ -1,7 +1,15 @@
 #' @title get_dict_update_ids
-#' @description Update database dictionaries and match foreign keys
-#' @param sheet_list Dataframe list to rename with original columns
+#' @description Update database dictionaries and match foreign keys to input identifiers.
+#' @param sheet_list Dataframe list of template sheets with dictionary columns to process and receive database dictionary table ID matches.
 #' @param schema String for the PostgreSQL schema information to pull.
+#' @return Named list of dataframes with modified columns mapping input identifiers to database identifiers if present. If not present, new database entries are created and the ID returned.
+#' @seealso 
+#'  \code{\link[dplyr]{rename}}, \code{\link[dplyr]{filter}}, \code{\link[dplyr]{reexports}}, \code{\link[dplyr]{select}}, \code{\link[dplyr]{distinct}}, \code{\link[dplyr]{mutate}}, \code{\link[dplyr]{across}}, \code{\link[dplyr]{mutate-joins}}
+#'  \code{\link[tidyr]{unite}}
+#' @rdname get_dict_update_ids
+#' @export 
+#' @importFrom dplyr rename filter any_of select distinct mutate across left_join
+#' @importFrom tidyr unite
 get_dict_update_ids <- function(sheet_list, schema){
   chemical_dict_rename_full = data.frame(to = c("chemical_name_original", 
                                            "chemical_name_secondary_original",
@@ -53,7 +61,7 @@ get_dict_update_ids <- function(sheet_list, schema){
           # Get what's new for the dictionary
           new = sheet %>%
             tidyr::unite(dplyr::any_of(dict_col), col="dict_index", sep="_", remove=FALSE) %>%
-            filter(!dict_index %in% dict$dict_index) %>%
+            dplyr::filter(!dict_index %in% dict$dict_index) %>%
             dplyr::select(any_of(dict_col)) %>%
             dplyr::distinct() %>%
             dplyr::mutate(dplyr::across(!where(is.character), as.character))  

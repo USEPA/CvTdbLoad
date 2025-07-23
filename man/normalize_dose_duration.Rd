@@ -2,30 +2,20 @@
 % Please edit documentation in R/normalize_dose_duration.R
 \name{normalize_dose_duration}
 \alias{normalize_dose_duration}
-\title{FUNCTION_TITLE}
+\title{normalize_dose_duration}
 \usage{
 normalize_dose_duration(raw, f)
 }
 \arguments{
-\item{raw}{A dataframe of weight information to normalize}
+\item{raw}{A dataframe of weight information to normalize.}
 
-\item{f}{The file name of the template being processed. Used for error logging. #'}
+\item{f}{The file name of the template being processed. Used for error logging.}
 }
 \value{
 Normalized version of the input \code{raw} parameter.
 }
 \description{
-Extraction of units from dose_duration field (similar to height/weight)
-}
-\details{
-DETAILS
-}
-\examples{
-\dontrun{
-if(interactive()){
- #EXAMPLE1
- }
-}
+Extraction of units from dose_duration field (similar to height/weight).
 }
 \seealso{
 \link[dplyr:mutate]{mutate}, \link[dplyr:bind_rows]{bind_rows}, \link[dplyr:arrange]{arrange}, \link[dplyr:select]{select}

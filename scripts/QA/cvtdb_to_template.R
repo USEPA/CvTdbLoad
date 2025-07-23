@@ -1,17 +1,19 @@
-# Convert CVTDB data back into template format
-# By: Jonathan Taylor Wall
-# Created: 2023-1-6
-# R version 4.1.2 (2021-11-01)
-# jsonlite_1.7.3; purrr_0.3.4; tidyr_1.1.4; magrittr_2.0.1; dplyr_1.0.7
-# readr_2.1.2; writexl_1.4.0
-
-#' cvtdb_to_template
-#' Uses other package helper functions to pull data from CVTDB, filters by input
-#' document ID information, and generates the template
+#' @title cvtdb_to_template
+#' @description Convert CVTDB data back into template format. Uses other package helper functions to pull data from CVTDB, filters by input
+#' document ID information, and generates the template.
+#' @description Convert CVTDB data back into template format. Uses other package helper functions to pull data from CVTDB, filters by input
+#' document ID information, and generates the template.
 #' @param id A named list of document ID information to filter by
 #' @param template_path File path to latest template
 #' @param template_map Template field name map
 #' @param include_foreign_keys Boolean whether to return template with database foreign keys. Default is FALSE.
+#' @return List of dataframes from the database in template format based on input document identifiers.
+#' @seealso 
+#'  \code{\link[dplyr]{bind_rows}}, \code{\link[dplyr]{mutate}}, \code{\link[dplyr]{mutate-joins}}, \code{\link[dplyr]{select}}, \code{\link[dplyr]{arrange}}
+#'  \code{\link[tidyr]{reexports}}
+#' @rdname cvtdb_to_template
+#' @export 
+#' @importFrom dplyr bind_rows mutate left_join select any_of arrange
 cvtdb_to_template <- function(id=NULL, template_path=NULL, template_map=NULL, include_foreign_keys=FALSE){
   # Check parameters
   if(is.null(template_path)) stop("Must provide a 'template_path' so data may be formatted into it.")
@@ -47,7 +49,6 @@ cvtdb_to_template <- function(id=NULL, template_path=NULL, template_map=NULL, in
     return()
 }
 
-#' @description Function to update field map with missing database fields by table
 update_field_map <- function(in_map = NULL){
   
   db_col_list = db_query_cvt(paste0("SELECT table_name AS sheet, column_name AS from ",
@@ -208,25 +209,25 @@ convert_cvt_to_template <- function(in_dat=NULL, template=NULL, map=NULL, includ
     tmp = in_dat[[s]] %T>% {
       # Have to map CvT database names back to the template (usually a _original stem)
       message("...Renaming mapped variables...", Sys.time())
-      names(.)[names(.) %in% map$from[map$sheet == tolower(s)]] <- left_join(data.frame(from=names(.)[names(.) %in% 
+      names(.)[names(.) %in% map$from[map$sheet == tolower(s)]] <- dplyr::left_join(data.frame(from=names(.)[names(.) %in% 
                                                                                                         map$from[map$sheet == tolower(s)]], 
                                                                                         stringsAsFactors = F), 
                                                                              map[map$sheet==tolower(s),], 
                                                                              by = "from") %>% 
-        select(to) %>% 
-        mutate(to = as.character(to)) %>% 
+        dplyr::select(to) %>% 
+        dplyr::mutate(to = as.character(to)) %>% 
         unlist()
       message("...Returning converted data...", Sys.time())
     } %>% 
       # Select all template fields that exist already (ensuring clowder_file_id included)
-      select(any_of(c("id", names(template[[s]]), "clowder_file_id")))
+      dplyr::select(dplyr::any_of(c("id", names(template[[s]]), "clowder_file_id")))
     # Fill missing template fields (happens when template is updated compared to older uploaded version)
     tmp[names(template[[s]])[!names(template[[s]]) %in% names(tmp)]] <- NA
     # Return converted template sheet in template order (ensuring clowder_file_id included)
     tmp = tmp %>% 
-      select(any_of(c("id", names(template[[s]]), "clowder_file_id"))) %>%
+      dplyr::select(dplyr::any_of(c("id", names(template[[s]]), "clowder_file_id"))) %>%
       # Add QC fields
-      mutate(qc_notes = NA,
+      dplyr::mutate(qc_notes = NA,
              qc_status = NA,
              qc_flags = NA)
     # Add reviewer LAN ID field
@@ -235,7 +236,7 @@ convert_cvt_to_template <- function(in_dat=NULL, template=NULL, map=NULL, includ
     } else if(s == "Conc_Time_Values"){
       # Sort by fk_series and time values
       tmp = tmp %>%
-        arrange(fk_series_id, time)
+        dplyr::arrange(fk_series_id, time)
     }
     return(tmp)
   }) %T>% {

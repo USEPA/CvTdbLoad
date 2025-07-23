@@ -1,3 +1,16 @@
+#' @title cvt_queue_unit_groups
+#' @description Queue templates for review by unit groups
+#' @return None. XLSX templates written to queue for review.
+#' @param in_unit_type List of unit types (e.g., doses, conc), Default: c("doses", "conc")
+#' @seealso 
+#'  \code{\link[readxl]{read_excel}}
+#'  \code{\link[dplyr]{group_split}}, \code{\link[dplyr]{filter}}, \code{\link[dplyr]{pull}}, \code{\link[dplyr]{mutate}}
+#'  \code{\link[writexl]{write_xlsx}}
+#' @rdname cvt_queue_unit_groups
+#' @export 
+#' @importFrom readxl read_xlsx
+#' @importFrom dplyr group_split filter pull mutate
+#' @importFrom writexl write_xlsx
 cvt_queue_unit_groups <- function(in_unit_type = c("doses", "conc")){
   
   # Load dictionary of unit filenames

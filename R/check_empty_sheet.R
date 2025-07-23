@@ -1,14 +1,7 @@
-#' @description Function to check if any sheet of loaded template is empty
-#' @param template List of loaded template sheets #'
-#' @return Boolean TRUE or FALSE if an empty sheet exists
-#' @title FUNCTION_TITLE
-#' @details DETAILS
-#' @examples 
-#' \dontrun{
-#' if(interactive()){
-#'  #EXAMPLE1
-#'  }
-#' }
+#' @title check_empty_sheet
+#' @description Function to check if any sheet of loaded template is empty.
+#' @param template List of loaded template sheets.
+#' @return Boolean TRUE or FALSE if an empty sheet exists.
 #' @seealso 
 #'  [is_empty][purrr::is_empty]
 #' @rdname check_empty_sheet

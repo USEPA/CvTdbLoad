@@ -20,26 +20,38 @@ download_jira_update_clowder_info(
 )
 }
 \arguments{
-\item{jira_project}{Jira project identifier}
+\item{jira_project}{Jira project identifier (e.g., CVTDB).}
 
-\item{in_file}{Optional param for the file path to previously pulled Jira information}
+\item{in_file}{Optional param for the file path to previously pulled Jira information CSV file.}
 
-\item{auth_token}{Jira API token}
+\item{auth_token}{Jira API token.}
 
-\item{reset_attachments}{Boolean whether to re-download files, or just update Clowder metadata}
+\item{reset_attachments}{Boolean whether to re-download Jira ticket attachments. Default: FALSE.}
 
-\item{dsID}{Clowder dataset ID}
+\item{update_clowder_metadata}{Boolean whether to update Clowder file metadata. Only set to TRUE once Jira ticket attachments have been uploaded to Clowder. Default: FALSE.}
 
-\item{baseurl}{Clowder URL}
+\item{dsID}{Clowder dataset identifier.}
 
-\item{userID}{Clowder user ID}
+\item{baseurl}{Clowder base URL.}
 
-\item{apiKey}{Clowder API key}
+\item{userID}{Clowder user identifier.}
 
-\item{labels_filter}{Vector list of Jira ticket labels to filter to}
+\item{apiKey}{Clowder API key.}
+
+\item{labels_filter}{Vector list of Jira ticket labels to filter to.}
 
 \item{epic_filter}{Custom filtering to a specific ticket Epic link by name (single or vector). Default: empty vector.}
+
+\item{attachment_filter}{Filename regex string vector to filter to select Jira ticket attachments, Default: empty vector.}
+}
+\value{
+Dataframe of metadata from Jira tickets to associate to Clowder files.
 }
 \description{
-download_jira_update_clowder_info
+Function to generate a dataframe of Jira ticket metadata with attachment information. Can be used to download the attachments locally and upload metadata to Clowder files once they have been uploaded to Clowder separately.
+}
+\seealso{
+\code{\link[dplyr]{filter}}, \code{\link[dplyr]{select}}, \code{\link[dplyr]{mutate}}
+\code{\link[tidyr]{unite}}
+\code{\link[utils]{View}}, \code{\link[utils]{download.file}}
 }

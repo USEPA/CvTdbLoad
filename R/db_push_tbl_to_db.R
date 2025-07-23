@@ -1,24 +1,17 @@
 #' @title db_push_tbl_to_db
-#' @description FUNCTION_DESCRIPTION
-#' @param dat PARAM_DESCRIPTION, Default: NULL
-#' @param tblName PARAM_DESCRIPTION, Default: NULL
-#' @param fieldTypes PARAM_DESCRIPTION, Default: NULL
-#' @param overwrite PARAM_DESCRIPTION, Default: FALSE
-#' @param customSQL PARAM_DESCRIPTION, Default: NULL
-#' @param append PARAM_DESCRIPTION, Default: FALSE
-#' @return OUTPUT_DESCRIPTION
-#' @details DETAILS
-#' @examples 
-#' \dontrun{
-#' if(interactive()){
-#'  #EXAMPLE1
-#'  }
-#' }
+#' @description A function to push a dataframe to a specified table in the database.
+#' @param dat A dataframe to write to the database, Default: NULL
+#' @param tblName Name of database table to create or append and fill with input `dat` dataframe data, Default: NULL
+#' @param fieldTypes Named list of field types for columns, Default: NULL
+#' @param overwrite Boolean of whether to overwrite the `tblName` table with input `dat` dataframe data, Default: FALSE
+#' @param customSQL Optional custom SQL statement to push, Default: NULL
+#' @param append Boolean of whether to append the `tblName` table with input `dat` dataframe data, Default: FALSE
+#' @return None. Updates are pushed to the database.
 #' @seealso 
-#'  [dbWriteTable][RPostgres::dbWriteTable], [dbSendQuery][RPostgres::dbSendQuery], [dbDisconnect][RPostgres::dbDisconnect]
+#'  [dbWriteTable][DBI::dbWriteTable], [dbSendQuery][DBI::dbSendQuery], [dbDisconnect][DBI::dbDisconnect]
 #' @rdname db_push_tbl_to_db
 #' @export 
-#' @importFrom RPostgres dbWriteTable dbSendQuery dbDisconnect
+#' @importFrom DBI dbWriteTable dbSendQuery dbDisconnect
 db_push_tbl_to_db <- function(dat=NULL, tblName=NULL, fieldTypes=NULL, overwrite=FALSE,
                            customSQL=NULL, append=FALSE){
   if(is.null(dat)) stop("...Error: User must provide data to write to database")
@@ -31,9 +24,9 @@ db_push_tbl_to_db <- function(dat=NULL, tblName=NULL, fieldTypes=NULL, overwrite
   
   out <- tryCatch({
     message("...Trying to write, '", tblName, "' to CvTdb")
-    RPostgres::dbWriteTable(con, value=dat, name=tblName, overwrite=overwrite,
+    DBI::dbWriteTable(con, value=dat, name=tblName, overwrite=overwrite,
                  field.types=fieldTypes, row.names=FALSE, append=append)
-    if(!is.null(customSQL)) { RPostgres::dbSendQuery(con, customSQL) } #Send custom SQL statement
+    if(!is.null(customSQL)) { DBI::dbSendQuery(con, customSQL) } #Send custom SQL statement
   },
   error=function(cond) { 
     message("...Error message for ",tblName,": ", cond); return(NA)
@@ -41,7 +34,7 @@ db_push_tbl_to_db <- function(dat=NULL, tblName=NULL, fieldTypes=NULL, overwrite
   warning=function(cond) { 
     message("...Warning message for ",tblName,": ", cond); return(NULL)
     },
-  finally={ RPostgres::dbDisconnect(con)
+  finally={ DBI::dbDisconnect(con)
   })
   return(0)
 }

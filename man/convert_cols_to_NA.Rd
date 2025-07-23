@@ -2,28 +2,18 @@
 % Please edit documentation in R/convert_cols_to_NA.R
 \name{convert_cols_to_NA}
 \alias{convert_cols_to_NA}
-\title{FUNCTION_TITLE}
+\title{convert_cols_to_NA}
 \usage{
 convert_cols_to_NA(df, col_list)
 }
 \arguments{
-\item{df}{PARAM_DESCRIPTION}
+\item{df}{Input dataframe.}
 
-\item{col_list}{PARAM_DESCRIPTION}
+\item{col_list}{String of name of column to convert to NA.}
 }
 \value{
-OUTPUT_DESCRIPTION
+Modified input \code{df} dataframe with \code{col_list} as NA.
 }
 \description{
-A helper function to convert input dataframe column list to NA
-}
-\details{
-DETAILS
-}
-\examples{
-\dontrun{
-if(interactive()){
- #EXAMPLE1
- }
-}
+A function to convert input dataframe column list to NA.
 }
