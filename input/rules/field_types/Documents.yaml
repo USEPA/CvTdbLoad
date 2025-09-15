@@ -5,7 +5,7 @@ rules:
 - expr: 'if (!is.na(document_type)) !is.na(as.numeric(document_type))'
   meta:
     message: invalid_field_type_document_type
-- expr: 'if (!is.na(pmid)) !is.na(as.numeric(pmid))'
+- expr: 'if (!is.na(pmid)) !is.na(as.numeric(gsub("PMID", "", pmid)))'
   meta:
     message: invalid_field_type_pmid
 - expr: 'if (!is.na(extracted)) !is.na(as.numeric(gsub("[;, ]", "", extracted)))'

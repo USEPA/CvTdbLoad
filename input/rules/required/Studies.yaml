@@ -17,7 +17,7 @@ rules:
 - expr: '!is.na(dose_frequency)'
   meta:
     message: NA_in_required_field_dose_frequency
-- expr: 'exists_any(if (!tolower(dose_frequency) %in% c("1/day", "single dose", 1, "NR", "ad libitum")) !is.na(administration_term))'
+- expr: 'exists_any(if (!tolower(dose_frequency) %in% c("1/day", "single dose", "single", "single-dose", 1, "NR", "nr", "ad libitum", "once")) !is.na(administration_term))'
   meta:
     message: missing_administration_term_pair
 - expr: 'exists_any(if (!is.na(administration_term) & !administration_term %in% c("NR")) !is.na(administration_term_units))'

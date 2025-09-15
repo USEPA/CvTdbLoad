@@ -10,6 +10,8 @@
 #' @importFrom dplyr select sym filter distinct pull mutate across any_of left_join bind_rows arrange
 #' @importFrom stringr str_squish
 match_cvt_doc_to_db_doc <- function(df=NULL){
+  orig_doc_count = nrow(df)
+  
   check_list = c("pmid", "other_study_identifier", "doi", "url", "title")
   # Find potential duplicate values per ID level (irrespective of the hierarchy)
   where_clause = lapply(check_list, function(x){
@@ -58,7 +60,13 @@ match_cvt_doc_to_db_doc <- function(df=NULL){
   # Those without matches get fk_document_id = NA
   df$fk_document_id = NA 
   # Recombine and return to user
-  rbind(doc_list, df) %>% 
-    dplyr::arrange(id) %>%
-    return()
+  out = doc_list %>%
+    dplyr::bind_rows(df) %>%
+    dplyr::arrange(id)
+    
+  if(nrow(out) == orig_doc_count){
+    return(out)
+  } else {
+    stop("Multiple doc matches found...")
+  }
 }

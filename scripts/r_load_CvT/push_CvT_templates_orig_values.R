@@ -44,8 +44,9 @@ load_cvt_templates_to_db <- function(
   to_load = pull_clowder_files_to_load(dsID, baseurl, apiKey, curation_set_tag=cvt_dataset, metadata_filter_tag=NULL) %>%
     
     dplyr::filter(!clowder_id %in% loaded_jira_docs$clowder_template_id,
-                  !jira_ticket %in% loaded_jira_docs$jira_ticket,
-                  grepl("_final\\.xlsx", filename))
+                  # !jira_ticket %in% loaded_jira_docs$jira_ticket,
+                  grepl("_final\\.xlsx", filename)
+                  )
   
   #Check for duplicates in ticket. Each ticket should only have 1 final
   dups = to_load %>%
@@ -78,6 +79,8 @@ load_cvt_templates_to_db <- function(
                                           mode = "wb",
                                           file_type = "xlsx")
       
+      # Storing as list in case future templates have multiple tk_params sheets
+      # For foreign key linkages and such
       tk_params_sheets = list()
       # Special tk_params table curation case
       if(any(c("tk_params", "tk_parameters") %in% names(doc_sheet_list))){
@@ -87,6 +90,13 @@ load_cvt_templates_to_db <- function(
         names(tk_params_sheets) <- "tk_parameters"
         # Remove excess name whitespace
         names(tk_params_sheets$tk_parameters) <- stringr::str_squish(names(tk_params_sheets$tk_parameters))
+        
+        tk_params_sheets$tk_parameters = tk_params_sheets$tk_parameters %>%
+          dplyr::filter(!is.na(parameter_name))
+        
+        if(!nrow(tk_params_sheets$tk_parameters)){
+          tk_params_sheets$tk_parameters = NULL
+        }
       }
       
       # Select Template Sheets
@@ -97,18 +107,25 @@ load_cvt_templates_to_db <- function(
           dplyr::rename(clowder_file_id = clowder_id)
       }
       
+      # Remove empty rows and columns (all NA values)
+      doc_sheet_list = lapply(names(doc_sheet_list), function(s){
+        doc_sheet_list[[s]] = doc_sheet_list[[s]][!apply(is.na(doc_sheet_list[[s]]), 1, all),]
+        doc_sheet_list[[s]] = doc_sheet_list[[s]][!sapply(doc_sheet_list[[s]], function(x) all(is.na(x)))]
+        # Remove empty sheets
+        if(!nrow(doc_sheet_list[[s]])) doc_sheet_list[[s]] = NULL
+        return(doc_sheet_list[[s]])
+      }) %T>% {
+        names(.) <- names(doc_sheet_list)
+      } %>%
+        purrr::compact()
+      
       # Validation using the standard curation template
       if (!validate_cvt(df=doc_sheet_list, df_identifier = f, log_path=log_path, ignore_qc = TRUE)) {
         stop("Validation failed, exiting.")
       }
       
-      # Remove empty rows and columns (all NA values)
-      doc_sheet_list = lapply(names(doc_sheet_list), function(s){
-        doc_sheet_list[[s]] = doc_sheet_list[[s]][!apply(is.na(doc_sheet_list[[s]]), 1, all),]
-        doc_sheet_list[[s]] = doc_sheet_list[[s]][!sapply(doc_sheet_list[[s]], function(x) all(is.na(x)))]
-      }) %T>% {
-        names(.) <- names(doc_sheet_list)
-      }
+      orig_sheet_row_counts = doc_sheet_list %>%
+        purrr::map_dfr(~ data.frame(n = nrow(.x)), .id = "sheet")
       
       # Fill in missing template fields
       doc_sheet_list = lapply(names(doc_sheet_list), function(s){
@@ -152,21 +169,36 @@ load_cvt_templates_to_db <- function(
       
       if(!load_doc_sheet_only){
         # Rename foreign key fields as needed
-        doc_sheet_list$Studies = doc_sheet_list$Studies %>%
-          dplyr::rename(fk_dosed_chemical_id=fk_chemicals_id)
-        doc_sheet_list$Series = doc_sheet_list$Series %>%
-          dplyr::rename(fk_analyzed_chemical_id=fk_chemicals_id)  
-        # Add Conc_Time_Values id column for ID mapping
-        doc_sheet_list$Conc_Time_Values = doc_sheet_list$Conc_Time_Values %>%
-          dplyr::mutate(id = 1:dplyr::n())
+        if("Studies" %in% names(doc_sheet_list)){
+          doc_sheet_list$Studies = doc_sheet_list$Studies %>%
+            dplyr::rename(fk_dosed_chemical_id=fk_chemicals_id)  
+        }
+        if("Series" %in% names(doc_sheet_list)){
+          doc_sheet_list$Series = doc_sheet_list$Series %>%
+            dplyr::rename(fk_analyzed_chemical_id=fk_chemicals_id)  
+        }
+        if("Conc_Time_Values" %in% names(doc_sheet_list)){
+          # Add Conc_Time_Values id column for ID mapping
+          doc_sheet_list$Conc_Time_Values = doc_sheet_list$Conc_Time_Values %>%
+            dplyr::mutate(id = 1:dplyr::n())  
+        }
       }
       
       ###########################################################################
       ### Parse the where clause to search by pmid, other_study_identifier, or doi
       ###########################################################################
+      # Set PMID as numeric
+      doc_sheet_list$Documents$pmid = doc_sheet_list$Documents$pmid %>%
+        gsub("PMID", "", ., ignore.case=TRUE) %>%
+        as.numeric()
+      
       # Check for duplicate docs within the template
       if(any(duplicated(doc_sheet_list$Documents$pmid[!is.na(doc_sheet_list$Documents$pmid)]))) stop("Duplicate PMID values found in template...")
       if(any(duplicated(doc_sheet_list$Documents$other_study_identifier[!is.na(doc_sheet_list$Documents$other_study_identifier)]))) stop("Duplicate other_study_identifier values found in template...")
+      # If only 1 document record, set type as 1
+      if(nrow(doc_sheet_list$Documents) == 1){
+        doc_sheet_list$Documents$document_type = 1
+      }
       
       # Match to document records in CvTdb, if available
       doc_sheet_list$Documents = match_cvt_doc_to_db_doc(df = doc_sheet_list$Documents)
@@ -359,7 +391,7 @@ load_cvt_templates_to_db <- function(
       ## Handle tk_params sheet case if it exists
       ##########################################################################
       if(length(tk_params_sheets)){
-        
+        message("Handling tk_params sheet...")
         for(sheet in unique(fk_map$sheet)){
           key_map = fk_map %>%
             dplyr::filter(sheet == !!sheet) %>%
@@ -367,16 +399,21 @@ load_cvt_templates_to_db <- function(
           
           # Create foreign_key table-field pair map
           fk_list = switch(sheet,
-                           "Studies" = c("tk_params", "fk_study_id"),
-                           "Subjects" = c("tk_params", "fk_subject_id"),
+                           "Studies" = c("tk_parameters", "fk_study_id"),
+                           "Subjects" = c("tk_parameters", "fk_subject_id"),
                            "Series" = c("tk_parameters", "fk_series_id"))
           
           # Map foreign key fields with table-field pair
           if(!is.null(fk_list)){
             if(fk_list[1] %in% names(tk_params_sheets)){
+              # Skip empty sheet
+              if(!nrow(tk_params_sheets[[fk_list[1]]])){
+                next
+              }
               if(!fk_list[2] %in% names(tk_params_sheets[[fk_list[1]]])){
+                tk_params_sheets[[fk_list[1]]][[fk_list[2]]] = NA
                 message("...", fk_list[2], " not present in tk_params sheet...")
-                stop()
+                # stop()
               }
               tk_params_sheets[[fk_list[1]]] = tk_params_sheets[[fk_list[1]]] %>%
                 dplyr::mutate(!!fk_list[2] := as.numeric(!!rlang::sym(fk_list[2]))) %>%
@@ -392,49 +429,95 @@ load_cvt_templates_to_db <- function(
           }
         }
         
-        if(anyNA(tk_params_sheets$tk_parameters$fk_series_id)){
-          stop("Template missing fk_series_id...")
+        if(all(is.na(tk_params_sheets$tk_parameters$fk_series_id)) &
+           all(is.na(tk_params_sheets$tk_parameters$fk_study_id))){
+          stop("Template missing fk_series_id and fk_study_id...")
         }
         
-        # Map fk_chemical_id
-        if(all(is.na(tk_params_sheets$tk_parameters$fk_study_id)) & 
-           all(!is.na(tk_params_sheets$tk_parameters$fk_series_id))){
-          # Set to Series analyzed chemical foreign key
-          tk_params_series_chem = doc_sheet_list$Series %>%
-            dplyr::filter(id %in% tk_params_sheets$tk_parameters$fk_series_id) %>%
-            dplyr::select(fk_series_id = id, fk_chemical_id_new = fk_analyzed_chemical_id) %>%
-            dplyr::distinct()
+        if(nrow(tk_params_sheets$tk_parameters)){
+          # Map fk_chemical_id by series_id entries
+          if(all(!is.na(tk_params_sheets$tk_parameters$fk_series_id))){
+            
+            # Check fk_id values
+            fk_ids = unique(tk_params_sheets$tk_parameters$fk_series_id)
+            if(any(fk_ids[!fk_ids %in% doc_sheet_list$Series$id])){
+              stop("tk_params fk_series_id value not present in Series sheet")
+            }
+            
+            # Set to Series analyzed chemical foreign key
+            tk_params_series_chem = doc_sheet_list$Series %>%
+              dplyr::filter(id %in% tk_params_sheets$tk_parameters$fk_series_id) %>%
+              dplyr::select(fk_series_id = id, fk_chemical_id_new = fk_analyzed_chemical_id) %>%
+              dplyr::distinct()
+            
+            tk_params_sheets$tk_parameters = tk_params_sheets$tk_parameters %>%
+              dplyr::left_join(tk_params_series_chem,
+                               by = "fk_series_id") %>%
+              dplyr::mutate(fk_chemical_id = dplyr::case_when(
+                !is.na(fk_chemical_id_new) ~ as.numeric(fk_chemical_id_new),
+                TRUE ~ as.numeric(fk_chemical_id)
+              )) %>%
+              dplyr::select(-fk_chemical_id_new)
+            # Map fk_chemical_id by study_id entries
+          } else if(all(!is.na(tk_params_sheets$tk_parameters$fk_study_id))) {
+            # Check fk_id values
+            fk_ids = unique(tk_params_sheets$tk_parameters$fk_study_id)
+            if(any(fk_ids[!fk_ids %in% doc_sheet_list$Studies$id])){
+              stop("tk_params fk_series_id value not present in Series sheet")
+            }
+            # Set to Series analyzed chemical foreign key
+            tk_params_study_chem = doc_sheet_list$Studies %>%
+              dplyr::filter(id %in% tk_params_sheets$tk_parameters$fk_study_id) %>%
+              dplyr::select(fk_study_id = id, fk_chemical_id_new = fk_dosed_chemical_id) %>%
+              dplyr::distinct()
+            
+            tk_params_sheets$tk_parameters = tk_params_sheets$tk_parameters %>%
+              dplyr::left_join(tk_params_study_chem,
+                               by = "fk_study_id") %>%
+              dplyr::mutate(fk_chemical_id = dplyr::case_when(
+                !is.na(fk_chemical_id_new) ~ as.numeric(fk_chemical_id_new),
+                TRUE ~ as.numeric(fk_chemical_id)
+              )) %>%
+              dplyr::select(-fk_chemical_id_new)
+          } else {
+            stop("Unhandled case for tk_params chemical identifier mapping...")
+          }
           
+          # Remove fields not present
+          # Get table fields
+          tbl_fields = tbl_field_list$column_name[tbl_field_list$table_name == tolower("tk_parameters")] %>%
+            .[!. %in% col_exclude]
           tk_params_sheets$tk_parameters = tk_params_sheets$tk_parameters %>%
-            dplyr::left_join(tk_params_series_chem,
-                             by = "fk_series_id") %>%
-            dplyr::mutate(fk_chemical_id = dplyr::case_when(
-              !is.na(fk_chemical_id_new) ~ fk_chemical_id_new,
-              TRUE ~ fk_chemical_id
-            )) %>%
-            dplyr::select(-fk_chemical_id_new)
-        } else {
-          stop("Unhandled case for tk_params chemical identifier mapping...")
+            dplyr::select(dplyr::any_of(tbl_fields))
+          
+          n_id = tbl_id_list[["tk_parameters"]]
+          tk_params_sheets$tk_parameters = tk_params_sheets$tk_parameters %>%
+            # Set ID values
+            dplyr::mutate(id = as.numeric(seq(n_id, (n_id + dplyr::n() - 1))),
+                          # Add push category
+                          qc_push_category = "Add")
         }
-        
-        # Remove fields not present
-        # Get table fields
-        tbl_fields = tbl_field_list$column_name[tbl_field_list$table_name == tolower("tk_parameters")] %>%
-          .[!. %in% col_exclude]
-        tk_params_sheets$tk_parameters = tk_params_sheets$tk_parameters %>%
-          dplyr::select(dplyr::any_of(tbl_fields))
-        
-        n_id = tbl_id_list[["tk_parameters"]]
-        tk_params_sheets$tk_parameters = tk_params_sheets$tk_parameters %>%
-                        # Set ID values
-          dplyr::mutate(id = as.numeric(seq(n_id, (n_id + dplyr::n() - 1))),
-                        # Add push category
-                        qc_push_category = "Add")
         
         # Append to doc_sheet_list
         doc_sheet_list = doc_sheet_list %>%
           append(tk_params_sheets)
       }
+      
+      out_sheet_row_counts = doc_sheet_list %>%
+        purrr::map_dfr(~ data.frame(n = nrow(.x)), .id = "sheet")
+      
+      row_compare = orig_sheet_row_counts %>%
+        dplyr::left_join(out_sheet_row_counts,
+                         by = "sheet") %>%
+        dplyr::mutate(diff = n.x != n.y) %>%
+        dplyr::filter(diff == TRUE)
+      
+      if(nrow(row_compare)){
+        # Check for row differences
+        stop("Processed sheets have more rows than the input template...")
+      }
+      
+      message("Exporting data for review...")
       
       # Export loaded template log
       output_dir = file.path("output", "Document Loading", to_load$curation_set_tag[i])
@@ -487,6 +570,14 @@ load_cvt_templates_to_db <- function(
                         tblName = "documents")
         } 
       }
+      
+      # Replace strings NA values
+      doc_sheet_list = lapply(doc_sheet_list, function(df){
+        df %>%
+          dplyr::mutate(dplyr::across(where(is.character), ~dplyr::na_if(., "NA")))
+      }) %T>%{
+        names(.) <- names(doc_sheet_list)
+      }
       ################################################################################    
       # Filter only to records that are "Add"
       # Select and iterate through "Pass" QC Category record updates
@@ -494,6 +585,10 @@ load_cvt_templates_to_db <- function(
                     tbl_field_list=tbl_field_list, 
                     load_doc_sheet_only=load_doc_sheet_only,
                     col_exclude=col_exclude)
+      
+      message("--- Check template uploaded successfully. ---")
+      browser()
+      # stop("Check")
     }
   }
   

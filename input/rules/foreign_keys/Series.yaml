@@ -4,4 +4,4 @@ rules:
     message: fk_study_id_not_in_studies_sheet
 - expr: 'all(fk_subject_id %in% subject_ids)'
   meta:
-    message: fk_study_id_not_in_subjects_sheet
+    message: fk_subject_id_not_in_subjects_sheet
